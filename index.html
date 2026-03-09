@@ -1751,6 +1751,7 @@ async function studentLogin(){
   btn.textContent='Checking…';btn.disabled=true;
   try{
     var d=await api({examNo:en,phone:ph});
+    alert("DEBUG exams: " + d.exams.length + " | first: " + JSON.stringify(d.exams[0]));
     CU={type:'student',data:d};
     sessionStorage.setItem('vva_session',JSON.stringify(CU));
     showDash('sDash');
