@@ -1706,7 +1706,7 @@ async function api(p) {
     var myRow = myResults.find(function(r){ return r.Subject.trim()===subject; });
     if (!myRow) return;
     var subjectClassRows = classResults.filter(function(r){ return r.Subject.trim()===subject; });
-    var classSize = students.filter(function(s){ return s.Class.trim()===student.Class.trim(); }).length || subjectClassRows.length || 1;
+    var classSize = subjectClassRows.length || 1;
     var pfx = prefix ? subject + '-' : '';
 
     examCols2.forEach(function(col) {
@@ -1720,6 +1720,7 @@ async function api(p) {
 
       examEntries.push({
         name:        pfx + (examColLabels[col] || col),
+        subject:     subject,
         type:        type,
         max:         max,
         score:       myScore !== null ? myScore : 0,
@@ -1732,7 +1733,7 @@ async function api(p) {
     });
   });
 
-  return { role:'student', name:student.Name, examNo:student.ExamNo, section:student.Class, gender:student.Gender, exams:examEntries };
+  return { role:'student', name:student.Name, examNo:student.ExamNo, section:student.Class, gender:student.Gender, subjects:subjects, exams:examEntries };
 }
 
 function switchTab(t){
@@ -1751,11 +1752,10 @@ async function studentLogin(){
   btn.textContent='Checking…';btn.disabled=true;
   try{
     var d=await api({examNo:en,phone:ph});
-    alert("DEBUG exams: " + d.exams.length + " | first: " + JSON.stringify(d.exams[0]));
     CU={type:'student',data:d};
     sessionStorage.setItem('vva_session',JSON.stringify(CU));
     showDash('sDash');
-    renderStudent(d);
+    setTimeout(function(){ renderStudent(d); }, 50);
   }catch(e){err.textContent=e.message;err.style.display='block';}
   finally{btn.textContent='Login';btn.disabled=false;}
 }
@@ -1864,25 +1864,17 @@ function renderStudent(d) {
   document.getElementById('sName').textContent = name;
   document.getElementById('sMeta').textContent = examNo;   // just roll no
 
-  // ── SUBJECT FILTER BAR (replaces last-updated) ──
-  var allSubjects = [];
-  exams.forEach(function(e) {
-    // strip trailing DRT1/DRT2/PT1 suffix to get subject
-    var subj = e.name.replace(/[-]?(DRT\d+|PT\d+|Term|Preboard)$/i,'').trim();
-    if (subj && allSubjects.indexOf(subj) < 0) allSubjects.push(subj);
-  });
-  // If prefix is empty (single-subject sheet), use subject from data
-  if (!allSubjects.length || (allSubjects.length === 1 && allSubjects[0] === '')) {
-    allSubjects = d.subject ? [d.subject] : [];
-  }
+  // ── SUBJECT FILTER BAR ──
+  var allSubjects = d.subjects && d.subjects.length ? d.subjects : [];
   var activeSubject = allSubjects[0] || null;
   var sbEl = document.getElementById('sSubjectBar');
   if (sbEl) {
     var pillsHtml = allSubjects.length > 1
-      ? allSubjects.map(function(s,i){
-          return '<button class="sf-pill'+(i===0?' active':'')+'" onclick="filterSubject(this.textContent.trim(),this)">' + s + '</button>';
+      ? '<button class="sf-pill active" onclick="filterSubject(\'ALL\',this)">All</button>' +
+        allSubjects.map(function(s){
+          return '<button class="sf-pill" onclick="filterSubject(\'' + s + '\',this)">' + s + '</button>';
         }).join('')
-      : (allSubjects.length === 1 ? '<button class="sf-pill active" style="cursor:default">'+allSubjects[0]+'</button>' : '');
+      : (allSubjects.length === 1 ? '<button class="sf-pill active" style="cursor:default">' + allSubjects[0] + '</button>' : '');
     sbEl.innerHTML =
       '<div class="lu-bar">' +
         '<div class="lu-inner lu-ok">' +
@@ -1898,68 +1890,22 @@ function renderStudent(d) {
   document.getElementById('sHeroName').textContent = name;
   document.getElementById('sHeroMeta').textContent = 'Class ' + section + ' · Roll No: ' + examNo + ' · 2025–26';
 
-  var taken    = exams.filter(function(e){ return e.score > 0; });
-  var drtTaken  = exams.filter(function(e){ return e.type === 'DRT' && e.score > 0; });
-  var mainTaken = exams.filter(function(e){ return e.type !== 'DRT' && e.score > 0; });
+  // Compute hero stats from ALL exams
+  var takenAll    = exams.filter(function(e){ return !e.absent && e.score > 0; });
+  var drtTakenAll = exams.filter(function(e){ return e.type === 'DRT' && !e.absent && e.score > 0; });
+  var mainTakenAll= exams.filter(function(e){ return e.type !== 'DRT' && !e.absent && e.score > 0; });
+  var allPcts     = takenAll.map(function(e){ return e.pct; });
+  var overallAvg  = allPcts.length ? Math.round(allPcts.reduce(function(a,b){return a+b;},0)/allPcts.length) : 0;
+  var drtPct      = drtTakenAll.length ? Math.round(drtTakenAll.reduce(function(a,e){return a+e.pct;},0)/drtTakenAll.length) : null;
+  var examPct     = mainTakenAll.length ? Math.round(mainTakenAll.reduce(function(a,e){return a+e.pct;},0)/mainTakenAll.length) : null;
+  var bestRank    = takenAll.length ? takenAll.reduce(function(a,b){ return a.rank < b.rank ? a : b; }) : null;
 
-  // Overall avg %
-  var allPcts = taken.map(function(e){ return e.pct; });
-  var overallAvg = allPcts.length ? Math.round(allPcts.reduce(function(a,b){return a+b;},0) / allPcts.length) : 0;
-
-  // DRT raw avg (score/max)
-  var drtRawAvg = null, drtMaxMark = 15;
-  if (drtTaken.length) {
-    drtMaxMark = drtTaken[0].max || 15;
-    drtRawAvg = drtTaken.reduce(function(a,e){return a+e.score;},0) / drtTaken.length;
-    drtRawAvg = Math.round(drtRawAvg * 10) / 10;
-  }
-  var drtPct = drtTaken.length ? Math.round(drtTaken.reduce(function(a,e){return a+e.pct;},0)/drtTaken.length) : null;
-
-  // Exam raw avg
-  var examRawAvg = null, examMaxMark = 100;
-  var mainNames = [];
-  if (mainTaken.length) {
-    examMaxMark = mainTaken[0].max || 100;
-    examRawAvg = mainTaken.reduce(function(a,e){return a+e.score;},0) / mainTaken.length;
-    examRawAvg = Math.round(examRawAvg * 10) / 10;
-    mainNames = uniqueMainCols;  // actual conducted exam names e.g. PT1, Term, Preboard
-  }
-  var examPct = mainTaken.length ? Math.round(mainTaken.reduce(function(a,e){return a+e.pct;},0)/mainTaken.length) : null;
-
-  // Best DRT rank & Best Exam rank
-  var bestDrtRank = null, bestExamRank = null;
-  if (drtTaken.length) bestDrtRank = drtTaken.reduce(function(a,b){ return a.rank < b.rank ? a : b; });
-  if (mainTaken.length) bestExamRank = mainTaken.reduce(function(a,b){ return a.rank < b.rank ? a : b; });
-
-  // Strip subject prefix helper ("CS-DRT1" → "DRT1", "DRT1" → "DRT1")
-  function stripPrefix(name) {
-    var idx = name.indexOf('-');
-    return idx >= 0 ? name.slice(idx + 1) : name;
-  }
-  // Unique exam column names — declared HERE so they're available throughout renderStudent
-  var uniqueExamCols  = [...new Set(taken.map(function(e){ return stripPrefix(e.name); }))];
-  var uniqueDrtCols   = [...new Set(drtTaken.map(function(e){ return stripPrefix(e.name); }))];
-  var uniqueMainCols  = [...new Set(mainTaken.map(function(e){ return stripPrefix(e.name); }))];
-  // Unique exam column names (regardless of subject count)
-
-  var bestRank = taken.length ? taken.reduce(function(a,b){ return a.rank < b.rank ? a : b; }) : null;
-  var best = taken.length ? taken.reduce(function(a,b){ return a.pct > b.pct ? a : b; }) : null;
-  var latest = taken.length ? taken[taken.length - 1] : null;
-
-  // Perf category
   function perfCat(p) {
-    if (p >= 90) return { label:'Excellent 🌟', cls:'shb-exc', color:'var(--green)', catLabel:'Excellent' };
-    if (p >= 75) return { label:'Very Good 👍', cls:'shb-vg',  color:'var(--blue-lt)', catLabel:'Very Good' };
-    if (p >= 60) return { label:'Good ✅',        cls:'shb-good',color:'var(--gold)',   catLabel:'Good' };
-    if (p >= 50) return { label:'Average ⚡',      cls:'shb-avg', color:'var(--org)',   catLabel:'Average' };
-    return { label:'Keep Going 💪', cls:'shb-ni', color:'var(--red)', catLabel:'Needs Improvement' };
-  }
-  function gradeBadge(p) {
-    if (p >= 90) return '<span class="gb gb-aplus">A+</span>';
-    if (p >= 75) return '<span class="gb gb-a">A</span>';
-    if (p >= 60) return '<span class="gb gb-b">B</span>';
-    if (p >= 50) return '<span class="gb gb-c">C</span>';
-    return '<span class="gb gb-d">D</span>';
+    if (p >= 90) return { label:'Excellent 🌟', cls:'shb-exc' };
+    if (p >= 75) return { label:'Very Good 👍', cls:'shb-vg' };
+    if (p >= 60) return { label:'Good ✅', cls:'shb-good' };
+    if (p >= 50) return { label:'Average ⚡', cls:'shb-avg' };
+    return { label:'Keep Going 💪', cls:'shb-ni' };
   }
 
   var perf = perfCat(overallAvg);
@@ -1967,22 +1913,58 @@ function renderStudent(d) {
   badge.textContent = perf.label;
   badge.className = 'sh-perf-badge ' + perf.cls;
 
-  // ── HERO INLINE STATS: Overall% | DRT% | Exam% | Best Rank ──
+  // ── HERO INLINE STATS ──
   var shStats = document.getElementById('shStats');
-  if (!taken.length) {
+  if (!takenAll.length) {
     shStats.innerHTML = '<div class="sh-stat sh-na" style="grid-column:1/-1"><div class="sh-sv">No results yet</div><div class="sh-sl">Marks will appear here once entered</div></div>';
   } else {
-    // Hero shows compact summary — 4 cells
     var heroRankLabel = bestRank ? '#' + bestRank.rank + ' / ' + bestRank.classSize : '—';
     var heroDrtLabel  = drtPct !== null ? drtPct + '%' : '—';
     var heroExamLabel = examPct !== null ? examPct + '%' : '—';
-    // Build a concise headline sentence for the banner
-    var aboveAvgCount = taken.filter(function(e){return e.pct > e.classAvgPct;}).length;
     shStats.innerHTML =
       '<div class="sh-stat"><div class="sh-sv">' + overallAvg + '%</div><div class="sh-sl">Overall</div></div>' +
       '<div class="sh-stat"><div class="sh-sv">' + heroDrtLabel + '</div><div class="sh-sl">DRT Avg</div></div>' +
       '<div class="sh-stat"><div class="sh-sv">' + heroExamLabel + '</div><div class="sh-sl">Exam Avg</div></div>' +
       '<div class="sh-stat"><div class="sh-sv">' + heroRankLabel + '</div><div class="sh-sl">Best Rank</div></div>';
+  }
+
+  // Render charts/table/cards based on current data
+  renderStudentCharts(d);
+}
+
+function renderStudentCharts(d) {
+  var exams = d.exams;
+  var taken    = exams.filter(function(e){ return !e.absent && e.score > 0; });
+  var drtTaken  = exams.filter(function(e){ return e.type === 'DRT' && !e.absent && e.score > 0; });
+  var mainTaken = exams.filter(function(e){ return e.type !== 'DRT' && !e.absent && e.score > 0; });
+
+  var allPcts = taken.map(function(e){ return e.pct; });
+  var overallAvg = allPcts.length ? Math.round(allPcts.reduce(function(a,b){return a+b;},0)/allPcts.length) : 0;
+  var drtRawAvg = null, drtMaxMark = 15;
+  if (drtTaken.length) {
+    drtMaxMark = drtTaken[0].max || 15;
+    drtRawAvg = Math.round(drtTaken.reduce(function(a,e){return a+e.score;},0)/drtTaken.length * 10)/10;
+  }
+  var drtPct = drtTaken.length ? Math.round(drtTaken.reduce(function(a,e){return a+e.pct;},0)/drtTaken.length) : null;
+  var examRawAvg = null, examMaxMark = 100;
+  if (mainTaken.length) {
+    examMaxMark = mainTaken[0].max || 100;
+    examRawAvg = Math.round(mainTaken.reduce(function(a,e){return a+e.score;},0)/mainTaken.length * 10)/10;
+  }
+  var examPct = mainTaken.length ? Math.round(mainTaken.reduce(function(a,e){return a+e.pct;},0)/mainTaken.length) : null;
+  var bestDrtRank = drtTaken.length ? drtTaken.reduce(function(a,b){ return a.rank < b.rank ? a : b; }) : null;
+  var bestExamRank = mainTaken.length ? mainTaken.reduce(function(a,b){ return a.rank < b.rank ? a : b; }) : null;
+  var bestRank = taken.length ? taken.reduce(function(a,b){ return a.rank < b.rank ? a : b; }) : null;
+  var uniqueExamCols = [...new Set(taken.map(function(e){ return e.name; }))];
+  var uniqueDrtCols  = [...new Set(drtTaken.map(function(e){ return e.name; }))];
+  var uniqueMainCols = [...new Set(mainTaken.map(function(e){ return e.name; }))];
+
+  function gradeBadge(p) {
+    if (p >= 90) return '<span class="gb gb-aplus">A+</span>';
+    if (p >= 75) return '<span class="gb gb-a">A</span>';
+    if (p >= 60) return '<span class="gb gb-b">B</span>';
+    if (p >= 50) return '<span class="gb gb-c">C</span>';
+    return '<span class="gb gb-d">D</span>';
   }
 
   // ── 1. OVERVIEW CARDS (5 cards) ──
@@ -2468,16 +2450,15 @@ function filterSubject(subj, btn) {
   _sActiveSubject = subj;
   document.querySelectorAll('.sf-pill').forEach(function(b){ b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
-  // Re-render with filtered exams
   if (!_sCurrentData) return;
   var d = _sCurrentData;
-  var filteredExams = d.exams.filter(function(e){
-    var examSubj = e.name.replace(/[-]?(DRT\d+|PT\d+|Term|Preboard)$/i,'').trim();
-    return examSubj === subj || examSubj === '';
-  });
-  // Temporarily swap exams for re-render sections below hero
-  // Subject filtering is visual — full re-render on multi-subject to be wired separately
-  // For now the pills are displayed; filtering charts is a future enhancement
+  // Filter exams by subject (or show all)
+  var filtered = JSON.parse(JSON.stringify(d));
+  if (subj !== 'ALL') {
+    filtered.exams = d.exams.filter(function(e){ return e.subject === subj; });
+  }
+  // Re-render everything except the subject bar (to avoid resetting pills)
+  renderStudentCharts(filtered);
 }
 
 // ════ TEACHER ANALYTICS STATE ════
