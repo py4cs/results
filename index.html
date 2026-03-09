@@ -1521,8 +1521,8 @@ function parseCSV(text) {
 function identifySheet(headers) {
   var k = headers.map(function(h){ return h.toLowerCase().replace(/[\s_\-]/g,''); });
   var has = function() { var names = Array.from(arguments); return names.some(function(n){ return k.indexOf(n) !== -1; }); };
-  if (has('examno') && has('phoneno','phone') && has('name') && !has('subject')) return 'students';
-  if (has('examno') && has('subject') && (has('drt1')||has('drt2')||has('pt1')||has('term')||has('preboard'))) return 'results';
+  if (has('examno') && has('phoneno') && has('name') && !has('subject')) return 'students';
+  if (has('examno') && has('subject') && (has('drt1','drt-1')||has('drt2','drt-2')||has('pt1','pt-1')||has('term')||has('preboard'))) return 'results';
   if (has('teacherid') && has('password')) return 'teachers';
   if (has('key') && has('value')) return 'settings';
   return null;
@@ -1574,34 +1574,34 @@ async function fetchAllSheets() {
     if (!type) return;
     if (type === 'students' && !data.students.length) {
       data.students = sheet.rows.map(function(r){ return {
-        ExamNo:  getField(r,'ExamNo','ExamNumber','Exam No'),
-        Phoneno: getField(r,'Phoneno','Phone','PhoneNo','Phone No'),
-        Name:    getField(r,'Name'),
-        Class:   getField(r,'Class','Section'),
-        Gender:  getField(r,'Gender'),
+        ExamNo:  r['Examno'] || '',
+        Phoneno: r['Phoneno'] || '',
+        Name:    r['Name'] || '',
+        Class:   r['Class'] || '',
+        Gender:  r['Gender'] || '',
       };}).filter(function(s){ return s.ExamNo && s.Name; });
     } else if (type === 'results' && !data.results.length) {
       data.results = sheet.rows.map(function(r){ return {
-        ExamNo:   getField(r,'ExamNo','Exam No'),
-        Class:    getField(r,'Class','Section'),
-        Subject:  getField(r,'Subject'),
-        DRT1:     getField(r,'DRT1'),
-        DRT2:     getField(r,'DRT2'),
-        PT1:      getField(r,'PT1'),
-        Term:     getField(r,'Term'),
-        Preboard: getField(r,'Preboard','Pre Board','Pre-Board'),
+        ExamNo:   r['Examno'] || '',
+        Class:    r['Class'] || '',
+        Subject:  r['Subject'] || '',
+        DRT1:     r['DRT-1'] || '',
+        DRT2:     r['DRT-2'] || '',
+        PT1:      r['PT-1'] || '',
+        Term:     r['Term'] || '',
+        Preboard: r['Preboard'] || '',
       };}).filter(function(r){ return r.ExamNo && r.Subject; });
     } else if (type === 'teachers' && !data.teachers.length) {
       data.teachers = sheet.rows.map(function(r){ return {
-        TeacherID: getField(r,'TeacherID','Teacher ID','TeacherNo'),
-        Password:  getField(r,'Password'),
-        Name:      getField(r,'Name'),
-        Subject:   getField(r,'Subject'),
-        Classes:   getField(r,'Classes','Class'),
+        TeacherID: r['TeacherID'] || '',
+        Password:  r['Password'] || '',
+        Name:      r['Name'] || '',
+        Subject:   r['Subject'] || '',
+        Classes:   r['Classes'] || '',
       };}).filter(function(t){ return t.TeacherID; });
     } else if (type === 'settings') {
       sheet.rows.forEach(function(r){
-        var k = getField(r,'Key'), v = getField(r,'Value');
+        var k = r['Key'], v = r['Value'];
         if (k) data.settings[k] = v;
       });
     }
