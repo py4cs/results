@@ -1702,11 +1702,14 @@ async function api(p) {
   var examCols2 = ['DRT1','DRT2','PT1','Term','Preboard'];
   var examColLabels = { DRT1:'DRT-1', DRT2:'DRT-2', PT1:'PT-1', Term:'Term', Preboard:'Preboard' };
 
+  // Class size from Students sheet — most accurate
+  var totalClassSize = students.filter(function(s){ return s.Class.trim()===student.Class.trim(); }).length || 1;
+
   subjects.forEach(function(subject) {
     var myRow = myResults.find(function(r){ return r.Subject.trim()===subject; });
     if (!myRow) return;
     var subjectClassRows = classResults.filter(function(r){ return r.Subject.trim()===subject; });
-    var classSize = subjectClassRows.length || 1;
+    var classSize = totalClassSize; // always from students sheet
     var pfx = prefix ? subject + '-' : '';
 
     examCols2.forEach(function(col) {
@@ -1866,29 +1869,33 @@ function renderStudent(d) {
 
   // ── SUBJECT FILTER BAR ──
   var allSubjects = d.subjects && d.subjects.length ? d.subjects : [];
-  var activeSubject = allSubjects[0] || null;
   var sbEl = document.getElementById('sSubjectBar');
   if (sbEl) {
-    var pillsHtml = allSubjects.length > 1
-      ? '<button class="sf-pill active" onclick="filterSubject(\'ALL\',this)">All</button>' +
-        allSubjects.map(function(s){
-          return '<button class="sf-pill" onclick="filterSubject(\'' + s + '\',this)">' + s + '</button>';
-        }).join('')
-      : (allSubjects.length === 1 ? '<button class="sf-pill active" style="cursor:default">' + allSubjects[0] + '</button>' : '');
+    var pillsHtml = allSubjects.map(function(s, i){
+      return '<button class="sf-pill'+(i===0?' active':'')+'" onclick="filterSubject(\''+s+'\',this)">'+s+'</button>';
+    }).join('');
     sbEl.innerHTML =
       '<div class="lu-bar">' +
         '<div class="lu-inner lu-ok">' +
           '<div class="lu-dot"></div>' +
           '<span style="font-size:.72rem;font-weight:700;color:var(--green);margin-right:6px">Live</span>' +
-          (pillsHtml ? '<div class="sf-pills">' + pillsHtml + '</div>' : '') +
+          (pillsHtml ? '<div class="sf-pills">'+pillsHtml+'</div>' : '') +
         '</div>' +
       '</div>';
+  }
+  // Auto-filter to first subject on load
+  if (allSubjects.length > 0) {
+    var firstSubj = allSubjects[0];
+    var filteredD = JSON.parse(JSON.stringify(d));
+    filteredD.exams = d.exams.filter(function(e){ return e.subject === firstSubj; });
+    renderStudentCharts(filteredD);
+    return; // renderStudentCharts will be called with filtered data
   }
 
   // Hero avatar + name
   document.getElementById('sHeroAv').textContent = name[0];
   document.getElementById('sHeroName').textContent = name;
-  document.getElementById('sHeroMeta').textContent = 'Class ' + section + ' · Roll No: ' + examNo + ' · 2025–26';
+  document.getElementById('sHeroMeta').textContent = 'Class ' + section;
 
   // Compute hero stats from ALL exams
   var takenAll    = exams.filter(function(e){ return !e.absent && e.score > 0; });
@@ -1904,8 +1911,8 @@ function renderStudent(d) {
     if (p >= 90) return { label:'Excellent 🌟', cls:'shb-exc' };
     if (p >= 75) return { label:'Very Good 👍', cls:'shb-vg' };
     if (p >= 60) return { label:'Good ✅', cls:'shb-good' };
-    if (p >= 50) return { label:'Average ⚡', cls:'shb-avg' };
-    return { label:'Keep Going 💪', cls:'shb-ni' };
+    if (p >= 50) return { label:'Rising Star 🌱', cls:'shb-avg' };
+    return { label:'Keep Climbing 🚀', cls:'shb-ni' };
   }
 
   var perf = perfCat(overallAvg);
@@ -1913,533 +1920,351 @@ function renderStudent(d) {
   badge.textContent = perf.label;
   badge.className = 'sh-perf-badge ' + perf.cls;
 
-  // ── HERO INLINE STATS ──
+  // ── HERO INLINE STATS — just a welcome, data is shown below ──
   var shStats = document.getElementById('shStats');
-  if (!takenAll.length) {
-    shStats.innerHTML = '<div class="sh-stat sh-na" style="grid-column:1/-1"><div class="sh-sv">No results yet</div><div class="sh-sl">Marks will appear here once entered</div></div>';
-  } else {
-    var heroRankLabel = bestRank ? '#' + bestRank.rank + ' / ' + bestRank.classSize : '—';
-    var heroDrtLabel  = drtPct !== null ? drtPct + '%' : '—';
-    var heroExamLabel = examPct !== null ? examPct + '%' : '—';
-    shStats.innerHTML =
-      '<div class="sh-stat"><div class="sh-sv">' + overallAvg + '%</div><div class="sh-sl">Overall</div></div>' +
-      '<div class="sh-stat"><div class="sh-sv">' + heroDrtLabel + '</div><div class="sh-sl">DRT Avg</div></div>' +
-      '<div class="sh-stat"><div class="sh-sv">' + heroExamLabel + '</div><div class="sh-sl">Exam Avg</div></div>' +
-      '<div class="sh-stat"><div class="sh-sv">' + heroRankLabel + '</div><div class="sh-sl">Best Rank</div></div>';
-  }
+  shStats.innerHTML = '<div class="sh-stat" style="grid-column:1/-1;text-align:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:14px">' +
+    '<div class="sh-sv" style="font-size:1rem;color:#fff;font-weight:600;">👋 Welcome back, ' + name.split(' ')[0] + '!</div>' +
+    '<div class="sh-sl" style="color:rgba(255,255,255,.6);margin-top:4px;font-size:.75rem;text-transform:none;letter-spacing:0">Your results are ready. Scroll down to view your performance.</div>' +
+    '</div>';
 
   // Render charts/table/cards based on current data
   renderStudentCharts(d);
 }
 
 function renderStudentCharts(d) {
-  var exams = d.exams;
-  var taken    = exams.filter(function(e){ return !e.absent && e.score > 0; });
-  var drtTaken  = exams.filter(function(e){ return e.type === 'DRT' && !e.absent && e.score > 0; });
-  var mainTaken = exams.filter(function(e){ return e.type !== 'DRT' && !e.absent && e.score > 0; });
+  var exams = d.exams || [];
 
-  var allPcts = taken.map(function(e){ return e.pct; });
-  var overallAvg = allPcts.length ? Math.round(allPcts.reduce(function(a,b){return a+b;},0)/allPcts.length) : 0;
-  var drtRawAvg = null, drtMaxMark = 15;
-  if (drtTaken.length) {
-    drtMaxMark = drtTaken[0].max || 15;
-    drtRawAvg = Math.round(drtTaken.reduce(function(a,e){return a+e.score;},0)/drtTaken.length * 10)/10;
-  }
-  var drtPct = drtTaken.length ? Math.round(drtTaken.reduce(function(a,e){return a+e.pct;},0)/drtTaken.length) : null;
-  var examRawAvg = null, examMaxMark = 100;
-  if (mainTaken.length) {
-    examMaxMark = mainTaken[0].max || 100;
-    examRawAvg = Math.round(mainTaken.reduce(function(a,e){return a+e.score;},0)/mainTaken.length * 10)/10;
-  }
-  var examPct = mainTaken.length ? Math.round(mainTaken.reduce(function(a,e){return a+e.pct;},0)/mainTaken.length) : null;
-  var bestDrtRank = drtTaken.length ? drtTaken.reduce(function(a,b){ return a.rank < b.rank ? a : b; }) : null;
-  var bestExamRank = mainTaken.length ? mainTaken.reduce(function(a,b){ return a.rank < b.rank ? a : b; }) : null;
-  var bestRank = taken.length ? taken.reduce(function(a,b){ return a.rank < b.rank ? a : b; }) : null;
-  var uniqueExamCols = [...new Set(taken.map(function(e){ return e.name; }))];
-  var uniqueDrtCols  = [...new Set(drtTaken.map(function(e){ return e.name; }))];
-  var uniqueMainCols = [...new Set(mainTaken.map(function(e){ return e.name; }))];
+  // ── Core data splits ──
+  var taken     = exams.filter(function(e){ return !e.absent && e.score > 0; });
+  var drtTaken  = taken.filter(function(e){ return e.type === 'DRT'; });
+  var mainTaken = taken.filter(function(e){ return e.type !== 'DRT'; });
 
-  function gradeBadge(p) {
-    if (p >= 90) return '<span class="gb gb-aplus">A+</span>';
-    if (p >= 75) return '<span class="gb gb-a">A</span>';
-    if (p >= 60) return '<span class="gb gb-b">B</span>';
-    if (p >= 50) return '<span class="gb gb-c">C</span>';
+  // ── Averages ──
+  var overallAvg = taken.length ? Math.round(taken.reduce(function(a,e){return a+e.pct;},0)/taken.length) : 0;
+  var drtPct     = drtTaken.length  ? Math.round(drtTaken.reduce(function(a,e){return a+e.pct;},0)/drtTaken.length)  : null;
+  var examPct    = mainTaken.length ? Math.round(mainTaken.reduce(function(a,e){return a+e.pct;},0)/mainTaken.length) : null;
+  var drtRawAvg  = drtTaken.length  ? Math.round(drtTaken.reduce(function(a,e){return a+e.score;},0)/drtTaken.length*10)/10 : null;
+  var examRawAvg = mainTaken.length ? Math.round(mainTaken.reduce(function(a,e){return a+e.score;},0)/mainTaken.length*10)/10 : null;
+  var drtMaxMark  = drtTaken.length  ? drtTaken[0].max  : 15;
+  var examMaxMark = mainTaken.length ? mainTaken[0].max : 100;
+
+  // ── Best ranks ──
+  var bestDrtRank  = drtTaken.length  ? drtTaken.reduce(function(a,b){return a.rank<b.rank?a:b;})  : null;
+  var bestExamRank = mainTaken.length ? mainTaken.reduce(function(a,b){return a.rank<b.rank?a:b;}) : null;
+
+  // ── Grade badge ──
+  function gb(p) {
+    if (p>=90) return '<span class="gb gb-aplus">A+</span>';
+    if (p>=75) return '<span class="gb gb-a">A</span>';
+    if (p>=60) return '<span class="gb gb-b">B</span>';
+    if (p>=50) return '<span class="gb gb-c">C</span>';
     return '<span class="gb gb-d">D</span>';
   }
 
-  // ── 1. OVERVIEW CARDS (5 cards) ──
+  // ══════════════════════════════════════
+  // 1. OVERVIEW CARDS
+  // ══════════════════════════════════════
   var sg = document.getElementById('sSumGrid');
+  if (!sg) return;
   if (!taken.length) {
     sg.innerHTML = '<div class="sd-sum sds1" style="grid-column:1/-1"><div class="sd-sum-val" style="font-size:1rem;color:var(--g400)">No exam data yet</div><div class="sd-sum-lbl">Results will appear here once marks are entered</div></div>';
   } else {
-    // Card 1: Overall Percentage
-    var c1 = '<div class="sd-sum sds1">' +
-      '<div class="sd-sum-emoji">📊</div>' +
-      '<div class="sd-sum-val">' + overallAvg + '%</div>' +
-      '<div class="sd-sum-lbl">Overall Percentage</div>' +
-      '<div class="sd-sum-sub">across ' + uniqueExamCols.length + ' exam' + (uniqueExamCols.length>1?'s':'') + '</div>' +
-      '</div>';
-
-    // Card 2: DRT Avg
-    var c2;
-    if (drtTaken.length) {
-      c2 = '<div class="sd-sum sds2">' +
-        '<div class="sd-sum-emoji">📝</div>' +
-        '<div class="sd-sum-val">' + drtRawAvg + '/' + drtMaxMark + '</div>' +
-        '<div class="sd-sum-lbl">DRT Avg <span style="font-weight:400;color:var(--g400)">· ' + drtPct + '%</span></div>' +
-        '<div class="sd-sum-sub">across ' + uniqueDrtCols.length + ' DRT' + (uniqueDrtCols.length>1?'s':'') + '</div>' +
-        '</div>';
-    } else {
-      c2 = '<div class="sd-sum sds2"><div class="sd-sum-emoji">📝</div><div class="sd-sum-val" style="font-size:.9rem;color:var(--g400)">—</div><div class="sd-sum-lbl">DRT Avg</div><div class="sd-sum-sub">Not yet conducted</div></div>';
-    }
-
-    // Card 3: Exam Avg
-    var c3;
-    if (mainTaken.length) {
-      var examTypesStr = uniqueMainCols.join(' · ');
-      c3 = '<div class="sd-sum sds3">' +
-        '<div class="sd-sum-emoji">📋</div>' +
-        '<div class="sd-sum-val">' + examRawAvg + '/' + examMaxMark + '</div>' +
-        '<div class="sd-sum-lbl">Exam Avg <span style="font-weight:400;color:var(--g400)">· ' + examPct + '%</span></div>' +
-        '<div class="sd-sum-sub">' + examTypesStr + '</div>' +
-        '</div>';
-    } else {
-      c3 = '<div class="sd-sum sds3"><div class="sd-sum-emoji">📋</div><div class="sd-sum-val" style="font-size:.9rem;color:var(--g400)">—</div><div class="sd-sum-lbl">Exam Avg</div><div class="sd-sum-sub">Not yet conducted</div></div>';
-    }
-
-    // Card 4: Best DRT Rank
-    var c4;
-    if (bestDrtRank) {
-      var drtMedal = bestDrtRank.rank===1?'🥇':bestDrtRank.rank<=3?'🥈':'🏅';
-      c4 = '<div class="sd-sum sds4">' +
-        '<div class="sd-sum-emoji">' + drtMedal + '</div>' +
-        '<div class="sd-sum-val">#' + bestDrtRank.rank + '</div>' +
-        '<div class="sd-sum-lbl">Best DRT Rank</div>' +
-        '<div class="sd-sum-sub">' + bestDrtRank.rank + ' of ' + bestDrtRank.classSize + ' students · ' + bestDrtRank.name + '</div>' +
-        '</div>';
-    } else {
-      c4 = '<div class="sd-sum sds4"><div class="sd-sum-emoji">🏅</div><div class="sd-sum-val" style="font-size:.9rem;color:var(--g400)">—</div><div class="sd-sum-lbl">Best DRT Rank</div><div class="sd-sum-sub">DRT not yet conducted</div></div>';
-    }
-
-    // Card 5: Best Exam Rank
-    var c5;
-    if (bestExamRank) {
-      var examMedal = bestExamRank.rank===1?'🥇':bestExamRank.rank<=3?'🥈':'🏆';
-      c5 = '<div class="sd-sum sds5">' +
-        '<div class="sd-sum-emoji">' + examMedal + '</div>' +
-        '<div class="sd-sum-val">#' + bestExamRank.rank + '</div>' +
-        '<div class="sd-sum-lbl">Best Exam Rank</div>' +
-        '<div class="sd-sum-sub">' + bestExamRank.rank + ' of ' + bestExamRank.classSize + ' students · ' + bestExamRank.name + '</div>' +
-        '</div>';
-    } else {
-      c5 = '<div class="sd-sum sds5"><div class="sd-sum-emoji">🏆</div><div class="sd-sum-val" style="font-size:.9rem;color:var(--g400)">—</div><div class="sd-sum-lbl">Best Exam Rank</div><div class="sd-sum-sub">Exams not yet conducted</div></div>';
-    }
-
-    sg.innerHTML = c1 + c2 + c3 + c4 + c5;
+    var c1 = '<div class="sd-sum sds1"><div class="sd-sum-emoji">📊</div><div class="sd-sum-val">'+overallAvg+'%</div><div class="sd-sum-lbl">Overall Average</div><div class="sd-sum-sub">across '+taken.length+' exam'+(taken.length>1?'s':'')+'</div></div>';
+    var c2 = drtTaken.length
+      ? '<div class="sd-sum sds2"><div class="sd-sum-emoji">📝</div><div class="sd-sum-val">'+drtRawAvg+'/'+drtMaxMark+'</div><div class="sd-sum-lbl">DRT Avg · '+drtPct+'%</div><div class="sd-sum-sub">across '+drtTaken.length+' DRT'+(drtTaken.length>1?'s':'')+'</div></div>'
+      : '<div class="sd-sum sds2"><div class="sd-sum-emoji">📝</div><div class="sd-sum-val" style="font-size:.9rem;color:var(--g400)">—</div><div class="sd-sum-lbl">DRT Avg</div><div class="sd-sum-sub">Not yet conducted</div></div>';
+    var c3 = mainTaken.length
+      ? '<div class="sd-sum sds3"><div class="sd-sum-emoji">📋</div><div class="sd-sum-val">'+examRawAvg+'/'+examMaxMark+'</div><div class="sd-sum-lbl">Exam Avg · '+examPct+'%</div><div class="sd-sum-sub">'+mainTaken.map(function(e){return e.name;}).join(' · ')+'</div></div>'
+      : '<div class="sd-sum sds3"><div class="sd-sum-emoji">📋</div><div class="sd-sum-val" style="font-size:.9rem;color:var(--g400)">—</div><div class="sd-sum-lbl">Exam Avg</div><div class="sd-sum-sub">Not yet conducted</div></div>';
+    var c4 = bestDrtRank
+      ? '<div class="sd-sum sds4"><div class="sd-sum-emoji">'+(bestDrtRank.rank===1?'🥇':bestDrtRank.rank<=3?'🥈':'🏅')+'</div><div class="sd-sum-val">#'+bestDrtRank.rank+'</div><div class="sd-sum-lbl">Best DRT Rank</div><div class="sd-sum-sub">of '+bestDrtRank.classSize+' · '+bestDrtRank.name+'</div></div>'
+      : '<div class="sd-sum sds4"><div class="sd-sum-emoji">🏅</div><div class="sd-sum-val" style="font-size:.9rem;color:var(--g400)">—</div><div class="sd-sum-lbl">Best DRT Rank</div><div class="sd-sum-sub">Not yet conducted</div></div>';
+    var c5 = bestExamRank
+      ? '<div class="sd-sum sds5"><div class="sd-sum-emoji">'+(bestExamRank.rank===1?'🥇':bestExamRank.rank<=3?'🥈':'🏆')+'</div><div class="sd-sum-val">#'+bestExamRank.rank+'</div><div class="sd-sum-lbl">Best Exam Rank</div><div class="sd-sum-sub">of '+bestExamRank.classSize+' · '+bestExamRank.name+'</div></div>'
+      : '<div class="sd-sum sds5"><div class="sd-sum-emoji">🏆</div><div class="sd-sum-val" style="font-size:.9rem;color:var(--g400)">—</div><div class="sd-sum-lbl">Best Exam Rank</div><div class="sd-sum-sub">Not yet conducted</div></div>';
+    sg.innerHTML = c1+c2+c3+c4+c5;
   }
 
-  // ── 2. MARKS TABLE ──
+  // ══════════════════════════════════════
+  // 2. MARKS TABLE
+  // ══════════════════════════════════════
   var tbody = document.querySelector('#sMarksTable tbody');
-  if (!exams.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="sd-no-data">No exams yet</td></tr>';
-  } else {
-    tbody.innerHTML = exams.map(function(e) {
-      var isAbsent = e.absent === true;
-      var hasMark = !isAbsent && e.score > 0;
-      var rowCls = isAbsent ? 'sd-absent' : !hasMark ? 'sd-awaited' : e.pct >= 90 ? 'sd-exc' : e.pct >= 75 ? 'sd-vg' : e.pct < 50 ? 'sd-ni' : '';
-      var vsAvg = hasMark ? Math.round(e.pct - e.classAvgPct) : 0;
-      var vsHtml = hasMark ? (vsAvg > 0 ? '<span class="vs-up">▲+' + vsAvg + '%</span>' : vsAvg < 0 ? '<span class="vs-down">▼' + vsAvg + '%</span>' : '<span class="vs-eq">= avg</span>') : '';
-      var rankHtml;
-      if (isAbsent) {
-        rankHtml = '<span style="color:var(--g400);font-size:.75rem">Absent</span>';
-      } else if (taken && e.rank) {
-        var rpCls = e.rank <= 3 ? 'rp-top' : e.rank <= Math.ceil(e.classSize * 0.5) ? 'rp-mid' : 'rp-low';
-        rankHtml = '<span class="rank-pill ' + rpCls + '">#' + e.rank + ' of ' + e.classSize + '</span>';
-      } else {
-        rankHtml = '—';
-      }
-      return '<tr class="' + rowCls + '">' +
-        '<td class="exam-name">' + e.name + '</td>' +
-        '<td>' + e.max + '</td>' +
-        '<td class="mark-cell">' + (isAbsent ? '<span style="color:var(--org);font-weight:600">AB</span>' : taken ? e.score : '<span style="color:var(--g400);font-weight:500">Awaited</span>') + '</td>' +
-        '<td>' + (taken ? e.pct + '%' : '—') + '</td>' +
-        '<td>' + (taken ? '<span style="font-size:.78rem">' + Math.round(e.classAvgPct/100*e.max).toFixed(0) + ' <span style="color:var(--g400);font-weight:400">(' + e.classAvgPct + '%)</span></span> ' + vsHtml : '—') + '</td>' +
-        '<td>' + rankHtml + '</td>' +
-      '</tr>';
-    }).join('');
-  }
-
-  // ── 3. PROGRESS CHART ──
-  Object.keys(sCharts).forEach(function(k) { if (sCharts[k]) { sCharts[k].destroy(); sCharts[k] = null; } });
-  var pw = document.getElementById('sProgressWrap');
-  pw.innerHTML = '';
-  if (!taken.length) {
-    pw.innerHTML = '<div class="sd-no-data"><div class="sd-no-data-icon">📈</div>No data yet — results will appear here once marks are entered</div>';
-  } else {
-    var pc = document.createElement('canvas');
-    pw.appendChild(pc);
-    var yourPcts = taken.map(function(e){ return e.pct; });
-    var classAvgPcts = taken.map(function(e){ return e.classAvgPct; });
-    var ptColors = taken.map(function(e){ return e.pct >= 75 ? '#16a34a' : e.pct >= 50 ? '#e9a820' : '#dc2626'; });
-    sCharts.progress = new Chart(pc, {
-      type: 'line',
-      data: {
-        labels: taken.map(function(e){ return e.name; }),
-        datasets: [
-          {
-            label: 'Your %',
-            data: yourPcts,
-            borderColor: '#0a1f6e',
-            backgroundColor: 'rgba(10,31,110,.07)',
-            borderWidth: 2.5,
-            pointBackgroundColor: ptColors,
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2.5,
-            pointRadius: 7,
-            pointHoverRadius: 10,
-            tension: .4, fill: true,
-            datalabels: {
-              anchor: 'end', align: 'top', offset: 4,
-              font: { size: 10, weight: 'bold' },
-              color: function(ctx){ return ptColors[ctx.dataIndex]; },
-              formatter: function(v){ return v + '%'; }
-            }
-          },
-          {
-            label: 'Class Avg %',
-            data: classAvgPcts,
-            borderColor: '#e9a820',
-            backgroundColor: 'transparent',
-            borderWidth: 2,
-            borderDash: [5, 4],
-            pointRadius: 4,
-            pointBackgroundColor: '#e9a820',
-            tension: .4,
-            datalabels: { display: false }
-          }
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'top', labels: { font: { size: 10 }, boxWidth: 12, usePointStyle: true, padding: 14 } },
-          datalabels: {},
-          tooltip: { callbacks: { label: function(ctx) {
-            var e = taken[ctx.dataIndex];
-            if (ctx.datasetIndex === 0) return 'You: ' + e.score + '/' + e.max + ' (' + e.pct + '%)';
-            return 'Class avg: ' + e.classAvgPct + '%';
-          }}}
-        },
-        scales: {
-          y: { min: 0, max: 100, title: { display: true, text: 'Marks %', font: { size: 10, weight: '600' }, color: '#64748b' }, ticks: { callback: function(v){ return v + '%'; }, font: { size: 10 }, stepSize: 20 }, grid: { color: '#f1f5f9' } },
-          x: { title: { display: true, text: 'Exam', font: { size: 10, weight: '600' }, color: '#64748b' }, ticks: { font: { size: 10 }, maxRotation: 30 }, grid: { display: false } }
-        }
-      }
-    });
-  }
-
-  // ── DRT CHART ──
-  // Update DRT subtitle dynamically
-  var drtSubEl = document.getElementById('sDrtChartSub');
-  if (drtSubEl) {
-    var drtMax0 = drtTaken.length ? drtTaken[0].max : 15;
-    var drtCount = [...new Set(drtTaken.map(function(e){ return e.name.replace(/.*-/,''); }))].length;
-    drtSubEl.textContent = drtCount + ' DRT' + (drtCount !== 1 ? 's' : '') + ' · out of ' + drtMax0;
-  }
-
-  var drtWrap = document.getElementById('sDrtChartWrap');
-  drtWrap.innerHTML = '';
-  if (!drtTaken.length) {
-    drtWrap.innerHTML = '<div class="sd-no-data"><div class="sd-no-data-icon">📝</div>No DRT results yet</div>';
-  } else {
-    var dc = document.createElement('canvas');
-    drtWrap.appendChild(dc);
-    var drtColors = drtTaken.map(function(e){ return e.pct >= 70 ? 'rgba(22,163,74,.85)' : e.pct >= 45 ? 'rgba(233,168,32,.9)' : 'rgba(220,38,38,.85)'; });
-    sCharts.drt = new Chart(dc, {
-      type: 'bar',
-      data: {
-        labels: drtTaken.map(function(e){ return e.name; }),
-        datasets: [
-          { label: 'You', data: drtTaken.map(function(e){ return e.score; }), backgroundColor: drtColors, borderRadius: 8, borderSkipped: false,
-            datalabels: { anchor: 'end', align: 'end', offset: -2, font: { size: 11, weight: 'bold' }, color: '#1e293b' } },
-          { label: 'Class Avg', data: drtTaken.map(function(e){ return parseFloat((e.classAvgPct/100*e.max).toFixed(1)); }),
-            backgroundColor: 'rgba(233,168,32,.25)', borderColor: '#e9a820', borderWidth: 1.5, borderRadius: 8, borderSkipped: false,
-            datalabels: { display: false } }
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'top', labels: { font: { size: 9 }, boxWidth: 10, padding: 10 } },
-          datalabels: {}
-        },
-        scales: {
-          y: { beginAtZero: true, max: 15, title: { display: true, text: 'Marks', font: { size: 10, weight: '600' }, color: '#64748b' }, ticks: { stepSize: 3, font: { size: 10 } }, grid: { color: '#f1f5f9' } },
-          x: { title: { display: true, text: 'DRT', font: { size: 10, weight: '600' }, color: '#64748b' }, ticks: { font: { size: 10 } }, grid: { display: false } }
-        }
-      }
-    });
-  }
-
-  // ── MAIN EXAMS CHART ──
-  // Update Main Exams subtitle dynamically
-  var mainSubEl = document.getElementById('sMainChartSub');
-  if (mainSubEl) {
-    var mainMax0 = mainTaken.length ? mainTaken[0].max : 100;
-    var mainTypes0 = [...new Set(mainTaken.map(function(e){ return e.type; }))];
-    mainSubEl.textContent = (mainTypes0.length ? mainTypes0.join(' · ') : 'PT · Term · Preboard') + ' · out of ' + mainMax0;
-  }
-
-  var mainWrap = document.getElementById('sMainChartWrap');
-  mainWrap.innerHTML = '';
-  if (!mainTaken.length) {
-    mainWrap.innerHTML = '<div class="sd-no-data"><div class="sd-no-data-icon">📚</div>No main exam results yet</div>';
-  } else {
-    var mc = document.createElement('canvas');
-    mainWrap.appendChild(mc);
-    var mainTypeColors = { PT: 'rgba(41,82,217,.85)', Term: 'rgba(22,163,74,.85)', Preboard: 'rgba(233,168,32,.9)' };
-    var mainBars = mainTaken.map(function(e){ return mainTypeColors[e.type] || 'rgba(10,31,110,.8)'; });
-    sCharts.main = new Chart(mc, {
-      type: 'bar',
-      data: {
-        labels: mainTaken.map(function(e){ return e.name; }),
-        datasets: [
-          { label: 'You', data: mainTaken.map(function(e){ return e.score; }), backgroundColor: mainBars, borderRadius: 8, borderSkipped: false,
-            datalabels: { anchor: 'end', align: 'end', offset: -2, font: { size: 11, weight: 'bold' }, color: '#1e293b' } },
-          { label: 'Class Avg', data: mainTaken.map(function(e){ return parseFloat((e.classAvgPct/100*e.max).toFixed(1)); }),
-            backgroundColor: 'rgba(148,163,184,.25)', borderColor: '#94a3b8', borderWidth: 1.5, borderRadius: 8, borderSkipped: false,
-            datalabels: { display: false } }
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'top', labels: { font: { size: 9 }, boxWidth: 10, padding: 10 } },
-          datalabels: {}
-        },
-        scales: {
-          y: { beginAtZero: true, max: 100, title: { display: true, text: 'Marks', font: { size: 10, weight: '600' }, color: '#64748b' }, ticks: { stepSize: 20, font: { size: 10 } }, grid: { color: '#f1f5f9' } },
-          x: { title: { display: true, text: 'Exam', font: { size: 10, weight: '600' }, color: '#64748b' }, ticks: { font: { size: 10 } }, grid: { display: false } }
-        }
-      }
-    });
-  }
-
-  // ── 4. CLASS COMPARISON ──
-  var cw = document.getElementById('sCompareWrap');
-  if (!taken.length) {
-    cw.innerHTML = '<div class="sd-no-data">No data yet</div>';
-  } else {
-    cw.innerHTML = taken.map(function(e) {
-      var vsAvg = Math.round(e.pct - e.classAvgPct);
-      var deltaHtml = vsAvg > 0
-        ? '<span class="sd-comp-delta scd-up">▲ +' + vsAvg + '% above class</span>'
-        : vsAvg < 0
-        ? '<span class="sd-comp-delta scd-down">▼ ' + vsAvg + '% below class</span>'
-        : '<span class="sd-comp-delta scd-eq">= At class avg</span>';
-      var classScore = Math.round(e.classAvgPct / 100 * e.max);
-      return '<div class="sd-comp-item">' +
-        '<div class="sd-comp-header"><span class="sd-comp-name">' + e.name + ' <small style="color:var(--g400);font-weight:400">(/' + e.max + ')</small></span>' + deltaHtml + '</div>' +
-        '<div class="sd-bar-row"><span class="sd-bar-lbl" style="color:var(--blue)">You</span><div class="sd-bar-bg"><div class="sd-bar-fill sdbf-you" style="width:' + Math.round(e.pct) + '%"></div></div><span class="sd-bar-num" style="color:var(--blue)">' + e.score + '</span></div>' +
-        '<div class="sd-bar-row"><span class="sd-bar-lbl" style="color:var(--gold)">Class</span><div class="sd-bar-bg"><div class="sd-bar-fill sdbf-avg" style="width:' + Math.round(e.classAvgPct) + '%"></div></div><span class="sd-bar-num" style="color:var(--gold)">' + classScore + '</span></div>' +
-      '</div>';
-    }).join('');
-  }
-
-  // ── 5. RANK (with dropdown) ──
-  var rw = document.getElementById('sRankWrap');
-  var rmw = document.getElementById('sRankMoveWrap');
-
-  // conductedExams for rank = exams with a real score (not absent, not awaited)
-  var rankableExams = exams.filter(function(e){ return !e.absent && e.score > 0; });
-
-  function renderRankFor(selExam) {
-    if (!selExam) {
-      rw.innerHTML = '<div class="sd-no-data">No data yet</div>';
-      rmw.innerHTML = '';
-      return;
-    }
-    var medal = selExam.rank === 1 ? '🥇' : selExam.rank === 2 ? '🥈' : selExam.rank === 3 ? '🥉' : '📊';
-    var pctile = selExam.rank ? Math.round((1 - selExam.rank / selExam.classSize) * 100) : 0;
-    var rankDisplay = selExam.rank ? '#' + selExam.rank : 'AB';
-    var denomDisplay = selExam.rank ? ' of ' + selExam.classSize + ' students' : '';
-
-    // Dropdown HTML — only conducted exams, in order
-    var ddHtml = '<select class="sd-rank-sel" id="sRankDrop" onchange="updateRankDisplay(this.value)">' +
-      rankableExams.map(function(e){
-        return '<option value="' + e.name + '"' + (e.name === selExam.name ? ' selected' : '') + '>' + e.name + ' (' + e.score + '/' + e.max + ')</option>';
-      }).join('') +
-    '</select>';
-
-    rw.innerHTML = ddHtml +
-      '<div class="sd-rank-hero">' +
-        '<div class="sdrh-medal">' + medal + '</div>' +
-        '<div><span class="sdrh-num">' + rankDisplay + '</span><span class="sdrh-denom">' + denomDisplay + '</span></div>' +
-        '<div class="sdrh-ctx">in Class ' + section + ' · ' + selExam.name + '</div>' +
-      '</div>' +
-      '<div class="sd-pct-bar">' +
-        '<div class="sd-pct-labels"><span>Bottom</span><span>Top</span></div>' +
-        '<div class="sd-pct-track"><div class="sd-pct-fill" style="width:' + pctile + '%"></div></div>' +
-      '</div>' +
-      '<div class="sd-pct-text">Top ' + Math.max(1, 100 - pctile) + '% of class · ' + pctile + 'th percentile</div>';
-
-    // Rank movement — compare selected exam vs the one before it in rankableExams
-    var selIdx = rankableExams.findIndex(function(e){ return e.name === selExam.name; });
-    if (selIdx >= 1) {
-      var prevExam = rankableExams[selIdx - 1];
-      var rankDiff = (prevExam.rank || 0) - (selExam.rank || 0);
-      var rmCls, rmIcon, rmMsg;
-      if (rankDiff > 0) {
-        rmCls = 'rm-up'; rmIcon = '⬆️';
-        rmMsg = 'Moved up ' + rankDiff + ' position' + (rankDiff > 1 ? 's' : '') + ' from ' + prevExam.name + ' — great improvement!';
-      } else if (rankDiff < 0) {
-        rmCls = 'rm-down'; rmIcon = '⬇️';
-        rmMsg = 'Dropped ' + Math.abs(rankDiff) + ' position' + (Math.abs(rankDiff) > 1 ? 's' : '') + ' from ' + prevExam.name + ' — keep working!';
-      } else {
-        rmCls = 'rm-same'; rmIcon = '➡️';
-        rmMsg = 'Rank held steady from ' + prevExam.name;
-      }
-      rmw.innerHTML = '<div class="rank-move ' + rmCls + '"><span class="rm-icon">' + rmIcon + '</span><span>' + rmMsg + '</span></div>';
+  if (tbody) {
+    if (!exams.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--g400)">No exams yet</td></tr>';
     } else {
-      rmw.innerHTML = '<div class="rank-move rm-same" style="font-size:.75rem;color:var(--g400)">First exam — no previous rank to compare</div>';
+      tbody.innerHTML = exams.map(function(e) {
+        var absent = e.absent === true;
+        var has = !absent && e.score > 0;
+        var rowCls = absent ? 'sd-absent' : !has ? 'sd-awaited' : e.pct>=90 ? 'sd-exc' : e.pct>=75 ? 'sd-vg' : e.pct<50 ? 'sd-ni' : '';
+        var vsAvg = has ? Math.round(e.pct - e.classAvgPct) : 0;
+        var vsHtml = has ? (vsAvg>0 ? '<span class="vs-up"> ▲+'+vsAvg+'%</span>' : vsAvg<0 ? '<span class="vs-down"> ▼'+vsAvg+'%</span>' : '<span class="vs-eq"> =avg</span>') : '';
+        var classAvgScore = has ? Math.round(e.classAvgPct/100*e.max) : '—';
+        var rankHtml = absent ? '<span style="color:var(--g400)">Absent</span>'
+          : has && e.rank ? '<span class="rank-pill '+(e.rank<=3?'rp-top':e.rank<=Math.ceil(e.classSize*0.5)?'rp-mid':'rp-low')+'">#'+e.rank+' of '+e.classSize+'</span>'
+          : '—';
+        return '<tr class="'+rowCls+'">'
+          +'<td class="exam-name">'+e.name+'</td>'
+          +'<td>'+e.max+'</td>'
+          +'<td class="mark-cell">'+(absent?'<span style="color:var(--org);font-weight:600">AB</span>':has?e.score:'Awaited')+'</td>'
+          +'<td>'+(has?e.pct+'% '+gb(e.pct):'—')+'</td>'
+          +'<td>'+(has?classAvgScore+' ('+e.classAvgPct+'%)'+vsHtml:'—')+'</td>'
+          +'<td>'+rankHtml+'</td>'
+          +'</tr>';
+      }).join('');
     }
   }
 
-  // Default: show last conducted exam
-  var defaultRankExam = rankableExams.length ? rankableExams[rankableExams.length - 1] : null;
-  renderRankFor(defaultRankExam);
+  // ══════════════════════════════════════
+  // 3. PROGRESS CHART (Line)
+  // ══════════════════════════════════════
+  if (typeof sCharts !== 'undefined') {
+    Object.keys(sCharts).forEach(function(k){ if(sCharts[k]){sCharts[k].destroy();sCharts[k]=null;} });
+  } else {
+    window.sCharts = {};
+  }
+  var pw = document.getElementById('sProgressWrap');
+  if (pw) {
+    pw.innerHTML = '';
+    if (!taken.length) {
+      pw.innerHTML = '<div class="sd-no-data">📈 No data yet</div>';
+    } else {
+      var pc = document.createElement('canvas');
+      pw.appendChild(pc);
+      sCharts.progress = new Chart(pc, {
+        type: 'line',
+        data: {
+          labels: taken.map(function(e){return e.name;}),
+          datasets: [
+            { label:'Your %', data:taken.map(function(e){return e.pct;}),
+              borderColor:'#0a1f6e', backgroundColor:'rgba(10,31,110,.07)',
+              borderWidth:2.5, pointRadius:6, pointBackgroundColor:taken.map(function(e){return e.pct>=75?'#16a34a':e.pct>=50?'#e9a820':'#dc2626';}),
+              pointBorderColor:'#fff', pointBorderWidth:2, tension:.4, fill:true,
+              datalabels:{anchor:'end',align:'top',font:{size:10,weight:'bold'},formatter:function(v){return v+'%';},color:'#0a1f6e'} },
+            { label:'Class Avg %', data:taken.map(function(e){return e.classAvgPct;}),
+              borderColor:'#e9a820', backgroundColor:'transparent',
+              borderWidth:2, borderDash:[5,4], pointRadius:3, tension:.4,
+              datalabels:{display:false} }
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{position:'top'},datalabels:{}},
+          scales:{
+            y:{min:0,max:100,ticks:{callback:function(v){return v+'%';}}},
+            x:{grid:{display:false}}
+          }
+        }
+      });
+    }
+  }
 
-  // Global handler for dropdown change
-  window.updateRankDisplay = function(examName) {
-    var selE = (CU && CU.data) ? CU.data.exams.find(function(e){ return e.name === examName; }) : null;
-    if (selE) renderRankFor(selE);
-  };
+  // ══════════════════════════════════════
+  // 4. DRT CHART (Bar)
+  // ══════════════════════════════════════
+  var dw = document.getElementById('sDrtChartWrap');
+  if (dw) {
+    dw.innerHTML = '';
+    if (!drtTaken.length) {
+      dw.innerHTML = '<div class="sd-no-data">📝 No DRT results yet</div>';
+    } else {
+      var dc = document.createElement('canvas');
+      dw.appendChild(dc);
+      sCharts.drt = new Chart(dc, {
+        type:'bar',
+        data:{
+          labels:drtTaken.map(function(e){return e.name;}),
+          datasets:[
+            { label:'You', data:drtTaken.map(function(e){return e.score;}),
+              backgroundColor:drtTaken.map(function(e){return e.pct>=70?'rgba(22,163,74,.85)':e.pct>=45?'rgba(233,168,32,.9)':'rgba(220,38,38,.85)';}),
+              borderRadius:8,
+              datalabels:{anchor:'end',align:'end',font:{size:11,weight:'bold'},color:'#1e293b'} },
+            { label:'Class Avg', data:drtTaken.map(function(e){return parseFloat((e.classAvgPct/100*e.max).toFixed(1));}),
+              backgroundColor:'rgba(233,168,32,.25)', borderColor:'#e9a820', borderWidth:1.5, borderRadius:8,
+              datalabels:{display:false} }
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{position:'top'},datalabels:{}},
+          scales:{
+            y:{beginAtZero:true, max:drtMaxMark+2},
+            x:{grid:{display:false}}
+          }
+        }
+      });
+    }
+  }
 
-  // ── ACHIEVEMENT BADGES ──
+  // ══════════════════════════════════════
+  // 5. MAIN EXAMS CHART (Bar)
+  // ══════════════════════════════════════
+  var mw = document.getElementById('sMainChartWrap');
+  if (mw) {
+    mw.innerHTML = '';
+    if (!mainTaken.length) {
+      mw.innerHTML = '<div class="sd-no-data">📋 No main exam results yet</div>';
+    } else {
+      var mc = document.createElement('canvas');
+      mw.appendChild(mc);
+      sCharts.main = new Chart(mc, {
+        type:'bar',
+        data:{
+          labels:mainTaken.map(function(e){return e.name;}),
+          datasets:[
+            { label:'You', data:mainTaken.map(function(e){return e.score;}),
+              backgroundColor:mainTaken.map(function(e){return e.pct>=75?'rgba(22,163,74,.85)':e.pct>=50?'rgba(233,168,32,.9)':'rgba(220,38,38,.85)';}),
+              borderRadius:8,
+              datalabels:{anchor:'end',align:'end',font:{size:11,weight:'bold'},color:'#1e293b'} },
+            { label:'Class Avg', data:mainTaken.map(function(e){return parseFloat((e.classAvgPct/100*e.max).toFixed(1));}),
+              backgroundColor:'rgba(233,168,32,.25)', borderColor:'#e9a820', borderWidth:1.5, borderRadius:8,
+              datalabels:{display:false} }
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{position:'top'},datalabels:{}},
+          scales:{
+            y:{beginAtZero:true, max:examMaxMark+5},
+            x:{grid:{display:false}}
+          }
+        }
+      });
+    }
+  }
+
+  // ══════════════════════════════════════
+  // 6. CLASS STANDING CHART (Bar)
+  // ══════════════════════════════════════
+  var csw = document.getElementById('sClassWrap');
+  if (csw) {
+    csw.innerHTML = '';
+    if (!taken.length) {
+      csw.innerHTML = '<div class="sd-no-data">🏫 No data yet</div>';
+    } else {
+      var csc = document.createElement('canvas');
+      csw.appendChild(csc);
+      sCharts.classStand = new Chart(csc, {
+        type:'bar',
+        data:{
+          labels:taken.map(function(e){return e.name;}),
+          datasets:[
+            { label:'You %', data:taken.map(function(e){return e.pct;}), backgroundColor:'rgba(10,31,110,.8)', borderRadius:6, datalabels:{anchor:'end',align:'end',font:{size:9,weight:'bold'},color:'#0a1f6e',formatter:function(v){return v+'%';}} },
+            { label:'Class Avg %', data:taken.map(function(e){return e.classAvgPct;}), backgroundColor:'rgba(233,168,32,.6)', borderRadius:6, datalabels:{display:false} }
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{position:'top'},datalabels:{}},
+          scales:{y:{min:0,max:100,ticks:{callback:function(v){return v+'%';}}},x:{grid:{display:false}}}
+        }
+      });
+    }
+  }
+
+  // ══════════════════════════════════════
+  // 7. CLASS RANK CARD
+  // ══════════════════════════════════════
+  var rkw = document.getElementById('sRankWrap');
+  if (rkw) {
+    if (!taken.length) {
+      rkw.innerHTML = '<div class="sd-no-data">🏅 No rank data yet</div>';
+    } else {
+      var rankRows = taken.map(function(e) {
+        if (!e.rank) return '';
+        var pct = Math.round(e.rank/e.classSize*100);
+        var cls = e.rank<=3?'rp-top':e.rank<=Math.ceil(e.classSize*0.5)?'rp-mid':'rp-low';
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--g100)">'
+          +'<div style="font-size:.85rem;font-weight:600;color:var(--g800)">'+e.name+'</div>'
+          +'<span class="rank-pill '+cls+'">#'+e.rank+' of '+e.classSize+'</span>'
+          +'</div>';
+      }).filter(Boolean).join('');
+      rkw.innerHTML = rankRows || '<div class="sd-no-data">No rank data</div>';
+    }
+  }
+
+  // ══════════════════════════════════════
+  // 8. ACHIEVEMENT BADGES
+  // ══════════════════════════════════════
   var bw = document.getElementById('sBadgesWrap');
-  var badges = [];
-  if (taken.length) {
-    var latE = taken[taken.length - 1];
-    // Top Performer
-    if (latE.rank === 1) badges.push({cls:'ab-gold', icon:'🏆', title:'Top Performer', desc:'Ranked #1 in class in ' + latE.name});
-    else if (latE.rank <= 3) badges.push({cls:'ab-gold', icon:'🥇', title:'Podium Finish', desc:'Top 3 in class in ' + latE.name});
-    // Improvement Star — score went up across last two taken exams
-    if (taken.length >= 2 && taken[taken.length-1].pct > taken[taken.length-2].pct + 5)
-      badges.push({cls:'ab-green', icon:'⭐', title:'Improvement Star', desc:'Score jumped ' + Math.round(taken[taken.length-1].pct - taken[taken.length-2].pct) + '% in latest exam'});
-    // Consistency Badge — all taken exams above 60%
-    if (taken.length >= 2 && taken.every(function(e){return e.pct >= 60;}))
-      badges.push({cls:'ab-blue', icon:'🔥', title:'Consistency Badge', desc:'Scored 60%+ across all ' + taken.length + ' exams'});
-    // Strong Comeback — after a drop, big improvement
-    if (taken.length >= 3) {
-      var t = taken;
-      if (t[t.length-2].pct < t[t.length-3].pct && t[t.length-1].pct > t[t.length-2].pct + 8)
-        badges.push({cls:'ab-orange', icon:'📈', title:'Strong Comeback', desc:'Bounced back strongly after a dip'});
+  if (bw) {
+    var badges = [];
+    if (taken.length) {
+      var latE = taken[taken.length-1];
+      if (latE.rank===1) badges.push({cls:'ab-gold',icon:'🏆',title:'Top of Class',desc:'Ranked #1 in '+latE.name});
+      else if (latE.rank<=3) badges.push({cls:'ab-gold',icon:'🥇',title:'Podium Finish',desc:'Top 3 in '+latE.name});
+      if (taken.length>=2 && taken[taken.length-1].pct > taken[taken.length-2].pct+5)
+        badges.push({cls:'ab-green',icon:'⭐',title:'Improvement Star',desc:'Score jumped '+Math.round(taken[taken.length-1].pct-taken[taken.length-2].pct)+'% in latest exam'});
+      if (taken.length>=2 && taken.every(function(e){return e.pct>=60;}))
+        badges.push({cls:'ab-blue',icon:'🔥',title:'Consistent Performer',desc:'60%+ in all '+taken.length+' exams'});
+      if (taken.filter(function(e){return e.pct>e.classAvgPct;}).length===taken.length && taken.length>=2)
+        badges.push({cls:'ab-purple',icon:'🌟',title:'Above & Beyond',desc:'Above class average in every exam'});
+      if (drtTaken.length>=2 && drtTaken.every(function(e){return e.pct>=80;}))
+        badges.push({cls:'ab-green',icon:'✅',title:'DRT Champion',desc:'80%+ in all DRT tests'});
+      if (overallAvg>=85)
+        badges.push({cls:'ab-gold',icon:'💎',title:'High Achiever',desc:'Overall average above 85%'});
     }
-    // Above Class Average
-    var aboveAvgCount = taken.filter(function(e){return e.pct > e.classAvgPct;}).length;
-    if (aboveAvgCount === taken.length && taken.length >= 2)
-      badges.push({cls:'ab-purple', icon:'🌟', title:'Above & Beyond', desc:'Above class average in all ' + taken.length + ' exams'});
-    // DRT Excellence
-    if (drtTaken.length >= 2 && drtTaken.every(function(e){return e.pct >= 80;}))
-      badges.push({cls:'ab-green', icon:'✅', title:'DRT Champion', desc:'80%+ in all DRT class tests'});
-    // High Scorer
-    if (overallAvg >= 85)
-      badges.push({cls:'ab-gold', icon:'💎', title:'High Achiever', desc:'Overall average above 85%'});
-  }
-  if (!badges.length) {
-    bw.innerHTML = '<div class="no-badges">🎯 Keep giving your best — badges will appear as you achieve milestones!</div>';
-  } else {
-    bw.innerHTML = '<div class="badge-row">' + badges.map(function(b){
-      return '<div class="ach-badge ' + b.cls + '"><span class="ab-icon">' + b.icon + '</span><div class="ab-text"><strong>' + b.title + '</strong><span>' + b.desc + '</span></div></div>';
-    }).join('') + '</div>';
+    bw.innerHTML = badges.length
+      ? '<div class="badge-row">'+badges.map(function(b){return '<div class="ach-badge '+b.cls+'"><span class="ab-icon">'+b.icon+'</span><div class="ab-text"><strong>'+b.title+'</strong><span>'+b.desc+'</span></div></div>';}).join('')+'</div>'
+      : '<div class="no-badges">🎯 Keep giving your best — badges will appear as you achieve milestones!</div>';
   }
 
-  // ── 7. IMPROVEMENT TREND ──
+  // ══════════════════════════════════════
+  // 9. IMPROVEMENT TREND
+  // ══════════════════════════════════════
   var tw = document.getElementById('sTrendWrap');
-  // Use ALL exams in sheet column order (not just taken) for consecutive pairs
-  // Only build pairs where both exams have been conducted (score > 0, not absent)
-  var conductedExams = exams.filter(function(e){ return !e.absent && e.score > 0; });
-  if (conductedExams.length < 2) {
-    tw.innerHTML = '<div class="sd-no-data" style="padding:16px 0">Need at least 2 conducted exams to show trend</div>';
-  } else {
-    function trendMsg(delta) {
-      var a = Math.abs(delta);
-      if (delta >= 26) return 'Score jumped sharply — outstanding! 🚀';
-      if (delta >= 16) return 'Great improvement — keep it up! 🌟';
-      if (delta >= 6)  return 'Good progress — well done! 📈';
-      if (delta >= 1)  return 'Slight improvement — moving forward 👍';
-      if (delta === 0) return 'Same score — consistency is good ➖';
-      if (delta >= -5) return 'Slight dip — stay focused 💪';
-      if (delta >= -15)return 'Score dropped — focus on revision 📚';
-      if (delta >= -25)return 'Significant drop — needs attention ⚠️';
-      return 'Sharp drop \u2014 work harder \uD83D\uDD34';
+  if (tw) {
+    if (taken.length<2) {
+      tw.innerHTML = '<div class="sd-no-data">Need at least 2 exams to show trend</div>';
+    } else {
+      var items = [];
+      for (var i=1; i<taken.length; i++) {
+        var curr=taken[i], prev=taken[i-1];
+        var delta=Math.round(curr.pct-prev.pct);
+        var icon=delta>=20?'🚀':delta>0?'📈':delta<-15?'🔴':delta<0?'📉':'➡️';
+        var msg=delta>=20?'Outstanding jump!':delta>=10?'Great improvement!':delta>=1?'Moving forward 👍':delta===0?'Consistent ➖':delta>=-10?'Slight dip — stay focused':' Needs attention ⚠️';
+        items.push('<div class="sd-trend-item '+(delta>0?'sdt-up':delta<0?'sdt-down':'sdt-same')+'">'
+          +'<div class="sdt-icon">'+icon+'</div>'
+          +'<div class="sdt-body"><div class="sdt-title">'+prev.name+' ('+prev.score+'/'+prev.max+') → '+curr.name+' ('+curr.score+'/'+curr.max+')</div>'
+          +'<div class="sdt-desc">'+msg+'</div></div>'
+          +'<div class="sdt-delta '+(delta>0?'sdt-delta-up':delta<0?'sdt-delta-down':'')+'">'+(delta>0?'+':'')+delta+'%</div>'
+          +'</div>');
+      }
+      tw.innerHTML = '<div class="sd-trend-list">'+items.join('')+'</div>';
     }
-    var items = [];
-    for (var i = 1; i < conductedExams.length; i++) {
-      var curr = conductedExams[i], prev = conductedExams[i-1];
-      var delta = Math.round(curr.pct - prev.pct);
-      var cls   = delta > 0 ? 'sdt-up' : delta < 0 ? 'sdt-down' : 'sdt-same';
-      var icon  = delta >= 26 ? '🚀' : delta > 0 ? '📈' : delta < -15 ? '🔴' : delta < 0 ? '📉' : '➡️';
-      var deltaStr = delta > 0 ? '+' + delta + '%' : delta + '%';
-      // Label: "DRT1 (12/15) → DRT2 (14/15)"
-      var prevLabel = prev.name + ' (' + prev.score + '/' + prev.max + ')';
-      var currLabel = curr.name + ' (' + curr.score + '/' + curr.max + ')';
-      items.push(
-        '<div class="sd-trend-item ' + cls + '">' +
-          '<div class="sdt-icon">' + icon + '</div>' +
-          '<div class="sdt-body">' +
-            '<div class="sdt-title">' + prevLabel + ' → ' + currLabel + '</div>' +
-            '<div class="sdt-desc">' + trendMsg(delta) + '</div>' +
-          '</div>' +
-          '<div class="sdt-delta ' + (delta > 0 ? 'sdt-delta-up' : delta < 0 ? 'sdt-delta-down' : '') + '">' + deltaStr + '</div>' +
-        '</div>'
-      );
-    }
-    tw.innerHTML = '<div class="sd-trend-list">' + items.join('') + '</div>';
   }
 
-
-    // ── 8. INSIGHTS ──
+  // ══════════════════════════════════════
+  // 10. PERSONALISED INSIGHTS
+  // ══════════════════════════════════════
   var iw = document.getElementById('sInsightsWrap');
-  var insights = [];
-  if (!taken.length) {
-    insights.push({ cls:'sdi-blue', icon:'ℹ️', title:'Results pending', body:'Your results will appear here once marks are entered. Check back soon!' });
-  } else {
-    // Overall trend
-    if (taken.length >= 2) {
-      var firstE = taken[0], lastE = taken[taken.length - 1];
-      var overallTrend = Math.round(lastE.pct - firstE.pct);
-      if (overallTrend > 0) insights.push({ cls:'sdi-green', icon:'📈', title:'Excellent progress!', body:'Your marks have improved by ' + overallTrend + '% from ' + firstE.name + ' to ' + lastE.name + '. Keep it up!' });
-      else if (overallTrend < 0) insights.push({ cls:'sdi-orange', icon:'💡', title:'Room to improve', body:'Your score has dipped ' + Math.abs(overallTrend) + '% overall. Consistent revision will help you bounce back.' });
+  if (iw) {
+    var ins = [];
+    if (!taken.length) {
+      ins.push({cls:'sdi-blue',icon:'ℹ️',title:'Results pending',body:'Your results will appear here once marks are entered.'});
+    } else {
+      if (taken.length>=2) {
+        var trend=Math.round(taken[taken.length-1].pct-taken[0].pct);
+        if (trend>0) ins.push({cls:'sdi-green',icon:'📈',title:'Great progress!',body:'Marks improved by '+trend+'% from '+taken[0].name+' to '+taken[taken.length-1].name+'.'});
+        else if (trend<0) ins.push({cls:'sdi-orange',icon:'💡',title:'Room to improve',body:'Score dipped '+Math.abs(trend)+'% overall. Consistent revision will help.'});
+      }
+      mainTaken.forEach(function(e){
+        if (e.pct>e.classAvgPct+5) ins.push({cls:'sdi-green',icon:'🌟',title:e.name+': Above class average!',body:'You scored '+Math.round(e.pct-e.classAvgPct)+'% above class average. Outstanding!'});
+        else if (e.pct<e.classAvgPct-5) ins.push({cls:'sdi-orange',icon:'⚡',title:e.name+': Below class average',body:'Focus on this area — you are '+Math.round(e.classAvgPct-e.pct)+'% below class average.'});
+      });
+      var perfLabel=overallAvg>=90?'Excellent':overallAvg>=75?'Very Good':overallAvg>=60?'Good':overallAvg>=50?'Rising Star':'Keep Climbing';
+      if (overallAvg>=75) ins.push({cls:'sdi-purple',icon:'🏆',title:'Strong performer!',body:'Your '+overallAvg+'% average places you in "'+perfLabel+'" category.'});
+      if (drtTaken.length>=2) {
+        var da=Math.round(drtTaken.reduce(function(a,e){return a+e.pct;},0)/drtTaken.length);
+        if (da>=80) ins.push({cls:'sdi-green',icon:'✅',title:'Great DRT performance!',body:da+'% DRT average — excellent daily preparation!'});
+        else if (da<50) ins.push({cls:'sdi-orange',icon:'📝',title:'DRTs need attention',body:'Your DRT average is '+da+'%. Regular revision will improve this.'});
+      }
+      if (ins.length<2) ins.push({cls:'sdi-blue',icon:'🎯',title:'Your next target',body:'Aim for 75%+ in all exams. You are currently at '+overallAvg+'%.'});
     }
-    // Above class average
-    mainTaken.forEach(function(e) {
-      if (e.pct > e.classAvgPct + 5) insights.push({ cls:'sdi-green', icon:'🌟', title:e.name + ': Above class average!', body:'You scored ' + e.score + '/' + e.max + ' — ' + Math.round(e.pct - e.classAvgPct) + '% above the class average. Outstanding!' });
-    });
-    // Below class average
-    mainTaken.forEach(function(e) {
-      if (e.pct < e.classAvgPct - 5) insights.push({ cls:'sdi-orange', icon:'⚡', title:e.name + ': Below class average', body:'You scored ' + Math.round(e.classAvgPct - e.pct) + '% below the class average. Focus on this area for better results.' });
-    });
-    // High average
-    var perfLabel = overallAvg>=90?'Excellent':overallAvg>=75?'Very Good':overallAvg>=60?'Good':overallAvg>=50?'Average':'Needs Improvement';
-    if (overallAvg >= 75) insights.push({ cls:'sdi-purple', icon:'🏆', title:'Strong performer!', body:'Your ' + overallAvg + '% overall average places you in the "' + perfLabel + '" category. Excellent consistency!' });
-    // DRT check
-    if (drtTaken.length >= 2) {
-      var drtPctAvg = Math.round(drtTaken.reduce(function(a,e){return a+e.pct;},0)/drtTaken.length);
-      if (drtPctAvg >= 80) insights.push({ cls:'sdi-green', icon:'✅', title:'Great daily preparation!', body:drtPctAvg + '% DRT average shows your class tests are going really well. This helps in exams too.' });
-      else if (drtPctAvg < 50) insights.push({ cls:'sdi-orange', icon:'📝', title:'DRTs need attention', body:'Your DRT average is ' + drtPctAvg + '%. Regular class preparation and short revision sessions will improve this.' });
-    }
-    // Top ranker
-    var latestExam = taken.length ? taken[taken.length-1] : null;
-    if (latestExam && latestExam.rank === 1) insights.push({ cls:'sdi-green', icon:'🥇', title:'Rank #1 in class!', body:'You are ranked first in ' + d.section + ' in ' + latestExam.name + '. Incredible achievement!' });
-    // General goal
-    if (insights.length < 2) insights.push({ cls:'sdi-blue', icon:'🎯', title:'Your next target', body:'Aim for 75% or above in all exams to reach the "Very Good" level. You are currently at ' + overallAvg + '%.' });
+    iw.innerHTML='<div class="sd-insight-list">'+ins.slice(0,5).map(function(i){
+      return '<div class="sd-insight '+i.cls+'"><div class="sdi-icon">'+i.icon+'</div><div class="sdi-content"><strong>'+i.title+'</strong><span>'+i.body+'</span></div></div>';
+    }).join('')+'</div>';
   }
-  iw.innerHTML = '<div class="sd-insight-list">' + insights.slice(0, 5).map(function(ins) {
-    return '<div class="sd-insight ' + ins.cls + '"><div class="sdi-icon">' + ins.icon + '</div><div class="sdi-content"><strong>' + ins.title + '</strong><span>' + ins.body + '</span></div></div>';
-  }).join('') + '</div>';
-
-  // ── 11. GOAL TRACKER ──
 }
 
 
@@ -2447,19 +2272,12 @@ function renderStudentCharts(d) {
 
 // ── Subject filter for student dashboard ──
 var _sCurrentData = null;
-var _sActiveSubject = null;
 function filterSubject(subj, btn) {
-  _sActiveSubject = subj;
   document.querySelectorAll('.sf-pill').forEach(function(b){ b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
   if (!_sCurrentData) return;
-  var d = _sCurrentData;
-  // Filter exams by subject (or show all)
-  var filtered = JSON.parse(JSON.stringify(d));
-  if (subj !== 'ALL') {
-    filtered.exams = d.exams.filter(function(e){ return e.subject === subj; });
-  }
-  // Re-render everything except the subject bar (to avoid resetting pills)
+  var filtered = JSON.parse(JSON.stringify(_sCurrentData));
+  filtered.exams = _sCurrentData.exams.filter(function(e){ return e.subject === subj; });
   renderStudentCharts(filtered);
 }
 
