@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Velammal Results Portal</title>
+<title>Velammal Results Portal v3</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
@@ -1996,7 +1996,7 @@ function renderStudentCharts(d) {
     // Card 3: Exam Avg
     var c3;
     if (mainTaken.length) {
-      var examTypesStr = mainNames.join(' · ');
+      var examTypesStr = uniqueMainCols.join(' · ');
       c3 = '<div class="sd-sum sds3">' +
         '<div class="sd-sum-emoji">📋</div>' +
         '<div class="sd-sum-val">' + examRawAvg + '/' + examMaxMark + '</div>' +
@@ -2421,7 +2421,8 @@ function renderStudentCharts(d) {
       if (e.pct < e.classAvgPct - 5) insights.push({ cls:'sdi-orange', icon:'⚡', title:e.name + ': Below class average', body:'You scored ' + Math.round(e.classAvgPct - e.pct) + '% below the class average. Focus on this area for better results.' });
     });
     // High average
-    if (overallAvg >= 75) insights.push({ cls:'sdi-purple', icon:'🏆', title:'Strong performer!', body:'Your ' + overallAvg + '% overall average places you in the "' + perf.catLabel + '" category. Excellent consistency!' });
+    var perfLabel = overallAvg>=90?'Excellent':overallAvg>=75?'Very Good':overallAvg>=60?'Good':overallAvg>=50?'Average':'Needs Improvement';
+    if (overallAvg >= 75) insights.push({ cls:'sdi-purple', icon:'🏆', title:'Strong performer!', body:'Your ' + overallAvg + '% overall average places you in the "' + perfLabel + '" category. Excellent consistency!' });
     // DRT check
     if (drtTaken.length >= 2) {
       var drtPctAvg = Math.round(drtTaken.reduce(function(a,e){return a+e.pct;},0)/drtTaken.length);
@@ -2429,7 +2430,8 @@ function renderStudentCharts(d) {
       else if (drtPctAvg < 50) insights.push({ cls:'sdi-orange', icon:'📝', title:'DRTs need attention', body:'Your DRT average is ' + drtPctAvg + '%. Regular class preparation and short revision sessions will improve this.' });
     }
     // Top ranker
-    if (latest && latest.rank === 1) insights.push({ cls:'sdi-green', icon:'🥇', title:'Rank #1 in class!', body:'You are ranked first in ' + section + ' in ' + latest.name + '. Incredible achievement!' });
+    var latestExam = taken.length ? taken[taken.length-1] : null;
+    if (latestExam && latestExam.rank === 1) insights.push({ cls:'sdi-green', icon:'🥇', title:'Rank #1 in class!', body:'You are ranked first in ' + d.section + ' in ' + latestExam.name + '. Incredible achievement!' });
     // General goal
     if (insights.length < 2) insights.push({ cls:'sdi-blue', icon:'🎯', title:'Your next target', body:'Aim for 75% or above in all exams to reach the "Very Good" level. You are currently at ' + overallAvg + '%.' });
   }
