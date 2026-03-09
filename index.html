@@ -1648,8 +1648,9 @@ async function api(p) {
     var activeExams = examCols.filter(function(col){ return teacherResults.some(function(r){ return nVal(r[col])!==null; }); });
     if (!activeExams.length) activeExams = ['DRT1','DRT2','PT1'];
 
+    var examColLabels2 = { DRT1:'DRT-1', DRT2:'DRT-2', PT1:'PT-1', Term:'Term', Preboard:'Preboard' };
     var exams = activeExams.map(function(col){ return {
-      name: col,
+      name: examColLabels2[col] || col,
       max:  col.startsWith('DRT') ? drtMax : examMax,
       type: col.startsWith('DRT') ? 'DRT' : col==='PT1' ? 'PT' : col==='Term' ? 'Term' : 'Preboard',
     };});
@@ -1697,7 +1698,9 @@ async function api(p) {
   }
 
   var examEntries = [];
+  // These match the internal mapped field names (not sheet headers)
   var examCols2 = ['DRT1','DRT2','PT1','Term','Preboard'];
+  var examColLabels = { DRT1:'DRT-1', DRT2:'DRT-2', PT1:'PT-1', Term:'Term', Preboard:'Preboard' };
 
   subjects.forEach(function(subject) {
     var myRow = myResults.find(function(r){ return r.Subject.trim()===subject; });
@@ -1716,7 +1719,7 @@ async function api(p) {
       var type = col.startsWith('DRT') ? 'DRT' : col==='PT1' ? 'PT' : col==='Term' ? 'Term' : 'Preboard';
 
       examEntries.push({
-        name:        pfx + col,
+        name:        pfx + (examColLabels[col] || col),
         type:        type,
         max:         max,
         score:       myScore !== null ? myScore : 0,
