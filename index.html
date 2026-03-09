@@ -1561,8 +1561,11 @@ async function fetchAllSheets() {
   if (_dbCache) return _dbCache;
   var data = { students: [], results: [], teachers: [], settings: {} };
   var urls = new Set();
-  urls.add(SHEET_BASE + '?output=csv');
-  for (var i = 0; i <= 9; i++) urls.add(SHEET_BASE + '?output=csv&gid=' + i);
+  // Hardcoded GIDs for all 4 sheets
+  urls.add(SHEET_BASE + '?output=csv&gid=1169388302'); // Students
+  urls.add(SHEET_BASE + '?output=csv&gid=721830630');  // Results
+  urls.add(SHEET_BASE + '?output=csv&gid=354715531');  // Teachers
+  urls.add(SHEET_BASE + '?output=csv&gid=1883781389'); // Settings
 
   await Promise.allSettled(Array.from(urls).map(async function(url) {
     var sheet = await fetchCSV(url);
@@ -1700,7 +1703,7 @@ async function api(p) {
     var myRow = myResults.find(function(r){ return r.Subject.trim()===subject; });
     if (!myRow) return;
     var subjectClassRows = classResults.filter(function(r){ return r.Subject.trim()===subject; });
-    var classSize = subjectClassRows.length || 1;
+    var classSize = students.filter(function(s){ return s.Class.trim()===student.Class.trim(); }).length || subjectClassRows.length || 1;
     var pfx = prefix ? subject + '-' : '';
 
     examCols2.forEach(function(col) {
