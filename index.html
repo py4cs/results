@@ -1576,7 +1576,7 @@ async function studentLogin(){
   if(!en||!ph){err.textContent='Please enter both fields.';err.style.display='block';return;}
   btn.textContent='Checking…';btn.disabled=true;
   try{
-    var d=await api({examNo:en,phone:ph});
+    var d=await api({role:'student',examNo:en,phone:ph});  // FIX: always send role explicitly
     CU={type:'student',data:d};
     sessionStorage.setItem('vva_session',JSON.stringify(CU));
     showDash('sDash');
@@ -1586,20 +1586,30 @@ async function studentLogin(){
 }
 
 async function teacherLogin(){
+  // FIX: Merged skeleton-overlay logic that was previously monkey-patched below.
+  // Having two versions of teacherLogin (original + override) was fragile and
+  // confusing — consolidated into one authoritative function here.
   var u=document.getElementById('tUser').value.trim();
   var p=document.getElementById('tPass').value.trim();
   var btn=document.getElementById('tBtn');
   var err=document.getElementById('tErr');
   err.style.display='none';
+  if(!u||!p){err.textContent='Please enter both fields.';err.style.display='block';return;}
   btn.textContent='Loading…';btn.disabled=true;
   try{
+    showDash('tDash');
+    showTeacherSkeleton();
     var d=await api({role:'teacher',username:u,password:p});
     CU={type:'teacher',data:d};
     sessionStorage.setItem('vva_session',JSON.stringify(CU));
-    showDash('tDash');
+    clearTeacherSkeleton();
     renderTeacher(d,null);
-  }catch(e){err.textContent=e.message;err.style.display='block';}
-  finally{btn.textContent='Login';btn.disabled=false;}
+  }catch(e){
+    clearTeacherSkeleton();
+    document.getElementById('loginPage').style.display='flex';
+    document.getElementById('tDash').style.display='none';
+    err.textContent=e.message;err.style.display='block';
+  }finally{btn.textContent='Login';btn.disabled=false;}
 }
 
 function showDash(id){
@@ -1943,7 +1953,8 @@ function renderStudentCharts(d) {
       rkw.innerHTML = '<div class="sd-no-data">🏅 No rank data yet</div>';
     } else {
       var rankRows = taken.map(function(e) {
-        if (!e.rank) return '';
+        // FIX #3: rank is null when student was absent — skip instead of showing #null
+        if (e.rank === null || e.rank === undefined) return '';
         var topPct  = Math.round((1 - (e.rank-1)/e.classSize)*100);
         var cls     = e.rank<=3?'rp-top':e.rank<=Math.ceil(e.classSize*0.5)?'rp-mid':'rp-low';
         var medal   = e.rank===1?'🥇':e.rank===2?'🥈':e.rank===3?'🥉':'';
@@ -2217,7 +2228,8 @@ function renderInsights(students, exams) {
   var cards = [];
 
   // Class avg improved since PT?
-  var ptIdx = getExamIdx('PT1') >= 0 ? getExamIdx('PT1') : exams.findIndex(function(e){return e.type==='PT';});
+  // FIX: Was 'PT1' (missing hyphen) — exam is named 'PT-1' everywhere else, so this always returned -1.
+  var ptIdx = getExamIdx('PT-1') >= 0 ? getExamIdx('PT-1') : exams.findIndex(function(e){return e.type==='PT';});
   var preIdx = exams.findIndex(function(e){return e.type==='Preboard';});
   if (ptIdx >= 0 && preIdx >= 0) {
     var ptAvg = avg(students.map(function(s){return pctOf(s.marks[ptIdx]||0, exams[ptIdx].max);}));
@@ -2941,33 +2953,7 @@ function clearTeacherSkeleton() {
   if (ov) ov.classList.remove('show');
 }
 
-// Wrap teacherLogin to show overlay before fetch completes
-var _origTeacherLogin = teacherLogin;
-teacherLogin = async function() {
-  var u = document.getElementById('tUser').value.trim();
-  var p = document.getElementById('tPass').value.trim();
-  if (!u || !p) { return _origTeacherLogin(); }
-  var btn = document.getElementById('tBtn');
-  var err = document.getElementById('tErr');
-  err.style.display = 'none';
-  btn.textContent = 'Loading…'; btn.disabled = true;
-  try {
-    showDash('tDash');
-    showTeacherSkeleton();
-    var d = await api({ role: 'teacher', username: u, password: p });
-    CU = { type: 'teacher', data: d };
-    sessionStorage.setItem('vva_session', JSON.stringify(CU));
-    clearTeacherSkeleton();
-    renderTeacher(d, null);
-  } catch(e) {
-    clearTeacherSkeleton();
-    document.getElementById('loginPage').style.display = 'flex';
-    document.getElementById('tDash').style.display = 'none';
-    err.textContent = e.message; err.style.display = 'block';
-  } finally {
-    btn.textContent = 'Login'; btn.disabled = false;
-  }
-};
+// NOTE: teacherLogin overlay logic was merged into the main teacherLogin() function above — no override needed here.
 
 // ══════════════════════════════════════════
 // FEATURE: Export functions
