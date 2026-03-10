@@ -1509,14 +1509,12 @@ var CU = null;
 //  Replace YOUR_WEB_APP_URL below after deploying GAS
 // ══════════════════════════════════════════════════════════════
 
-var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxWTDo72HncEQlpzruVS5NfurDPfA7H4LBFCnBHBXHfilbvCVgTEpKf5NpiYq8diDCuRA/exec';
+var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz5kqod48dDLF7nd2N842-2OR-QXAvb4-rWjPRUL3ARF0OSJDoQGnJz4KHoG2fKaYQs/exec';
 
 async function api(p) {
-  var res = await fetch(WEB_APP_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(p)
-  });
+  var url = new URL(WEB_APP_URL);
+  Object.keys(p).forEach(function(k) { url.searchParams.append(k, p[k]); });
+  var res = await fetch(url.toString(), { method: 'GET' });
   var d = await res.json();
   if (d.error) throw new Error(d.error);
   return d;
