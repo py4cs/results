@@ -828,7 +828,7 @@ button,.l-tab,.l-btn,.f-btn,.tf-btn,.stab,.lo-btn{
 
 /* ── Charts: fully fluid ── */
 .cw,.cw-sm,.sd-chart-wrap,.sd-chart-wrap-sm{width:100%;min-width:0;}
-.cw canvas,.cw-sm canvas,.sd-chart-wrap canvas,.sd-chart-wrap-sm canvas{max-width:100%;}
+.cw canvas,.cw-sm canvas,.sd-chart-wrap canvas,.sd-chart-wrap-sm canvas{width:100%!important;height:100%!important;display:block;}
 @media(min-width:700px){
   .cw{height:240px!important;}
   .sd-chart-wrap{height:260px!important;}
@@ -1227,7 +1227,7 @@ button,.l-tab,.l-btn,.f-btn,.tf-btn,.stab,.lo-btn{
           <div class="sdc-title">Your Marks vs Class</div>
           <div class="sdc-sub">You vs class average per exam</div>
         </div>
-        <div id="sCompareWrap"></div>
+        <div class="sd-chart-wrap" id="sCompareWrap"></div>
       </div>
       <div class="sd-card">
         <div class="sdc-head">
@@ -1527,12 +1527,38 @@ var CU = null;
 var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxWTDo72HncEQlpzruVS5NfurDPfA7H4LBFCnBHBXHfilbvCVgTEpKf5NpiYq8diDCuRA/exec';
 
 async function api(p) {
-  var url = new URL(WEB_APP_URL);
-  Object.keys(p).forEach(function(k) { url.searchParams.append(k, p[k]); });
-  var res = await fetch(url.toString(), { method: 'GET' });
-  var d = await res.json();
-  if (d.error) throw new Error(d.error);
-  return d;
+  return new Promise(function(resolve, reject) {
+    var cbName = '_gasCb_' + Date.now();
+    var url = new URL(WEB_APP_URL);
+    Object.keys(p).forEach(function(k) { url.searchParams.append(k, p[k]); });
+    url.searchParams.append('callback', cbName);
+
+    var script = document.createElement('script');
+    var timer = setTimeout(function() {
+      cleanup();
+      reject(new Error('Request timed out. Please try again.'));
+    }, 15000);
+
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[cbName] = function(data) {
+      cleanup();
+      if (data && data.error) reject(new Error(data.error));
+      else resolve(data);
+    };
+
+    script.onerror = function() {
+      cleanup();
+      reject(new Error('Failed to reach server. Check your internet connection.'));
+    };
+
+    script.src = url.toString();
+    document.head.appendChild(script);
+  });
 }
 
 function switchTab(t){
@@ -1810,168 +1836,103 @@ function renderStudentCharts(d) {
   // ══════════════════════════════════════
   // 3. PROGRESS CHART (Line)
   // ══════════════════════════════════════
+  // CHART HELPERS
+  // ══════════════════════════════════════
   ['progress','drt','main','classStand'].forEach(function(k){
-    if (sCharts[k]) { sCharts[k].destroy(); sCharts[k] = null; }
+    if (sCharts[k]) { try { sCharts[k].destroy(); } catch(e){} sCharts[k] = null; }
   });
   console.log('[Charts] taken:', taken.length, 'drtTaken:', drtTaken.length, 'mainTaken:', mainTaken.length);
 
-  var pw = document.getElementById('sProgressWrap');
-  if (pw) {
-    pw.innerHTML = '';
-    if (!taken.length) {
-      pw.innerHTML = '<div class="sd-no-data">📈 No data yet</div>';
-    } else {
-      var pc = document.createElement('canvas');
-      pw.appendChild(pc);
-      sCharts.progress = new Chart(pc.getContext('2d'), {
-        type: 'line',
-        data: {
-          labels: taken.map(function(e){ return e.name; }),
-          datasets: [
-            {
-              label: 'Your %',
-              data: taken.map(function(e){ return e.pct; }),
-              borderColor: '#0a1f6e',
-              backgroundColor: 'rgba(10,31,110,.08)',
-              borderWidth: 2.5,
-              pointRadius: 6,
-              pointBackgroundColor: taken.map(function(e){ return e.pct>=75?'#16a34a':e.pct>=50?'#e9a820':'#dc2626'; }),
-              pointBorderColor: '#fff',
-              pointBorderWidth: 2,
-              tension: 0.4,
-              fill: true
-            },
-            {
-              label: 'Class Avg %',
-              data: taken.map(function(e){ return e.classAvgPct; }),
-              borderColor: '#e9a820',
-              backgroundColor: 'transparent',
-              borderWidth: 2,
-              borderDash: [5,4],
-              pointRadius: 3,
-              tension: 0.4,
-              fill: false
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: 'top' } },
-          scales: {
-            y: { min:0, max:100, ticks:{ callback:function(v){ return v+'%'; } } },
-            x: { grid:{ display:false } }
-          }
-        }
-      });
+  function makeChart(wrapId, noDataMsg, chartKey, config) {
+    var wrap = document.getElementById(wrapId);
+    if (!wrap) { console.warn('[Charts] wrap not found:', wrapId); return; }
+    wrap.innerHTML = '';
+    if (!config) {
+      wrap.innerHTML = '<div class="sd-no-data">' + noDataMsg + '</div>';
+      return;
+    }
+    var canvas = document.createElement('canvas');
+    canvas.style.width  = '100%';
+    canvas.style.height = '100%';
+    wrap.appendChild(canvas);
+    try {
+      sCharts[chartKey] = new Chart(canvas, config);
+      console.log('[Charts] ' + chartKey + ' chart OK. Labels:', config.data.labels);
+    } catch(err) {
+      console.error('[Charts] ' + chartKey + ' failed:', err);
+      wrap.innerHTML = '<div class="sd-no-data">Chart error: ' + err.message + '</div>';
     }
   }
 
-  // ══════════════════════════════════════
-  // 4. DRT CHART (Bar)
-  // ══════════════════════════════════════
-  var dw = document.getElementById('sDrtChartWrap');
-  console.log('[Charts] sDrtChartWrap element:', dw, '| drtTaken:', drtTaken.length);
-  if (dw) {
-    dw.innerHTML = '';
-    if (!drtTaken.length) {
-      dw.innerHTML = '<div class="sd-no-data">📝 No DRT results yet</div>';
-    } else {
-      var dc = document.createElement('canvas');
-      dw.appendChild(dc);
-      sCharts.drt = new Chart(dc.getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels: drtTaken.map(function(e){ return e.name; }),
-          datasets: [{
-            label: 'Your Marks',
-            data: drtTaken.map(function(e){ return e.score; }),
-            backgroundColor: drtTaken.map(function(e){ return e.pct>=70?'rgba(22,163,74,.85)':e.pct>=45?'rgba(233,168,32,.9)':'rgba(220,38,38,.85)'; }),
-            borderRadius: 8
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { beginAtZero: true, max: drtMaxMark + 2, ticks:{ stepSize:1 } },
-            x: { grid: { display: false } }
-          }
-        }
-      });
-      console.log('[Charts] DRT chart created:', sCharts.drt);
-    }
-  }
+  // ── 3. PROGRESS CHART (Line) ──
+  makeChart('sProgressWrap', '📈 No data yet', 'progress', taken.length ? {
+    type: 'line',
+    data: {
+      labels: taken.map(function(e){ return e.name; }),
+      datasets: [
+        { label:'Your %', data:taken.map(function(e){ return e.pct; }),
+          borderColor:'#0a1f6e', backgroundColor:'rgba(10,31,110,.08)',
+          borderWidth:2.5, pointRadius:5, tension:0.4, fill:true,
+          pointBackgroundColor: taken.map(function(e){ return e.pct>=75?'#16a34a':e.pct>=50?'#e9a820':'#dc2626'; }),
+          pointBorderColor:'#fff', pointBorderWidth:2 },
+        { label:'Class Avg %', data:taken.map(function(e){ return e.classAvgPct; }),
+          borderColor:'#e9a820', borderWidth:2, borderDash:[5,4],
+          pointRadius:3, tension:0.4, fill:false, backgroundColor:'transparent' }
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{position:'top'} },
+      scales:{ y:{min:0,max:100, ticks:{callback:function(v){return v+'%';}}}, x:{grid:{display:false}} } }
+  } : null);
 
-  // ══════════════════════════════════════
-  // 5. MAIN EXAMS CHART (Bar)
-  // ══════════════════════════════════════
-  var mw = document.getElementById('sMainChartWrap');
-  console.log('[Charts] sMainChartWrap element:', mw, '| mainTaken:', mainTaken.length);
-  if (mw) {
-    mw.innerHTML = '';
-    if (!mainTaken.length) {
-      mw.innerHTML = '<div class="sd-no-data">📋 No main exam results yet</div>';
-    } else {
-      var mc = document.createElement('canvas');
-      mw.appendChild(mc);
-      sCharts.main = new Chart(mc.getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels: mainTaken.map(function(e){ return e.name; }),
-          datasets: [{
-            label: 'Your Marks',
-            data: mainTaken.map(function(e){ return e.score; }),
-            backgroundColor: mainTaken.map(function(e){ return e.pct>=75?'rgba(22,163,74,.85)':e.pct>=50?'rgba(233,168,32,.9)':'rgba(220,38,38,.85)'; }),
-            borderRadius: 8
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { beginAtZero: true, max: examMaxMark + 5 },
-            x: { grid: { display: false } }
-          }
-        }
-      });
-    }
-  }
+  // ── 4. DRT CHART (Bar) ──
+  makeChart('sDrtChartWrap', '📝 No DRT results yet', 'drt', drtTaken.length ? {
+    type: 'bar',
+    data: {
+      labels: drtTaken.map(function(e){ return e.name; }),
+      datasets: [{
+        label: 'Your Marks',
+        data:  drtTaken.map(function(e){ return e.score; }),
+        backgroundColor: drtTaken.map(function(e){ return e.pct>=70?'#16a34a':e.pct>=45?'#e9a820':'#dc2626'; }),
+        borderRadius: 8
+      }]
+    },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{ y:{beginAtZero:true, max:drtMaxMark+2, ticks:{stepSize:1}}, x:{grid:{display:false}} } }
+  } : null);
 
-  // ══════════════════════════════════════
-  // 6. CLASS STANDING CHART (Bar)
-  // ══════════════════════════════════════
-  var csw = document.getElementById('sCompareWrap');
-  if (csw) {
-    csw.innerHTML = '';
-    if (!taken.length) {
-      csw.innerHTML = '<div class="sd-no-data">🏫 No data yet</div>';
-    } else {
-      var csc = document.createElement('canvas');
-      csw.appendChild(csc);
-      sCharts.classStand = new Chart(csc.getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels: taken.map(function(e){ return e.name; }),
-          datasets: [
-            { label:'You %',        data:taken.map(function(e){ return e.pct; }),        backgroundColor:'rgba(10,31,110,.8)',  borderRadius:6 },
-            { label:'Class Avg %',  data:taken.map(function(e){ return e.classAvgPct; }),backgroundColor:'rgba(233,168,32,.6)', borderRadius:6 }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: 'top' } },
-          scales: {
-            y: { min:0, max:100, ticks:{ callback:function(v){ return v+'%'; } } },
-            x: { grid:{ display:false } }
-          }
-        }
-      });
-    }
-  }
+  // ── 5. MAIN EXAMS CHART (Bar) ──
+  makeChart('sMainChartWrap', '📋 No main exam results yet', 'main', mainTaken.length ? {
+    type: 'bar',
+    data: {
+      labels: mainTaken.map(function(e){ return e.name; }),
+      datasets: [{
+        label: 'Your Marks',
+        data:  mainTaken.map(function(e){ return e.score; }),
+        backgroundColor: mainTaken.map(function(e){ return e.pct>=75?'#16a34a':e.pct>=50?'#e9a820':'#dc2626'; }),
+        borderRadius: 8
+      }]
+    },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{ y:{beginAtZero:true, max:examMaxMark+5}, x:{grid:{display:false}} } }
+  } : null);
+
+  // ── 6. CLASS STANDING CHART (Bar) ──
+  makeChart('sCompareWrap', '🏫 No data yet', 'classStand', taken.length ? {
+    type: 'bar',
+    data: {
+      labels: taken.map(function(e){ return e.name; }),
+      datasets: [
+        { label:'You %',       data:taken.map(function(e){ return e.pct; }),        backgroundColor:'rgba(10,31,110,.8)',  borderRadius:6 },
+        { label:'Class Avg %', data:taken.map(function(e){ return e.classAvgPct; }),backgroundColor:'rgba(233,168,32,.7)', borderRadius:6 }
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{position:'top'} },
+      scales:{ y:{min:0,max:100, ticks:{callback:function(v){return v+'%';}}}, x:{grid:{display:false}} } }
+  } : null);
 
   // ══════════════════════════════════════
   // 7. CLASS RANK CARD — improved
