@@ -1,0 +1,3005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Velammal Results Portal v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<style>
+:root{
+  --blue:#0a1f6e;--blue-mid:#1535a8;--blue-lt:#2952d9;--blue-pale:#eef2ff;--blue-border:#c7d2fe;
+  --gold:#e9a820;--gold-lt:#fcd34d;
+  --cream:#f0f2fc;
+  --g50:#f8fafc;--g100:#f1f5f9;--g200:#e2e8f0;--g400:#94a3b8;--g600:#475569;--g800:#1e293b;
+  --green:#16a34a;--green-lt:#dcfce7;--red:#dc2626;--red-lt:#fee2e2;--org:#ea580c;--org-lt:#ffedd5;
+  --sh:0 4px 16px rgba(10,31,110,.10);--sh-sm:0 1px 4px rgba(10,31,110,.07);--sh-lg:0 8px 32px rgba(10,31,110,.16);
+  --r:14px;--rs:8px;--p:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:var(--g800);min-height:100vh;font-size:15px;}
+
+.lp{min-height:100vh;display:flex;flex-direction:column;}
+.lh{background:linear-gradient(135deg,var(--blue),var(--blue-mid) 60%,var(--blue-lt));padding:18px var(--p);display:flex;align-items:center;gap:12px;box-shadow:0 2px 16px rgba(0,48,135,.25);}
+.lh img{height:42px;}
+.lh-t h1{font-family:'Playfair Display',serif;color:#fff;font-size:1.1rem;}
+.lh-t p{color:var(--gold-lt);font-size:.7rem;font-weight:600;letter-spacing:.8px;text-transform:uppercase;margin-top:2px;}
+.lb{flex:1;display:flex;align-items:center;justify-content:center;padding:24px var(--p);background:linear-gradient(160deg,var(--cream) 60%,#dbeafe 100%);}
+.lc{background:#fff;border-radius:20px;box-shadow:var(--sh-lg);padding:26px 20px;width:100%;max-width:420px;border:1px solid var(--blue-border);}
+.l-tabs{display:flex;background:var(--g100);border-radius:var(--rs);padding:4px;margin-bottom:22px;}
+.l-tab{flex:1;padding:9px;text-align:center;border-radius:6px;font-size:.84rem;font-weight:700;cursor:pointer;color:var(--g600);border:none;background:none;transition:all .2s;font-family:inherit;}
+.l-tab.active{background:var(--blue);color:#fff;box-shadow:var(--sh-sm);}
+.l-title{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--blue);margin-bottom:4px;}
+.l-sub{color:var(--g600);font-size:.84rem;margin-bottom:20px;}
+.fg{margin-bottom:15px;}
+.fg label{display:block;font-size:.8rem;font-weight:700;color:var(--g800);margin-bottom:6px;}
+.fg input{width:100%;padding:13px 14px;border:1.5px solid var(--g200);border-radius:var(--rs);font-size:1rem;font-family:inherit;background:var(--g50);color:var(--g800);transition:all .2s;-webkit-appearance:none;}
+.fg input:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(0,48,135,.08);}
+.l-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--blue),var(--blue-lt));color:#fff;border:none;border-radius:var(--rs);font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;margin-top:4px;}
+.l-btn:active{transform:scale(.98);}
+.l-err{background:var(--red-lt);color:var(--red);padding:10px 14px;border-radius:var(--rs);font-size:.83rem;font-weight:500;margin-top:12px;display:none;border-left:3px solid var(--red);}
+.l-hint{margin-top:16px;padding:11px 14px;background:var(--blue-pale);border-radius:var(--rs);font-size:.79rem;color:var(--blue);font-weight:500;border:1px solid var(--blue-border);}
+.l-hint strong{display:block;margin-bottom:3px;}
+
+.topbar{background:linear-gradient(135deg,var(--blue),var(--blue-mid) 60%,var(--blue-lt));padding:0 var(--p);display:flex;align-items:center;justify-content:space-between;height:54px;box-shadow:0 2px 12px rgba(0,48,135,.25);position:sticky;top:0;z-index:100;}
+.tb-l{display:flex;align-items:center;gap:10px;}
+.tb-l img{height:30px;}
+.tb-brand span{color:#fff;font-weight:700;font-size:.88rem;display:block;}
+.tb-brand small{color:var(--gold-lt);font-size:.61rem;font-weight:600;letter-spacing:.8px;text-transform:uppercase;}
+.tb-r{display:flex;align-items:center;gap:8px;}
+.u-badge{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.12);padding:4px 10px 4px 5px;border-radius:30px;}
+.u-av{width:28px;height:28px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.76rem;color:var(--blue);flex-shrink:0;}
+.u-info span{display:block;color:#fff;font-size:.76rem;font-weight:700;line-height:1.2;}
+.u-info small{color:var(--gold-lt);font-size:.63rem;}
+.lo-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:6px 12px;border-radius:20px;font-size:.73rem;font-weight:700;cursor:pointer;font-family:inherit;}
+
+.dash{display:none;flex-direction:column;min-height:100vh;}
+.s-dash,.t-dash{padding:var(--p);max-width:1100px;margin:0 auto;width:100%;}
+
+.w-banner{background:linear-gradient(135deg,var(--blue),var(--blue-mid));border-radius:var(--r);padding:18px var(--p);margin-bottom:16px;color:#fff;}
+.w-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;}
+.w-top h2{font-family:'Playfair Display',serif;font-size:1.1rem;margin-bottom:2px;}
+.w-top p{color:rgba(255,255,255,.7);font-size:.78rem;}
+.sec-pill{background:rgba(255,255,255,.15);padding:4px 12px;border-radius:20px;font-size:.73rem;font-weight:700;color:var(--gold-lt);white-space:nowrap;flex-shrink:0;margin-left:8px;}
+.ws-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.ws{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.14);padding:10px 12px;border-radius:10px;}
+.ws .wv{font-size:1.1rem;font-weight:800;color:var(--gold-lt);line-height:1.2;}
+.ws.na .wv{font-size:.8rem;color:rgba(255,255,255,.38);font-weight:500;}
+.ws .wl{font-size:.67rem;color:rgba(255,255,255,.7);margin-top:3px;line-height:1.3;font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+.ws .wsb{font-size:.67rem;color:rgba(255,255,255,.48);margin-top:2px;}
+
+.sc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.sc{background:#fff;border-radius:var(--r);padding:15px;box-shadow:var(--sh-sm);border:1px solid var(--g100);position:relative;overflow:hidden;}
+.sc::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;}
+.sc.c1::before{background:linear-gradient(90deg,var(--blue),var(--blue-lt));}
+.sc.c2::before{background:linear-gradient(90deg,var(--gold),var(--gold-lt));}
+.sc.c3::before{background:linear-gradient(90deg,var(--green),#4ade80);}
+.sc.c4::before{background:linear-gradient(90deg,#7c3aed,#a78bfa);}
+.sc .si{font-size:1.1rem;margin-bottom:7px;}
+.sc .sv{font-size:1.35rem;font-weight:800;color:var(--g800);line-height:1.1;}
+.sc .sl{font-size:.72rem;font-weight:700;color:var(--g600);margin-top:4px;text-transform:uppercase;letter-spacing:.4px;}
+.sc .sd{font-size:.74rem;color:var(--g400);margin-top:4px;line-height:1.3;}
+.sc .st{font-size:.73rem;font-weight:700;margin-top:3px;}
+.tu{color:var(--green);}.td{color:var(--red);}.tn{color:var(--g400);}
+
+.card{background:#fff;border-radius:var(--r);padding:16px;box-shadow:var(--sh-sm);border:1px solid var(--g100);margin-bottom:16px;}
+.ct{font-size:.9rem;font-weight:700;color:var(--g800);margin-bottom:2px;}
+.csub{font-size:.74rem;color:var(--g400);margin-bottom:13px;}
+.no-data{text-align:center;padding:28px 16px;color:var(--g400);font-size:.83rem;line-height:1.6;}
+.no-data .ni{font-size:2rem;margin-bottom:8px;}
+
+.al{padding:11px 14px;border-radius:var(--rs);font-size:.82rem;font-weight:500;margin-bottom:10px;line-height:1.4;}
+.al-ok{background:var(--green-lt);color:var(--green);border-left:4px solid var(--green);}
+.al-warn{background:var(--org-lt);color:var(--org);border-left:4px solid var(--org);}
+.al-info{background:var(--blue-pale);color:var(--blue);border-left:4px solid var(--blue);}
+
+.stabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.stab{padding:7px 16px;border-radius:20px;font-size:.81rem;font-weight:700;cursor:pointer;border:2px solid var(--blue);background:#fff;color:var(--blue);transition:all .2s;font-family:inherit;}
+.stab.active{background:var(--blue);color:#fff;}
+.stab.soon{opacity:.4;cursor:default;}
+
+.t-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.etable{width:100%;border-collapse:collapse;font-size:.83rem;min-width:400px;}
+.etable th{text-align:left;padding:9px 11px;font-size:.7rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--g100);white-space:nowrap;background:var(--g50);}
+.etable td{padding:11px 11px;border-bottom:1px solid var(--g100);white-space:nowrap;vertical-align:middle;}
+.etable tr:last-child td{border-bottom:none;}
+.etable tbody tr:hover td{background:var(--blue-pale);}
+.chip{display:inline-block;padding:2px 7px;border-radius:6px;font-size:.69rem;font-weight:700;}
+.ch-drt{background:#ede9fe;color:#5b21b6;}
+.ch-pt{background:#dbeafe;color:#1d4ed8;}
+.ch-term{background:var(--green-lt);color:#15803d;}
+.ch-pre{background:#fef3c7;color:#b45309;}
+
+.t-header{background:linear-gradient(135deg,var(--blue),var(--blue-mid));border-radius:var(--r);padding:18px var(--p);margin-bottom:16px;}
+.t-header h2{font-family:'Playfair Display',serif;color:#fff;font-size:1.1rem;}
+.t-header p{color:rgba(255,255,255,.72);font-size:.81rem;margin-top:3px;}
+.sec-filter{display:flex;gap:8px;margin-top:13px;flex-wrap:wrap;}
+.f-btn{padding:7px 16px;border-radius:20px;font-size:.79rem;font-weight:700;cursor:pointer;border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;transition:all .2s;font-family:inherit;}
+.f-btn.active{background:var(--gold);color:var(--blue);border-color:var(--gold);}
+.tsc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.s-row{display:grid;grid-template-columns:32px 1fr 50px 50px 70px;gap:8px;align-items:center;padding:10px 8px;border-radius:var(--rs);font-size:.82rem;}
+.s-row:hover{background:var(--blue-pale);}
+.s-row.hdr{font-size:.69rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--g100);padding-bottom:8px;margin-bottom:4px;}
+.s-row.hdr:hover{background:none;}
+.srk{width:26px;height:26px;border-radius:50%;background:var(--g100);display:flex;align-items:center;justify-content:center;font-size:.71rem;font-weight:700;color:var(--g600);}
+.srk.top{background:var(--gold);color:var(--blue);}
+.srk.low{background:var(--red-lt);color:var(--red);}
+.fc{display:inline-block;padding:2px 7px;border-radius:6px;font-size:.69rem;font-weight:700;}
+.fc-imp{background:var(--green-lt);color:var(--green);}
+.fc-dec{background:var(--red-lt);color:var(--red);}
+.fc-wch{background:var(--org-lt);color:var(--org);}
+.fc-stb{background:var(--g100);color:var(--g600);}
+
+.cw{position:relative;height:220px;}
+.cw-sm{position:relative;height:200px;}
+.two-col{margin-bottom:16px;}
+@media(min-width:640px){
+  :root{--p:22px;}
+  .sc-grid{grid-template-columns:repeat(4,1fr);}
+  .tsc-grid{grid-template-columns:repeat(4,1fr);}
+  .ws-grid{grid-template-columns:repeat(3,1fr);}
+}
+@media(min-width:900px){
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+  .two-col .card{margin-bottom:0;}
+  .ws-grid{grid-template-columns:repeat(6,1fr);}
+}
+.hidden{display:none!important;}
+
+/* ── STUDENT DASHBOARD ── */
+/* ══════════════════════════════════════
+   STUDENT DASHBOARD — FULL REDESIGN
+══════════════════════════════════════ */
+
+.s-dash {
+  padding: var(--p);
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+  padding-bottom: 40px;
+}
+
+/* ── SECTION LABELS ── */
+.sd-section-label {
+  font-size: .73rem;
+  font-weight: 800;
+  color: var(--blue);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 22px 0 10px;
+  padding-left: 10px;
+  border-left: 3px solid var(--gold);
+}
+
+/* ── CARDS ── */
+.sd-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 2px 12px rgba(10,31,110,.08);
+  border: 1px solid rgba(10,31,110,.06);
+  margin-bottom: 14px;
+  transition: box-shadow .2s;
+}
+.sd-card:hover { box-shadow: 0 4px 20px rgba(10,31,110,.12); }
+.sdc-head { margin-bottom: 14px; }
+.sdc-title { font-size: .9rem; font-weight: 700; color: var(--g800); }
+.sdc-sub { font-size: .73rem; color: var(--g400); margin-top: 2px; }
+
+/* ── TWO COLUMN ── */
+.sd-two-col { display: flex; flex-direction: column; gap: 0; }
+.sd-two-col .sd-card { margin-bottom: 14px; }
+@media(min-width:700px) {
+  .sd-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 0; }
+  .sd-two-col .sd-card { margin-bottom: 14px; }
+}
+
+/* ── CHART WRAPS ── */
+.sd-chart-wrap { position: relative; height: 240px; }
+.sd-chart-wrap-sm { position: relative; height: 200px; }
+
+/* ══ HERO BANNER ══ */
+.s-hero {
+  background: linear-gradient(135deg, #0a1f6e 0%, #1535a8 50%, #2952d9 100%);
+  border-radius: 20px;
+  padding: 20px 20px 16px;
+  margin-bottom: 6px;
+  position: relative;
+  overflow: hidden;
+}
+.s-hero::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.05);
+}
+.s-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -30px; left: -20px;
+  width: 140px; height: 140px;
+  border-radius: 50%;
+  background: rgba(233,168,32,.08);
+}
+.sh-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+}
+.sh-left { display: flex; align-items: center; gap: 14px; }
+.sh-avatar {
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  background: var(--gold);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 1.4rem; color: var(--blue);
+  border: 3px solid rgba(255,255,255,.25);
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0,0,0,.2);
+}
+.sh-name {
+  font-size: 1.15rem; font-weight: 800; color: #fff;
+  font-family: 'Playfair Display', serif;
+  line-height: 1.2;
+}
+.sh-meta { font-size: .74rem; color: rgba(255,255,255,.65); margin-top: 3px; font-weight: 500; }
+.sh-perf-badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: .78rem;
+  font-weight: 800;
+  white-space: nowrap;
+  border: 2px solid;
+  backdrop-filter: blur(8px);
+}
+.shb-exc { background: rgba(22,163,74,.25); border-color: rgba(22,163,74,.5); color: #bbf7d0; }
+.shb-vg  { background: rgba(99,102,241,.25); border-color: rgba(99,102,241,.5); color: #c7d2fe; }
+.shb-good{ background: rgba(234,179,8,.2);   border-color: rgba(234,179,8,.4); color: #fde68a; }
+.shb-avg { background: rgba(234,88,12,.2);   border-color: rgba(234,88,12,.4); color: #fed7aa; }
+.shb-ni  { background: rgba(220,38,38,.2);   border-color: rgba(220,38,38,.4); color: #fca5a5; }
+
+/* Hero inline stats row */
+.sh-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+@media(min-width:500px) { .sh-stats { grid-template-columns: repeat(4, 1fr); } }
+.sh-stat {
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 10px;
+  padding: 10px 12px;
+  text-align: center;
+}
+.sh-sv { font-size: 1.1rem; font-weight: 800; color: var(--gold-lt); line-height: 1.1; }
+.sh-sl { font-size: .63rem; color: rgba(255,255,255,.6); margin-top: 3px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+.sh-stat.sh-na .sh-sv { font-size: .75rem; color: rgba(255,255,255,.3); font-weight: 500; }
+
+/* ══ SUMMARY CARDS ══ */
+.sd-sum-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+@media(min-width:500px) { .sd-sum-grid { grid-template-columns: repeat(3, 1fr); } }
+@media(min-width:800px) { .sd-sum-grid { grid-template-columns: repeat(5, 1fr); } }
+
+.sd-sum {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 2px 12px rgba(10,31,110,.07);
+  border: 1px solid rgba(10,31,110,.06);
+  position: relative;
+  overflow: hidden;
+}
+.sd-sum::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 4px;
+  border-radius: 16px 16px 0 0;
+}
+.sds1::before { background: linear-gradient(90deg, var(--blue), var(--blue-lt)); }
+.sds2::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+.sds3::before { background: linear-gradient(90deg, var(--green), #4ade80); }
+.sds4::before { background: linear-gradient(90deg, var(--gold), var(--gold-lt)); }
+.sds5::before { background: linear-gradient(90deg, #0891b2, #22d3ee); }
+.sd-sum-emoji { font-size: 1.3rem; margin-bottom: 8px; }
+.sd-sum-val { font-size: 1.4rem; font-weight: 800; color: var(--g800); line-height: 1; }
+.sd-sum-lbl { font-size: .68rem; font-weight: 700; color: var(--g400); margin-top: 6px; text-transform: uppercase; letter-spacing: .5px; }
+.sd-sum-sub { font-size: .72rem; color: var(--g600); margin-top: 4px; line-height: 1.3; }
+
+/* ══ MARKS TABLE ══ */
+.sd-table { width: 100%; border-collapse: collapse; font-size: .82rem; min-width: 480px; }
+.sd-table thead tr { background: var(--blue); }
+.sd-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: .68rem;
+  font-weight: 700;
+  color: rgba(255,255,255,.85);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  white-space: nowrap;
+}
+.sd-table td { padding: 11px 12px; border-bottom: 1px solid var(--g100); white-space: nowrap; vertical-align: middle; }
+.sd-table tbody tr:last-child td { border-bottom: none; }
+.sd-table tbody tr:hover td { background: var(--blue-pale); }
+.sd-table .exam-name { font-weight: 700; }
+.sd-table .mark-cell { font-weight: 700; font-size: .88rem; }
+.sd-awaited td { color: var(--g400) !important; }
+.sd-awaited td:first-child { color: var(--g800) !important; font-weight: 700 !important; }
+.sd-exc .mark-cell { color: #166534 !important; }
+.sd-vg .mark-cell { color: #1e40af !important; }
+.sd-ni .mark-cell { color: #991b1b !important; }
+
+/* Grade badges */
+.gb { display: inline-block; padding: 3px 9px; border-radius: 6px; font-size: .7rem; font-weight: 800; }
+.gb-aplus { background: #dcfce7; color: #166534; }
+.gb-a     { background: #dbeafe; color: #1e40af; }
+.gb-b     { background: #fef3c7; color: #92400e; }
+.gb-c     { background: #ffedd5; color: #9a3412; }
+.gb-d     { background: #fee2e2; color: #991b1b; }
+
+/* vs class mini badge */
+.vs-up   { color: var(--green); font-size: .7rem; font-weight: 700; }
+.vs-down { color: var(--red);   font-size: .7rem; font-weight: 700; }
+.vs-eq   { color: var(--g400);  font-size: .7rem; font-weight: 700; }
+
+/* Rank pill */
+.rank-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 20px; font-size: .72rem; font-weight: 800;
+}
+.rp-top  { background: #fef3c7; color: #92400e; }
+.rp-mid  { background: var(--blue-pale); color: var(--blue); }
+.rp-low  { background: #fee2e2; color: var(--red); }
+
+/* ══ CLASS COMPARISON ══ */
+.sd-comp-item { margin-bottom: 16px; }
+.sd-comp-item:last-child { margin-bottom: 0; }
+.sd-comp-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.sd-comp-name { font-size: .82rem; font-weight: 700; color: var(--g800); }
+.sd-comp-delta { font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+.scd-up   { background: #dcfce7; color: #166534; }
+.scd-down { background: #fee2e2; color: #991b1b; }
+.scd-eq   { background: var(--g100); color: var(--g600); }
+.sd-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.sd-bar-lbl { font-size: .65rem; font-weight: 700; width: 56px; flex-shrink: 0; }
+.sd-bar-bg { flex: 1; height: 10px; background: var(--g100); border-radius: 6px; overflow: hidden; }
+.sd-bar-fill { height: 100%; border-radius: 6px; transition: width .7s ease; }
+.sdbf-you { background: linear-gradient(90deg, var(--blue), var(--blue-lt)); }
+.sdbf-avg { background: linear-gradient(90deg, var(--gold), var(--gold-lt)); }
+.sd-bar-num { font-size: .72rem; font-weight: 700; width: 32px; text-align: right; flex-shrink: 0; }
+
+/* ══ RANK DISPLAY ══ */
+.sd-rank-hero {
+  text-align: center; padding: 16px 0 10px;
+}
+.sdrh-num {
+  font-size: 3.5rem; font-weight: 800; color: var(--blue); line-height: 1;
+  font-family: 'Playfair Display', serif;
+}
+.sdrh-denom { font-size: 1.1rem; color: var(--g400); font-weight: 600; }
+.sdrh-ctx { font-size: .76rem; color: var(--g600); margin-top: 6px; font-weight: 500; }
+.sdrh-medal { font-size: 1.8rem; margin-bottom: 6px; }
+.sd-pct-bar { margin: 14px 0 4px; }
+.sd-pct-labels { display: flex; justify-content: space-between; font-size: .68rem; color: var(--g400); font-weight: 600; margin-bottom: 5px; }
+.sd-pct-track { height: 10px; background: var(--g100); border-radius: 6px; overflow: hidden; }
+.sd-pct-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--blue), var(--blue-lt)); transition: width .8s ease; }
+.sd-pct-text { text-align: center; font-size: .8rem; font-weight: 700; color: var(--blue); margin-top: 8px; }
+
+/* ══ IMPROVEMENT TREND ══ */
+.sd-trend-list { display: flex; flex-direction: column; gap: 10px; }
+.sd-trend-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 15px; border-radius: 12px; border: 1px solid;
+}
+.sdt-up   { background: #f0fdf4; border-color: #bbf7d0; }
+.sdt-down { background: #fef2f2; border-color: #fca5a5; }
+.sdt-same { background: var(--g50); border-color: var(--g200); }
+.sdt-icon { font-size: 1.3rem; flex-shrink: 0; }
+.sdt-body { flex: 1; }
+.sdt-title { font-size: .85rem; font-weight: 700; color: var(--g800); }
+.sdt-desc { font-size: .74rem; color: var(--g600); margin-top: 2px; }
+.sdt-delta { font-size: .92rem; font-weight: 800; flex-shrink: 0; margin-left: auto; }
+.sd-rank-sel{width:100%;padding:8px 12px;border-radius:10px;border:1.5px solid var(--blue-border);font-family:inherit;font-size:.82rem;font-weight:600;color:var(--blue);background:#fff;cursor:pointer;margin-bottom:14px;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%230a1f6e' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+.sd-rank-sel:focus{outline:none;border-color:var(--blue);}
+.sdt-up .sdt-delta { color: var(--green); }
+.sdt-down .sdt-delta { color: var(--red); }
+.sdt-same .sdt-delta { color: var(--g400); }
+.sdt-delta { min-width: 52px; text-align: right; padding: 4px 10px; border-radius: 20px; font-size: .88rem; font-weight: 800; }
+.sdt-up   .sdt-delta { background: #dcfce7; }
+.sdt-down .sdt-delta { background: #fee2e2; }
+.sdt-same .sdt-delta { background: var(--g100); }
+
+/* ══ PERFORMANCE GAUGE ══ */
+.sd-gauge {
+  padding: 8px 0;
+}
+.sd-gauge-track {
+  display: flex; border-radius: 30px; overflow: hidden;
+  height: 26px; position: relative; margin-bottom: 8px;
+}
+.sgg-seg {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  font-size: .58rem; font-weight: 700; color: rgba(255,255,255,.9);
+}
+.sgg-ni  { background: #ef4444; }
+.sgg-avg { background: #f97316; }
+.sgg-good{ background: #eab308; }
+.sgg-vg  { background: #22c55e; }
+.sgg-exc { background: #16a34a; }
+.sd-gauge-ptr {
+  position: absolute; top: -6px;
+  width: 5px; height: 38px;
+  background: var(--g800); border-radius: 3px;
+  transform: translateX(-50%);
+  transition: left .9s cubic-bezier(.34,1.56,.64,1);
+  box-shadow: 0 2px 6px rgba(0,0,0,.3);
+}
+.sd-gauge-ptr::before {
+  content: '▼'; position: absolute; top: -14px; left: 50%;
+  transform: translateX(-50%); font-size: .7rem; color: var(--g800);
+}
+.sd-gauge-labels {
+  display: flex; justify-content: space-between;
+  font-size: .6rem; color: var(--g400); font-weight: 600; padding: 0 2px;
+  margin-bottom: 14px;
+}
+.sd-gauge-score-wrap { text-align: center; }
+.sd-gauge-score { font-size: 2rem; font-weight: 800; color: var(--blue); line-height: 1; }
+.sd-gauge-cat { font-size: .78rem; color: var(--g600); font-weight: 600; margin-top: 4px; }
+
+/* ══ CLASS DISTRIBUTION ══ */
+.sd-dist {
+  padding: 8px 0;
+}
+.sd-dist-bar-outer {
+  position: relative; height: 32px;
+  background: linear-gradient(90deg,#ef4444 0%,#f97316 25%,#eab308 50%,#22c55e 75%,#16a34a 100%);
+  border-radius: 30px; margin: 12px 0 8px;
+}
+.sd-dist-marker {
+  position: absolute; top: 50%; transform: translate(-50%,-50%);
+  width: 30px; height: 30px;
+  background: #fff; border-radius: 50%;
+  border: 3px solid var(--blue);
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .52rem; font-weight: 800; color: var(--blue);
+  transition: left .8s ease;
+}
+.sd-dist-range {
+  display: flex; justify-content: space-between;
+  font-size: .7rem; color: var(--g400); margin-bottom: 12px;
+}
+.sd-dist-info {
+  background: var(--blue-pale);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: .8rem;
+  line-height: 1.7;
+  color: var(--g600);
+}
+.sd-dist-info strong { color: var(--blue); }
+.sd-dist-tag { font-size: .76rem; font-weight: 700; }
+.sdd-above { color: var(--green); }
+.sdd-below { color: var(--red); }
+
+/* ══ INSIGHTS ══ */
+.sd-insight-list { display: flex; flex-direction: column; gap: 10px; }
+.sd-insight {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 13px 15px; border-radius: 12px; border-left: 4px solid;
+}
+.sdi-green  { background: #f0fdf4;        border-color: var(--green); }
+.sdi-blue   { background: var(--blue-pale); border-color: var(--blue); }
+.sdi-orange { background: #fff7ed;         border-color: var(--org); }
+.sdi-purple { background: #f5f3ff;         border-color: #7c3aed; }
+.sdi-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 2px; }
+.sdi-content strong { display: block; font-size: .84rem; font-weight: 700; color: var(--g800); margin-bottom: 2px; }
+.sdi-content span { font-size: .78rem; color: var(--g600); line-height: 1.4; }
+
+/* ══ GOAL TRACKER ══ */
+.sd-goal-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+}
+.sd-goal-title { font-size: .85rem; font-weight: 700; color: var(--g800); }
+.sd-goal-edit-btn {
+  font-size: .76rem; color: var(--blue); font-weight: 700;
+  background: none; border: none; cursor: pointer; font-family: inherit;
+  padding: 4px 10px; border-radius: 8px; background: var(--blue-pale);
+}
+.sd-goal-info {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.sd-goal-current { font-size: 1.6rem; font-weight: 800; color: var(--blue); line-height: 1; }
+.sd-goal-current small { font-size: .75rem; color: var(--g400); font-weight: 500; display: block; margin-top: 2px; }
+.sd-goal-target { font-size: .8rem; color: var(--g600); font-weight: 600; text-align: right; }
+.sd-goal-bar-bg {
+  height: 16px; background: var(--g100); border-radius: 8px;
+  overflow: hidden; position: relative; margin: 8px 0;
+}
+.sd-goal-bar-fill {
+  height: 100%; border-radius: 8px;
+  background: linear-gradient(90deg, var(--blue), var(--blue-lt));
+  transition: width .9s cubic-bezier(.34,1.56,.64,1);
+}
+.sd-goal-bar-fill.goal-met {
+  background: linear-gradient(90deg, var(--green), #4ade80);
+}
+.sd-goal-labels {
+  display: flex; justify-content: space-between;
+  font-size: .68rem; color: var(--g400); font-weight: 600;
+}
+.sd-goal-msg {
+  margin-top: 12px; padding: 10px 14px;
+  border-radius: 10px; font-size: .82rem; font-weight: 600; line-height: 1.4;
+}
+.sgm-achieved { background: #f0fdf4; color: #166534; }
+.sgm-close    { background: #fefce8; color: #854d0e; }
+.sgm-work     { background: var(--blue-pale); color: var(--blue); }
+.sd-goal-input-row {
+  display: flex; gap: 8px; margin-top: 12px;
+}
+.sd-goal-input {
+  flex: 1; padding: 9px 13px;
+  border: 1.5px solid var(--blue-border); border-radius: var(--rs);
+  font-size: .85rem; font-family: inherit; color: var(--g800);
+}
+.sd-goal-set-btn {
+  padding: 9px 18px; background: var(--blue); color: #fff;
+  border: none; border-radius: var(--rs); font-size: .82rem;
+  font-weight: 700; cursor: pointer; font-family: inherit;
+}
+
+/* ── No data states ── */
+.sd-no-data {
+  text-align: center; padding: 28px 16px;
+  color: var(--g400); font-size: .84rem; line-height: 1.8;
+}
+.sd-no-data-icon { font-size: 2rem; margin-bottom: 8px; }
+
+
+/* ── TEACHER ANALYTICS ── */
+/* ── TEACHER ANALYTICS STYLES ── */
+.t-filterbar{position:sticky;top:54px;z-index:90;background:rgba(255,255,255,.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--blue-border);padding:10px var(--p);}
+.t-filter-inner{display:flex;flex-wrap:wrap;gap:10px;align-items:center;max-width:1100px;margin:0 auto;}
+.t-filter-group{display:flex;align-items:center;gap:8px;}
+.t-filter-label{font-size:.72rem;font-weight:700;color:var(--g600);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;}
+.t-filter-btns{display:flex;gap:4px;}
+.tf-btn{padding:5px 13px;border-radius:20px;font-size:.78rem;font-weight:700;cursor:pointer;border:1.5px solid var(--blue-border);background:#fff;color:var(--blue);transition:all .18s;font-family:inherit;}
+.tf-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+.t-search-wrap{flex:1;min-width:160px;}
+.t-search{width:100%;padding:7px 14px;border:1.5px solid var(--blue-border);border-radius:20px;font-size:.82rem;font-family:inherit;background:#fff;color:var(--g800);}
+.t-search:focus{outline:none;border-color:var(--blue);}
+.t-select{width:100%;padding:9px 14px;border:1.5px solid var(--blue-border);border-radius:var(--rs);font-size:.85rem;font-family:inherit;background:#fff;color:var(--g800);margin-bottom:4px;}
+.t-select:focus{outline:none;border-color:var(--blue);}
+.t-dash{padding:var(--p);max-width:1100px;margin:0 auto;width:100%;}
+.t-section-title{font-size:.78rem;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:1px;margin:20px 0 10px;padding-left:2px;border-left:3px solid var(--blue);padding-left:10px;}
+
+/* Insight strip */
+.insight-strip{display:flex;flex-direction:column;gap:8px;margin-bottom:4px;}
+.insight-card{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-radius:12px;border-left:4px solid;}
+.ic-green{background:#f0fdf4;border-color:var(--green);}
+.ic-orange{background:#fff7ed;border-color:var(--org);}
+.ic-red{background:#fef2f2;border-color:var(--red);}
+.ic-blue{background:var(--blue-pale);border-color:var(--blue);}
+.ic-icon{font-size:1.2rem;flex-shrink:0;margin-top:1px;}
+.ic-text strong{display:block;font-size:.85rem;font-weight:700;color:var(--g800);}
+.ic-text span{font-size:.78rem;color:var(--g600);}
+
+/* Summary grid */
+.summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px;}
+.sum-card{background:#fff;border-radius:var(--r);padding:14px 16px;box-shadow:var(--sh-sm);border:1px solid var(--g100);text-align:center;}
+.sum-card .sv{font-size:1.6rem;font-weight:800;color:var(--blue);line-height:1.1;}
+.sum-card .sl{font-size:.7rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.4px;margin-top:4px;}
+.sum-card.s-pass .sv{color:var(--green);}
+.sum-card.s-fail .sv{color:var(--red);}
+.sum-card.s-high .sv{color:#7c3aed;}
+
+/* Quadrant grid */
+.quad-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.quad{border-radius:var(--rs);padding:14px;border:1px solid var(--g100);}
+.quad.q-excellent{background:#f0fdf4;border-color:#86efac;}
+.quad.q-monitor{background:#fff7ed;border-color:#fed7aa;}
+.quad.q-progress{background:var(--blue-pale);border-color:var(--blue-border);}
+.quad.q-risk{background:#fef2f2;border-color:#fca5a5;}
+.quad-title{font-size:.78rem;font-weight:800;margin-bottom:8px;}
+.q-excellent .quad-title{color:var(--green);}
+.q-monitor .quad-title{color:var(--org);}
+.q-progress .quad-title{color:var(--blue);}
+.q-risk .quad-title{color:var(--red);}
+.quad-student{font-size:.78rem;color:var(--g800);padding:2px 0;border-bottom:1px solid rgba(0,0,0,.05);}
+.quad-student:last-child{border-bottom:none;}
+
+/* Heatmap */
+.heatmap-table{border-collapse:collapse;font-size:.78rem;min-width:500px;width:100%;}
+.heatmap-table th{padding:8px 10px;background:var(--blue);color:#fff;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;position:sticky;top:0;}
+.heatmap-table td{padding:7px 10px;border-bottom:1px solid var(--g100);white-space:nowrap;font-weight:600;font-size:.8rem;}
+.heatmap-table tr:hover td{filter:brightness(.95);}
+.hm-green{background:#dcfce7;color:#166534;}
+.hm-yellow{background:#fef9c3;color:#854d0e;}
+.hm-red{background:#fee2e2;color:#991b1b;}
+.hm-na{background:var(--g50);color:var(--g400);}
+
+/* Rank chip */
+.rk-chip{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:.72rem;font-weight:800;}
+.rk-1{background:#fbbf24;color:#78350f;}
+.rk-2{background:#cbd5e1;color:#334155;}
+.rk-3{background:#d97706;color:#fff;}
+.rk-n{background:var(--g100);color:var(--g600);}
+
+/* Risk chips */
+.risk-high{background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:700;}
+.risk-med{background:#ffedd5;color:#9a3412;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:700;}
+.risk-low{background:#dcfce7;color:#166534;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:700;}
+
+/* Attention list */
+.att-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--g100);}
+.att-item:last-child{border-bottom:none;}
+.att-name{font-size:.83rem;font-weight:700;color:var(--g800);}
+.att-sub{font-size:.72rem;color:var(--g400);}
+
+/* Difficulty chips */
+.diff-easy{background:#dcfce7;color:#166534;padding:2px 10px;border-radius:6px;font-size:.72rem;font-weight:700;}
+.diff-med{background:#fef9c3;color:#854d0e;padding:2px 10px;border-radius:6px;font-size:.72rem;font-weight:700;}
+.diff-hard{background:#fee2e2;color:#991b1b;padding:2px 10px;border-radius:6px;font-size:.72rem;font-weight:700;}
+
+/* Class leaderboard */
+.lb-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--g100);}
+.lb-item:last-child{border-bottom:none;}
+.lb-rank{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:800;flex-shrink:0;}
+.lb-1{background:#fbbf24;color:#78350f;}
+.lb-2{background:#cbd5e1;color:#1e293b;}
+.lb-3{background:#d97706;color:#fff;}
+.lb-info{flex:1;}
+.lb-name{font-size:.9rem;font-weight:700;color:var(--g800);}
+.lb-avg{font-size:.78rem;color:var(--g400);}
+.lb-bar-wrap{width:100px;height:8px;background:var(--g100);border-radius:4px;overflow:hidden;}
+.lb-bar{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--blue),var(--blue-lt));}
+
+/* Trend icons */
+.trend-imp{color:var(--green);font-size:.9rem;font-weight:700;}
+.trend-dec{color:var(--red);font-size:.9rem;font-weight:700;}
+.trend-stb{color:var(--g400);font-size:.9rem;font-weight:700;}
+
+/* Consistent chips */
+.cons-great{background:#dcfce7;color:#166534;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:700;}
+.cons-ok{background:#fef9c3;color:#854d0e;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:700;}
+.cons-bad{background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:700;}
+
+@media(min-width:640px){
+  .summary-grid{grid-template-columns:repeat(6,1fr);}
+  .insight-strip{flex-direction:row;flex-wrap:wrap;}
+  .insight-card{flex:1;min-width:200px;}
+}
+
+/* ── LAST UPDATED BAR ── */
+.lu-bar{background:#fff;border-bottom:1px solid var(--g200);padding:8px var(--p);}
+.lu-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:8px;}
+.lu-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.lu-ok .lu-dot{background:var(--green);}
+.lu-warn .lu-dot{background:var(--org);}
+.lu-text{font-size:.78rem;color:var(--g600);}
+.lu-text strong{font-weight:700;color:var(--g800);}
+.lu-chip{margin-left:auto;padding:2px 10px;border-radius:20px;font-size:.68rem;font-weight:700;}
+.lu-ok .lu-chip{background:var(--green-lt);color:var(--green);}
+.lu-warn .lu-chip{background:var(--org-lt);color:var(--org);}
+/* ── subject filter pills ── */
+.sf-pill{padding:5px 14px;border-radius:20px;font-size:.76rem;font-weight:700;cursor:pointer;border:1.5px solid var(--blue-border);background:#fff;color:var(--blue);transition:all .18s;font-family:inherit;}
+.sf-pill.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+.sf-pill:only-child{opacity:1;cursor:default;}
+.sf-pills{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+
+/* ── RANK MOVEMENT TRACKER ── */
+.rank-move{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;margin-top:12px;font-size:.83rem;font-weight:600;}
+.rm-up{background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0;}
+.rm-down{background:var(--red-lt);color:var(--red);border:1px solid #fca5a5;}
+.rm-same{background:var(--g100);color:var(--g600);border:1px solid var(--g200);}
+.rm-icon{font-size:1.1rem;}
+
+/* ── ACHIEVEMENT BADGES ── */
+.badge-row{display:flex;flex-wrap:wrap;gap:10px;padding:4px 0;}
+.ach-badge{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;border:1px solid;flex:1;min-width:150px;}
+.ach-badge .ab-icon{font-size:1.4rem;flex-shrink:0;}
+.ab-text strong{display:block;font-size:.8rem;font-weight:700;color:var(--g800);}
+.ab-text span{font-size:.7rem;color:var(--g600);}
+.ab-gold{background:#fef9c3;border-color:#fbbf24;}
+.ab-green{background:var(--green-lt);border-color:#4ade80;}
+.ab-blue{background:var(--blue-pale);border-color:var(--blue-border);}
+.ab-purple{background:#f5f3ff;border-color:#c4b5fd;}
+.ab-orange{background:var(--org-lt);border-color:#fdba74;}
+.ab-red{background:var(--red-lt);border-color:#fca5a5;}
+.no-badges{text-align:center;padding:20px;color:var(--g400);font-size:.83rem;}
+
+/* ══════════════════════════════════════════
+   POLISH LAYER — Mobile + UI + Performance
+══════════════════════════════════════════ */
+
+/* ── Global resets for mobile ── */
+@media(max-width:400px){body{font-size:14px;}:root{--p:12px;}}
+html{scroll-behavior:smooth;}
+
+/* ── Prevent iOS input zoom ── */
+@media(max-width:480px){
+  .fg input{font-size:16px!important;padding:14px!important;}
+}
+
+/* ── Touch targets on all buttons ── */
+button,.l-tab,.l-btn,.f-btn,.tf-btn,.stab,.lo-btn{
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+.l-btn{min-height:48px!important;}
+
+/* ── Card depth + hover lift ── */
+.card,.sd-card{
+  box-shadow:0 1px 3px rgba(0,0,0,.05),0 4px 16px rgba(10,31,110,.08)!important;
+  transition:box-shadow .2s ease,transform .15s ease!important;
+}
+.card:hover,.sd-card:hover{
+  box-shadow:0 2px 6px rgba(0,0,0,.07),0 10px 28px rgba(10,31,110,.13)!important;
+  transform:translateY(-1px);
+}
+@media(max-width:700px){.card:hover,.sd-card:hover{transform:none;}}
+
+/* Summary + insight card hover */
+.sum-card{transition:box-shadow .2s,transform .15s;}
+.sum-card:hover{box-shadow:0 4px 20px rgba(10,31,110,.12)!important;transform:translateY(-1px);}
+@media(max-width:640px){.sum-card:hover{transform:none;}}
+.insight-card{transition:box-shadow .18s;}
+.insight-card:hover{box-shadow:0 4px 16px rgba(10,31,110,.1);}
+
+/* ── Section title refinement ── */
+.t-section-title{
+  display:flex!important;align-items:center;gap:8px;
+  font-size:.71rem!important;letter-spacing:1.2px!important;
+  margin:26px 0 12px!important;
+}
+.t-section-title::after{
+  content:'';flex:1;height:1px;background:var(--g200);margin-left:4px;
+}
+.sd-section-label{font-size:.71rem!important;letter-spacing:1.1px!important;}
+
+/* ── Typography hierarchy ── */
+.ct{font-size:.93rem!important;font-weight:700!important;letter-spacing:-.1px;}
+.csub{font-size:.74rem!important;color:var(--g400)!important;margin-bottom:14px!important;}
+.sdc-title{font-size:.93rem!important;font-weight:700!important;}
+
+/* ── Tables: striped + sticky header + hover ── */
+.etable th{
+  position:sticky;top:0;z-index:2;
+  background:var(--blue)!important;
+  color:rgba(255,255,255,.92)!important;
+  font-size:.67rem!important;letter-spacing:.5px;
+  padding:10px 12px!important;border-bottom:none!important;
+}
+.etable td{padding:10px 12px!important;font-size:.81rem!important;transition:background .1s;}
+.etable tbody tr:nth-child(even) td{background:var(--g50);}
+.etable tbody tr:hover td{background:var(--blue-pale)!important;}
+.heatmap-table th{position:sticky;top:0;z-index:2;}
+.heatmap-table tbody tr:nth-child(even) td{background:rgba(248,250,252,.7);}
+.sd-table th{position:sticky;top:0;z-index:2;}
+.sd-table tbody tr:nth-child(even) td{background:#fafbff;}
+.sd-table tbody tr:hover td{background:var(--blue-pale)!important;}
+
+/* ── Filter bar touch targets ── */
+.tf-btn{min-height:34px;font-size:.78rem!important;padding:6px 14px!important;}
+.tf-btn:hover:not(.active){background:var(--blue-pale);border-color:var(--blue-border);}
+.tf-btn.active{box-shadow:0 2px 8px rgba(10,31,110,.2);}
+.t-filter-btns{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;}
+.t-filter-btns::-webkit-scrollbar{display:none;}
+.t-search{min-height:34px;}
+.lo-btn{transition:background .18s;}
+.lo-btn:hover{background:rgba(255,255,255,.25)!important;}
+@media(max-width:360px){.u-info{display:none;}.tb-brand small{display:none;}}
+
+/* ── Charts: fully fluid ── */
+.cw,.cw-sm,.sd-chart-wrap,.sd-chart-wrap-sm{width:100%;min-width:0;}
+.cw canvas,.cw-sm canvas,.sd-chart-wrap canvas,.sd-chart-wrap-sm canvas{max-width:100%;}
+@media(min-width:700px){
+  .cw{height:240px!important;}
+  .sd-chart-wrap{height:260px!important;}
+}
+@media(max-width:500px){
+  .cw{height:185px!important;}.cw-sm{height:170px!important;}
+  .sd-chart-wrap{height:195px!important;}.sd-chart-wrap-sm{height:170px!important;}
+}
+.chart-loading{opacity:.4;pointer-events:none;}
+
+/* ── Fade-in animation ── */
+@keyframes vva-fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.card,.sd-card,.sd-sum{animation:vva-fadeUp .22s ease both;}
+.insight-strip>.insight-card:nth-child(1){animation:vva-fadeUp .2s .02s ease both;}
+.insight-strip>.insight-card:nth-child(2){animation:vva-fadeUp .2s .05s ease both;}
+.insight-strip>.insight-card:nth-child(3){animation:vva-fadeUp .2s .08s ease both;}
+.insight-strip>.insight-card:nth-child(4){animation:vva-fadeUp .2s .11s ease both;}
+.insight-strip>.insight-card:nth-child(5){animation:vva-fadeUp .2s .14s ease both;}
+.summary-grid>.sum-card:nth-child(1){animation:vva-fadeUp .2s .03s ease both;}
+.summary-grid>.sum-card:nth-child(2){animation:vva-fadeUp .2s .06s ease both;}
+.summary-grid>.sum-card:nth-child(3){animation:vva-fadeUp .2s .09s ease both;}
+.summary-grid>.sum-card:nth-child(4){animation:vva-fadeUp .2s .12s ease both;}
+.summary-grid>.sum-card:nth-child(5){animation:vva-fadeUp .2s .15s ease both;}
+.summary-grid>.sum-card:nth-child(6){animation:vva-fadeUp .2s .18s ease both;}
+.sd-sum-grid>.sd-sum:nth-child(1){animation:vva-fadeUp .2s .03s ease both;}
+.sd-sum-grid>.sd-sum:nth-child(2){animation:vva-fadeUp .2s .07s ease both;}
+.sd-sum-grid>.sd-sum:nth-child(3){animation:vva-fadeUp .2s .11s ease both;}
+.sd-sum-grid>.sd-sum:nth-child(4){animation:vva-fadeUp .2s .15s ease both;}
+/* Pause animation when re-render triggered to allow restart */
+.anim-reset{animation:none!important;}
+
+/* ── Hero mobile adjustments ── */
+@media(max-width:420px){
+  .sh-top{flex-direction:column;gap:10px;}
+  .sh-badge-wrap{align-self:flex-start;}
+  .sh-avatar{width:44px!important;height:44px!important;font-size:1.1rem!important;}
+  .sh-name{font-size:1rem!important;}
+}
+
+/* ── Rank hero ── */
+.sdrh-num{font-size:3rem!important;letter-spacing:-2px;}
+
+/* ── Quadrant mobile ── */
+@media(max-width:500px){.quad-grid{grid-template-columns:1fr!important;}}
+.quad{transition:box-shadow .18s;}
+.quad:hover{box-shadow:0 4px 12px rgba(10,31,110,.1);}
+
+/* ── Achievement badges mobile ── */
+@media(max-width:420px){.ach-badge{min-width:100%!important;}}
+
+/* ── Leaderboard + attention items ── */
+.lb-item{transition:background .12s;border-radius:var(--rs);padding:10px 4px!important;}
+.lb-item:hover{background:var(--blue-pale);}
+.att-item{padding:11px 0!important;transition:background .12s;}
+.att-item:hover{background:var(--blue-pale);border-radius:var(--rs);padding-left:6px!important;padding-right:6px!important;}
+
+/* ── Trend/insight text sizing ── */
+.ic-text strong{font-size:.84rem!important;}
+.ic-text span{font-size:.76rem!important;line-height:1.5;}
+@media(max-width:400px){
+  .sd-trend-item{padding:10px 12px!important;gap:8px!important;}
+  .sdt-title{font-size:.8rem!important;}
+  .sdt-desc{font-size:.7rem!important;}
+}
+
+/* ── Horizontal scroll fade hint ── */
+.t-scroll{position:relative;}
+
+/* ── Mobile card padding ── */
+@media(max-width:400px){.card{padding:13px!important;}.sd-card{padding:13px!important;}}
+
+/* ── Progress tracker select ── */
+.t-select{min-height:40px;touch-action:manipulation;}
+
+/* ── t-dash bottom padding ── */
+.t-dash{padding-bottom:48px!important;}
+
+/* ══════════════════════════════════════════
+   ENHANCEMENT LAYER — v2 polish
+══════════════════════════════════════════ */
+
+/* ── Filter bar: better wrapping on tiny screens ── */
+.t-filterbar{padding:8px var(--p)!important;}
+.t-filter-inner{gap:8px!important;}
+.t-filter-group{flex-wrap:nowrap;gap:6px!important;}
+@media(max-width:480px){
+  .t-filter-inner{flex-direction:column;align-items:flex-start;}
+  .t-filter-group{width:100%;}
+  .t-filter-btns{width:100%;justify-content:flex-start;}
+  .t-search-wrap{width:100%;}
+  .tf-btn{flex:1;text-align:center;padding:7px 8px!important;font-size:.75rem!important;}
+}
+
+/* ── lu-bar: make it sticky too so filter bar stacks correctly ── */
+.lu-bar{position:sticky;top:54px;z-index:95;border-bottom:1px solid var(--g200);}
+.t-filterbar{top:calc(54px + 37px)!important;} /* topbar + lu-bar */
+/* On mobile the lu-bar may wrap to 2 lines; JS will fix this dynamically */
+
+/* ── Topbar: tighter on tiny screens ── */
+@media(max-width:380px){
+  .lo-btn{padding:5px 9px!important;font-size:.68rem!important;}
+  .tb-brand span{font-size:.8rem!important;}
+}
+
+/* ── Cards: consistent padding system ── */
+.card{padding:18px!important;}
+@media(min-width:700px){.card{padding:20px!important;}}
+@media(max-width:380px){.card,.sd-card{padding:12px!important;}}
+
+/* ── Section titles: better spacing ── */
+.t-section-title{margin:22px 0 10px!important;}
+.sd-section-label{margin:20px 0 9px!important;}
+
+/* ── Summary grid: 2-col on tiny, 3-col on small, 6-col on wide ── */
+@media(max-width:340px){.summary-grid{grid-template-columns:1fr 1fr!important;}}
+
+/* ── Tables: font size protection on mobile ── */
+@media(max-width:400px){
+  .etable td{font-size:.77rem!important;padding:8px 9px!important;}
+  .etable th{font-size:.62rem!important;padding:8px 9px!important;}
+  .heatmap-table td,.heatmap-table th{font-size:.72rem!important;padding:6px 8px!important;}
+  .sd-table td,.sd-table th{font-size:.76rem!important;padding:8px 10px!important;}
+}
+
+/* ── Chart container: layout padding for label breathing room ── */
+.cw canvas,.cw-sm canvas{display:block;}
+
+/* ── Insight strip on small screens ── */
+@media(max-width:500px){
+  .insight-card{padding:10px 13px!important;gap:10px!important;}
+  .ic-text strong{font-size:.8rem!important;}
+}
+
+/* ── S-dash: full-width on wide screens ── */
+@media(min-width:860px){.s-dash{max-width:1100px!important;}}
+
+/* ── Input: prevent zoom on iOS across all inputs ── */
+@media(max-width:480px){
+  input,select,textarea{font-size:16px!important;}
+  .t-search,.t-select{font-size:16px!important;}
+}
+
+/* ── Heatmap table: consistent name column ── */
+.heatmap-table td:first-child{font-weight:700;color:var(--g800)!important;}
+.etable td:first-child{font-weight:600;}
+
+/* ── Two-col cards: ensure equal height on desktop ── */
+@media(min-width:700px){
+  .two-col .card{height:auto;}
+  .sd-two-col .sd-card{height:auto;}
+}
+
+/* ── Smooth scrolling within scroll containers ── */
+.t-scroll{scroll-snap-type:none;-webkit-overflow-scrolling:touch;}
+
+/* ── Chart load shimmer (applied before chart renders) ── */
+.chart-loading::after{
+  content:''; display:block; width:100%; height:100%;
+  border-radius:var(--rs);
+  background:linear-gradient(90deg,var(--g100) 25%,var(--g50) 50%,var(--g100) 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.4s infinite;
+}
+@keyframes shimmer{from{background-position:200% 0;}to{background-position:-200% 0;}}
+
+/* ── Button active-state depth ── */
+.tf-btn:active{transform:scale(.96);transition:transform .08s;}
+.l-btn:hover{filter:brightness(1.08);box-shadow:0 4px 16px rgba(10,31,110,.3);}
+.l-btn:active{transform:scale(.98)!important;}
+
+/* ── Rank move card on mobile ── */
+@media(max-width:400px){.rank-move{font-size:.78rem!important;padding:9px 12px!important;}}
+
+/* ── Quad grid: hover effect ── */
+.quad{transition:box-shadow .18s,transform .15s;}
+.quad:hover{box-shadow:0 4px 14px rgba(10,31,110,.1);transform:translateY(-1px);}
+@media(max-width:500px){.quad:hover{transform:none;}}
+
+/* ── Risk/cons chips: consistent height ── */
+.risk-high,.risk-med,.risk-low,.cons-great,.cons-ok,.cons-bad{display:inline-flex;align-items:center;height:22px;}
+
+/* ── Improve t-dash padding on mobile to not crowd filter bar ── */
+.t-dash{padding-top:var(--p)!important;}
+
+/* ── Goal tracker input touch target ── */
+.sd-goal-input{min-height:44px;}
+.sd-goal-set-btn{min-height:44px;}
+
+/* ══ LOADING SKELETONS ══ */
+@keyframes sk-wave{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+.sk-base{
+  background:linear-gradient(90deg,var(--g100) 25%,var(--g50) 50%,var(--g100) 75%);
+  background-size:300% 100%;
+  animation:sk-wave 1.5s ease-in-out infinite;
+  border-radius:8px;
+}
+.sk-block{height:14px;margin-bottom:8px;}
+.sk-block.h8{height:8px;} .sk-block.h20{height:20px;} .sk-block.h40{height:40px;} .sk-block.h60{height:60px;}
+.sk-block.w50{width:50%;} .sk-block.w70{width:70%;} .sk-block.w40{width:40%;} .sk-block.w80{width:80%;}
+.sk-chart{height:200px;border-radius:10px;}
+.sk-card{background:#fff;border-radius:var(--r);padding:18px;box-shadow:var(--sh-sm);border:1px solid var(--g100);margin-bottom:16px;}
+.sk-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+@media(min-width:640px){.sk-grid{grid-template-columns:repeat(6,1fr);}}
+.sk-sum{background:#fff;border-radius:var(--r);padding:14px;box-shadow:var(--sh-sm);}
+.sk-insight-row{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+@media(min-width:640px){.sk-insight-row{flex-direction:row;flex-wrap:wrap;}}
+.sk-insight{background:#fff;border-radius:12px;padding:14px 16px;flex:1;min-width:180px;border-left:4px solid var(--g200);}
+.sk-two-col{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:16px;}
+@media(min-width:900px){.sk-two-col{grid-template-columns:1fr 1fr;}}
+
+/* ══ EXPORT BUTTONS ══ */
+.export-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;}
+.export-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 14px;border-radius:8px;font-size:.78rem;font-weight:700;
+  cursor:pointer;border:1.5px solid;font-family:inherit;
+  transition:all .18s;touch-action:manipulation;user-select:none;
+  text-decoration:none;
+}
+.export-btn-csv{background:#f0fdf4;color:var(--green);border-color:#86efac;}
+.export-btn-csv:hover{background:var(--green);color:#fff;border-color:var(--green);}
+.export-btn-pdf{background:var(--blue-pale);color:var(--blue);border-color:var(--blue-border);}
+.export-btn-pdf:hover{background:var(--blue);color:#fff;border-color:var(--blue);}
+.export-btn:active{transform:scale(.96);}
+.export-label{font-size:.68rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.6px;flex-basis:100%;margin-bottom:2px;}
+@media(max-width:400px){.export-btn{width:100%;justify-content:center;}}
+
+/* ══ PRINT STYLES (for PDF export) ══ */
+@media print{
+  body *{visibility:hidden!important;}
+  #printZone,#printZone *{visibility:visible!important;}
+  #printZone{position:fixed!important;top:0;left:0;width:100%;background:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;color:#111;}
+  #printZone h2{font-size:15px;margin-bottom:8px;color:#0a1f6e;}
+  #printZone p{font-size:10px;color:#6b7280;margin-bottom:12px;}
+  #printZone table{width:100%;border-collapse:collapse;font-size:11px;}
+  #printZone th{background:#0a1f6e!important;color:#fff!important;padding:7px 10px;text-align:left;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  #printZone td{padding:6px 10px;border-bottom:1px solid #e5e7eb;}
+  #printZone tr:nth-child(even) td{background:#f8fafc!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  #printZone .pr-badge{padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;}
+}
+
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="lp" id="loginPage">
+  <div class="lh">
+    <img src="https://velammalnexus.com/wp-content/uploads/2023/10/velammal-nexus-logo-2.png" alt="V" onerror="this.style.display='none'">
+    <div class="lh-t"><h1>Velammal Results Portal</h1><p>Academic Performance · 2025–26</p></div>
+  </div>
+  <div class="lb">
+    <div class="lc">
+      <div class="l-tabs">
+        <button class="l-tab active" onclick="switchTab('student')">Student / Parent</button>
+        <button class="l-tab" onclick="switchTab('teacher')">Teacher</button>
+      </div>
+      <div id="sForm">
+        <h2 class="l-title">View Your Results</h2>
+        <p class="l-sub">Enter your exam number and parent's phone</p>
+        <div class="fg"><label>Exam Number</label><input type="text" id="examNo" placeholder="e.g. 1001" inputmode="numeric"></div>
+        <div class="fg"><label>Parent's Phone Number</label><input type="tel" id="phone" placeholder="10-digit number, without country code" inputmode="numeric"></div>
+        <button class="l-btn" id="sBtn" onclick="studentLogin()">Login</button>
+        <div class="l-err" id="sErr">Invalid exam number or phone number.</div>
+        <div class="l-hint">For any issues with login or discrepancy in marks, please contact your class teacher.</div>
+      </div>
+      <div id="tForm" class="hidden">
+        <h2 class="l-title">Teacher Dashboard</h2>
+        <p class="l-sub">Sign in with your Teacher ID and password</p>
+        <div class="fg"><label>Teacher ID</label><input type="text" id="tUser" placeholder="e.g. 7374" inputmode="numeric" autocomplete="username"></div>
+        <div class="fg"><label>Password</label><input type="password" id="tPass" placeholder="Password" autocomplete="current-password"></div>
+        <button class="l-btn" id="tBtn" onclick="teacherLogin()">Login</button>
+        <div class="l-err" id="tErr">Invalid Teacher ID or password.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STUDENT DASHBOARD -->
+<div class="dash" id="sDash">
+  <div class="topbar">
+    <div class="tb-l">
+      <img src="https://velammalnexus.com/wp-content/uploads/2023/10/velammal-nexus-logo-2.png" alt="V" onerror="this.style.display='none'">
+      <div class="tb-brand"><span>Velammal Results</span><small>2025–26</small></div>
+    </div>
+    <div class="tb-r">
+      <div class="u-badge">
+        <div class="u-av" id="sAv">S</div>
+        <div class="u-info"><span id="sName"></span><small id="sMeta" style="color:var(--gold-lt);font-size:.65rem;letter-spacing:.3px"></small></div>
+      </div>
+      <button class="lo-btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="s-dash">
+
+    <!-- HERO BANNER -->
+    <div class="s-hero" id="sHero">
+      <div class="sh-top">
+        <div class="sh-left">
+          <div class="sh-avatar" id="sHeroAv">S</div>
+          <div class="sh-info">
+            <div class="sh-name" id="sHeroName"></div>
+            <div class="sh-meta" id="sHeroMeta"></div>
+          </div>
+        </div>
+        <div class="sh-badge-wrap">
+          <div class="sh-perf-badge" id="sPerfBadge"></div>
+        </div>
+      </div>
+      <div class="sh-stats" id="shStats"></div>
+    </div>
+
+    <!-- STICKY SUBJECT FILTER BAR -->
+    <div id="sSubjectBar" style="position:sticky;top:54px;z-index:99;background:var(--cream);padding:8px 0;margin-bottom:4px;"></div>
+
+    <!-- SECTION: OVERVIEW CARDS -->
+    <div class="sd-section-label">📌 Your Overview</div>
+    <div class="sd-sum-grid" id="sSumGrid"></div>
+
+    <!-- SECTION: MARKS TABLE -->
+    <div class="sd-section-label">📋 Your Marks</div>
+    <div class="sd-card">
+      <div class="sdc-head">
+        <div class="sdc-title">Exam-wise Marks</div>
+        <div class="sdc-sub">Your score vs class average with percentage change</div>
+      </div>
+      <div class="t-scroll">
+        <table class="sd-table" id="sMarksTable">
+          <thead>
+            <tr>
+              <th>Exam</th>
+              <th>Max</th>
+              <th>Your Marks</th>
+              <th>Your %</th>
+              <th>Class Avg</th>
+              <th>Rank</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SECTION: ACHIEVEMENT BADGES -->
+    <div class="sd-section-label">🏅 Achievement Badges</div>
+    <div class="sd-card">
+      <div class="sdc-head">
+        <div class="sdc-title">Your Earned Badges</div>
+        <div class="sdc-sub">Awarded automatically based on your performance</div>
+      </div>
+      <div id="sBadgesWrap"></div>
+    </div>
+
+    <!-- SECTION: IMPROVEMENT TREND -->
+    <div class="sd-section-label">🔄 Improvement Trend</div>
+    <div class="sd-card">
+      <div class="sdc-head">
+        <div class="sdc-title">Exam-by-Exam Changes</div>
+        <div class="sdc-sub">How your score changed between consecutive exams · in the order they were conducted</div>
+      </div>
+      <div id="sTrendWrap"></div>
+    </div>
+
+        <div class="sd-section-label">📊 Exam Category View</div>
+    <div class="sd-two-col">
+      <div class="sd-card">
+        <div class="sdc-head">
+          <div class="sdc-title">DRT Performance</div>
+          <div class="sdc-sub" id="sDrtChartSub">Class tests · out of 15</div>
+        </div>
+        <div class="sd-chart-wrap-sm" id="sDrtChartWrap"></div>
+      </div>
+      <div class="sd-card">
+        <div class="sdc-head">
+          <div class="sdc-title">Main Exams</div>
+          <div class="sdc-sub" id="sMainChartSub">PT · Term · Preboard · out of 100</div>
+        </div>
+        <div class="sd-chart-wrap-sm" id="sMainChartWrap"></div>
+      </div>
+    </div>
+
+        <div class="sd-section-label">📈 Performance Journey</div>
+    <div class="sd-card">
+      <div class="sdc-head">
+        <div class="sdc-title">Your Progress Over Time</div>
+        <div class="sdc-sub">Your marks % vs class average</div>
+      </div>
+      <div class="sd-chart-wrap" id="sProgressWrap"></div>
+    </div>
+
+        <div class="sd-section-label">🏫 Class Standing</div>
+    <div class="sd-two-col">
+      <div class="sd-card">
+        <div class="sdc-head">
+          <div class="sdc-title">Your Marks vs Class</div>
+          <div class="sdc-sub">You vs class average per exam</div>
+        </div>
+        <div id="sCompareWrap"></div>
+      </div>
+      <div class="sd-card">
+        <div class="sdc-head">
+          <div class="sdc-title">🏅 Your Class Rank</div>
+          <div class="sdc-sub">Where you stand among classmates</div>
+        </div>
+        <div id="sRankWrap"></div>
+        <div id="sRankMoveWrap"></div>
+      </div>
+    </div>
+
+    <!-- SECTION: INSIGHTS -->
+    <div class="sd-section-label">💡 Your Personalised Insights</div>
+    <div class="sd-card">
+      <div class="sdc-head">
+        <div class="sdc-title">Strengths &amp; Suggestions</div>
+        <div class="sdc-sub">Auto-generated observations about your performance</div>
+      </div>
+      <div id="sInsightsWrap"></div>
+    </div>
+
+  
+  </div>
+</div>
+
+
+<!-- TEACHER DASHBOARD -->
+<div class="dash" id="tDash">
+  <div class="topbar">
+    <div class="tb-l">
+      <img src="https://velammalnexus.com/wp-content/uploads/2023/10/velammal-nexus-logo-2.png" alt="V" onerror="this.style.display='none'">
+      <div class="tb-brand"><span>Velammal Analytics</span><small id="tbSubjectLabel">Teacher</small></div>
+    </div>
+    <div class="tb-r">
+      <div class="u-badge">
+        <div class="u-av" style="background:var(--gold);color:var(--blue)" id="tAv">T</div>
+        <div class="u-info"><span id="tNavName">Teacher</span><small id="tNavSub">Loading…</small></div>
+      </div>
+      <button class="lo-btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- LAST UPDATED -->
+  <div id="tLastUpdated"></div>
+
+  <!-- STICKY FILTER BAR -->
+  <div class="t-filterbar" id="tFilterBar">
+    <div class="t-filter-inner">
+      <div class="t-filter-group">
+        <span class="t-filter-label">Class</span>
+        <div class="t-filter-btns" id="classFilters">
+          <button class="tf-btn active" onclick="setClass('12D',this)">12D</button>
+          <button class="tf-btn" onclick="setClass('12E',this)">12E</button>
+          <button class="tf-btn" onclick="setClass('11C',this)">11C</button>
+        </div>
+      </div>
+      <div class="t-filter-group">
+        <span class="t-filter-label">Exam Type</span>
+        <div class="t-filter-btns" id="typeFilters">
+          <button class="tf-btn active" onclick="setExamType('DRT',this)">DRT Tests</button>
+          <button class="tf-btn" onclick="setExamType('Main',this)">Main Exams</button>
+        </div>
+      </div>
+      <div class="t-search-wrap">
+        <input type="text" class="t-search" id="studentSearch" placeholder="🔍 Search student…" oninput="renderStudentSearch()">
+      </div>
+    </div>
+  </div>
+
+  <div class="t-dash" id="tDashBody">
+
+    <!-- 1. QUICK INSIGHT CARDS -->
+    <div class="t-section-title">Quick Insights</div>
+    <div class="insight-strip" id="insightStrip"></div>
+
+    <!-- 2. CLASS SUMMARY CARDS -->
+    <div class="t-section-title">Class Summary</div>
+    <div class="summary-grid" id="summaryGrid"></div>
+
+    <!-- 3/4. DRT ANALYTICS -->
+    <div id="drtSection">
+      <div class="t-section-title">DRT Analytics</div>
+      <div class="two-col">
+        <div class="card">
+          <div class="ct">DRT Comparison</div>
+          <div class="csub">Class average per DRT test</div>
+          <div class="cw" id="drtCompWrap"></div>
+        </div>
+        <div class="card">
+          <div class="ct">Marks Distribution</div>
+          <div class="csub">Student count by score range</div>
+          <div class="cw" id="drtHistWrap"></div>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="ct">🏆 Top Students</div>
+          <div class="csub">Highest scorers in DRT tests</div>
+          <div class="export-bar">
+            <span class="export-label">Export</span>
+            <button class="export-btn export-btn-csv" onclick="exportCSV('drtTopTable','drt_top_students')">⬇ CSV</button>
+            <button class="export-btn export-btn-pdf" onclick="exportPDF('drtTopTable','DRT Top Students','Highest scorers · DRT Tests')">⬇ PDF</button>
+          </div>
+          <div class="t-scroll"><table class="etable" id="drtTopTable"><thead><tr><th>#</th><th>Student</th><th>Avg Marks</th></tr></thead><tbody></tbody></table></div>
+        </div>
+        <div class="card">
+          <div class="ct">🤝 Students Needing Support</div>
+          <div class="csub" id="drtWeakSub">Scored below 6 in any DRT · needs extra support</div>
+          <div class="export-bar">
+            <span class="export-label">Export</span>
+            <button class="export-btn export-btn-csv" onclick="exportCSV('drtWeakTable','drt_needs_support')">⬇ CSV</button>
+            <button class="export-btn export-btn-pdf" onclick="exportPDF('drtWeakTable','Students Needing Support','DRT Tests · scored below 6')">⬇ PDF</button>
+          </div>
+          <div class="t-scroll"><table class="etable" id="drtWeakTable"><thead><tr><th>Student</th><th>DRT1</th><th>DRT2</th></tr></thead><tbody></tbody></table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN EXAM ANALYTICS -->
+    <div id="mainSection" class="hidden">
+      <div class="t-section-title">Main Exam Analytics</div>
+      <div class="two-col">
+        <div class="card">
+          <div class="ct">Exam Comparison</div>
+          <div class="csub">Class average: PT · Term · Preboard</div>
+          <div class="cw" id="mainCompWrap"></div>
+        </div>
+        <div class="card">
+          <div class="ct">Marks Distribution</div>
+          <div class="csub">Student count by score range (pass line at 40)</div>
+          <div class="cw" id="mainHistWrap"></div>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="ct">🏆 Top Students</div>
+          <div class="csub">Highest scorers in main exams</div>
+          <div class="export-bar">
+            <span class="export-label">Export</span>
+            <button class="export-btn export-btn-csv" onclick="exportCSV('mainTopTable','main_top_students')">⬇ CSV</button>
+            <button class="export-btn export-btn-pdf" onclick="exportPDF('mainTopTable','Top Students — Main Exams','PT · Term · Preboard')">⬇ PDF</button>
+          </div>
+          <div class="t-scroll"><table class="etable" id="mainTopTable"><thead><tr><th>#</th><th>Student</th><th>Latest</th></tr></thead><tbody></tbody></table></div>
+        </div>
+        <div class="card">
+          <div class="ct">🤝 Students Needing Support</div>
+          <div class="csub">Scored below 40 · needs extra support</div>
+          <div class="export-bar">
+            <span class="export-label">Export</span>
+            <button class="export-btn export-btn-csv" onclick="exportCSV('mainWeakTable','main_needs_support')">⬇ CSV</button>
+            <button class="export-btn export-btn-pdf" onclick="exportPDF('mainWeakTable','Students Needing Support','Main Exams · scored below 40')">⬇ PDF</button>
+          </div>
+          <div class="t-scroll"><table class="etable" id="mainWeakTable"><thead><tr><th>Student</th><th>PT</th><th>Term</th><th>Preboard</th></tr></thead><tbody></tbody></table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. STUDENT PROGRESS TRACKER -->
+    <div class="t-section-title">Student Progress Tracker</div>
+    <div class="card" id="progressCard">
+      <div class="ct">Individual Student Performance</div>
+      <div class="csub">Select a student to view their journey</div>
+      <select class="t-select" id="progressSelect" onchange="renderProgressChart()">
+        <option value="">— Select Student —</option>
+      </select>
+      <div class="cw" style="margin-top:14px" id="progressWrap"><div class="no-data"><div class="ni">👤</div>Select a student above</div></div>
+    </div>
+
+    <!-- 6. IMPROVEMENT TRACKER -->
+    <div class="t-section-title">Improvement Tracker</div>
+    <div class="card">
+      <div class="ct">Performance Trend by Student</div>
+      <div class="csub">Based on PT → Term → Preboard progression</div>
+      <div class="export-bar">
+        <span class="export-label">Export</span>
+        <button class="export-btn export-btn-csv" onclick="exportCSV('improvTable','improvement_tracker')">⬇ CSV</button>
+        <button class="export-btn export-btn-pdf" onclick="exportPDF('improvTable','Improvement Tracker','PT → Term → Preboard trend')">⬇ PDF</button>
+      </div>
+      <div class="t-scroll"><table class="etable" id="improvTable">
+        <thead><tr><th>Student</th><th>PT</th><th>Term</th><th>Preboard</th><th>Trend</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+
+    <!-- 7. CONSISTENCY ANALYSIS -->
+    <div class="t-section-title">Consistency Analysis</div>
+    <div class="card">
+      <div class="ct">Mark Stability Assessment</div>
+      <div class="csub">Based on standard deviation across all exams</div>
+      <div class="export-bar">
+        <span class="export-label">Export</span>
+        <button class="export-btn export-btn-csv" onclick="exportCSV('consistTable','consistency_analysis')">⬇ CSV</button>
+        <button class="export-btn export-btn-pdf" onclick="exportPDF('consistTable','Consistency Analysis','Standard deviation across all exams')">⬇ PDF</button>
+      </div>
+      <div class="t-scroll"><table class="etable" id="consistTable">
+        <thead><tr><th>Student</th><th>Average</th><th>Std Dev</th><th>Consistency</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+
+    <!-- 8. RISK PREDICTION -->
+    <div class="t-section-title">Student Risk Prediction</div>
+    <div class="two-col">
+      <div class="card">
+        <div class="ct">Risk Assessment Table</div>
+        <div class="csub">Based on PT, Term, Preboard performance</div>
+        <div class="export-bar">
+          <span class="export-label">Export</span>
+          <button class="export-btn export-btn-csv" onclick="exportCSV('riskTable','risk_prediction')">⬇ CSV</button>
+          <button class="export-btn export-btn-pdf" onclick="exportPDF('riskTable','Student Risk Prediction','PT · Term · Preboard analysis')">⬇ PDF</button>
+        </div>
+        <div class="t-scroll"><table class="etable" id="riskTable">
+          <thead><tr><th>Student</th><th>PT</th><th>Term</th><th>Preboard</th><th>Risk</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <div class="ct">⚠️ Students Requiring Attention</div>
+        <div class="csub">High and medium risk students</div>
+        <div id="attentionList"></div>
+      </div>
+    </div>
+
+    <!-- 9. PERFORMANCE QUADRANT -->
+    <div class="t-section-title">Performance Quadrant</div>
+    <div class="card">
+      <div class="ct">Student Classification</div>
+      <div class="csub">Score level × improvement direction</div>
+      <div class="quad-grid" id="quadGrid"></div>
+    </div>
+
+    <!-- 10. HEATMAP -->
+    <div class="t-section-title">Performance Heatmap</div>
+    <div class="card">
+      <div class="ct">Student × Exam Score Map</div>
+      <div class="csub">Green = strong · Yellow = average · Red = weak</div>
+      <div class="t-scroll" id="heatmapWrap"></div>
+    </div>
+
+    <!-- 11. SCATTER MATRIX -->
+    <div class="t-section-title">Performance Matrix</div>
+    <div class="card">
+      <div class="ct">Average Marks vs Improvement Trend</div>
+      <div class="csub">Each dot = one student · 4 performance zones</div>
+      <div class="cw" style="height:300px" id="scatterWrap"><canvas id="scatterChart"></canvas></div>
+    </div>
+
+    <!-- 12. CLASS COMPARISON -->
+    <div class="t-section-title">Class Comparison</div>
+    <div class="two-col">
+      <div class="card">
+        <div class="ct">Class Performance Table</div>
+        <div class="csub">PT · Term · Preboard averages by class</div>
+        <div class="t-scroll"><table class="etable" id="classCompTable">
+          <thead><tr><th>Class</th><th>PT Avg</th><th>Term Avg</th><th>Preboard Avg</th><th>Overall</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <div class="ct">Class Leaderboard</div>
+        <div class="csub">Ranked by overall average</div>
+        <div id="classLeaderboard"></div>
+      </div>
+    </div>
+
+    <!-- 13. DIFFICULTY INDICATOR -->
+    <div class="t-section-title">Exam Difficulty Indicator</div>
+    <div class="card">
+      <div class="ct">Difficulty by Exam</div>
+      <div class="csub">Based on class average performance</div>
+      <div class="t-scroll"><table class="etable" id="diffTable">
+        <thead><tr><th>Exam</th><th>Max</th><th>Class Avg</th><th>%</th><th>Difficulty</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+
+    <!-- STUDENT SEARCH RESULTS -->
+    <div class="t-section-title" id="searchTitle" style="display:none">Search Results</div>
+    <div class="card hidden" id="searchCard">
+      <div id="searchResults"></div>
+    </div>
+
+  </div>
+</div>
+
+
+<div id="printZone" style="display:none"></div>
+
+<script>
+var CU = null;
+
+// ══════════════════════════════════════════════════════════════
+//  Velammal Results Portal — Secure Google Apps Script Backend
+//  Replace YOUR_WEB_APP_URL below after deploying GAS
+// ══════════════════════════════════════════════════════════════
+
+var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxWTDo72HncEQlpzruVS5NfurDPfA7H4LBFCnBHBXHfilbvCVgTEpKf5NpiYq8diDCuRA/exec';
+
+async function api(p) {
+  var res = await fetch(WEB_APP_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(p)
+  });
+  var d = await res.json();
+  if (d.error) throw new Error(d.error);
+  return d;
+}
+
+function switchTab(t){
+  document.querySelectorAll('.l-tab').forEach(function(b,i){b.classList.toggle('active',(t==='student'&&i===0)||(t==='teacher'&&i===1));});
+  document.getElementById('sForm').classList.toggle('hidden',t!=='student');
+  document.getElementById('tForm').classList.toggle('hidden',t!=='teacher');
+}
+
+async function studentLogin(){
+  var en=document.getElementById('examNo').value.trim();
+  var ph=document.getElementById('phone').value.trim();
+  var btn=document.getElementById('sBtn');
+  var err=document.getElementById('sErr');
+  err.style.display='none';
+  if(!en||!ph){err.textContent='Please enter both fields.';err.style.display='block';return;}
+  btn.textContent='Checking…';btn.disabled=true;
+  try{
+    var d=await api({examNo:en,phone:ph});
+    CU={type:'student',data:d};
+    sessionStorage.setItem('vva_session',JSON.stringify(CU));
+    showDash('sDash');
+    setTimeout(function(){ renderStudent(d); }, 50);
+  }catch(e){err.textContent=e.message;err.style.display='block';}
+  finally{btn.textContent='Login';btn.disabled=false;}
+}
+
+async function teacherLogin(){
+  var u=document.getElementById('tUser').value.trim();
+  var p=document.getElementById('tPass').value.trim();
+  var btn=document.getElementById('tBtn');
+  var err=document.getElementById('tErr');
+  err.style.display='none';
+  btn.textContent='Loading…';btn.disabled=true;
+  try{
+    var d=await api({role:'teacher',username:u,password:p});
+    CU={type:'teacher',data:d};
+    sessionStorage.setItem('vva_session',JSON.stringify(CU));
+    showDash('tDash');
+    renderTeacher(d,null);
+  }catch(e){err.textContent=e.message;err.style.display='block';}
+  finally{btn.textContent='Login';btn.disabled=false;}
+}
+
+function showDash(id){
+  document.getElementById('loginPage').style.display='none';
+  ['sDash','tDash'].forEach(function(i){document.getElementById(i).style.display='none';});
+  var el=document.getElementById(id);
+  el.style.display='flex';el.style.flexDirection='column';
+  window.scrollTo(0,0);
+}
+
+function logout(){
+  CU=null;
+  sessionStorage.removeItem('vva_session');
+  document.getElementById('loginPage').style.display='flex';
+  document.getElementById('sDash').style.display='none';
+  document.getElementById('tDash').style.display='none';
+  document.getElementById('sErr').style.display='none';
+  document.getElementById('tErr').style.display='none';
+  document.getElementById('examNo').value='';
+  document.getElementById('phone').value='';
+  window.scrollTo(0,0);
+}
+
+function calcPct(s,m){return m>0?Math.round(s/m*100):0;}
+function calcAvg(arr){return arr.length?Math.round(arr.reduce(function(a,b){return a+b;},0)/arr.length):null;}
+function grade(p){if(p>=90)return'A+';if(p>=75)return'A';if(p>=60)return'B';if(p>=45)return'C';return'D';}
+function typeChip(t){var m={DRT:'ch-drt',PT:'ch-pt',Term:'ch-term',Preboard:'ch-pre'};return'<span class="chip '+(m[t]||'ch-drt')+'">'+t+'</span>';}
+
+// Register datalabels plugin globally
+Chart.register(ChartDataLabels);
+
+// ── Chart.js global defaults ──
+Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+Chart.defaults.animation.duration = 500;
+Chart.defaults.animation.easing = 'easeOutQuart';
+Chart.defaults.plugins.tooltip.cornerRadius = 8;
+Chart.defaults.plugins.tooltip.padding = 10;
+Chart.defaults.plugins.tooltip.titleFont = { size: 12, weight: 'bold' };
+Chart.defaults.plugins.tooltip.bodyFont  = { size: 11 };
+Chart.defaults.plugins.legend.labels.padding = 14;
+Chart.defaults.plugins.legend.labels.font = { size: 10 };
+Chart.defaults.plugins.legend.labels.usePointStyle = true;
+// Bar charts: nicer spacing
+Chart.defaults.datasets.bar.barPercentage = 0.65;
+Chart.defaults.datasets.bar.categoryPercentage = 0.75;
+// Default grid: cleaner lines, no border
+Chart.defaults.scale.grid = { color: '#f1f5f9', drawBorder: false };
+// Smaller tick font on mobile for breathing room
+var _mFont = window.innerWidth < 500 ? 8 : 10;
+Chart.defaults.scale.ticks = { font: { size: _mFont }, padding: 4 };
+// Layout padding so top datalabels never clip
+Chart.defaults.layout = { padding: { top: 20, right: 8, bottom: 2, left: 4 } };
+
+// ── LAST UPDATED ──
+function renderLastUpdated(targetId) {
+  var el = document.getElementById(targetId);
+  if (!el) return;
+  var now = new Date();
+  var opts = { day:'numeric', month:'short', year:'numeric' };
+  var dateStr = now.toLocaleDateString('en-IN', opts);
+  var timeStr = now.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+  // Consider "outdated" if hour is 0 (midnight refresh window) — simplified heuristic
+  var isOk = true;
+  var statusText = isOk ? '🟢 Results Updated' : '🟡 May be outdated';
+  var chipText = isOk ? 'Live' : 'Check';
+  var stateClass = isOk ? 'lu-ok' : 'lu-warn';
+  el.innerHTML =
+    '<div class="lu-bar">' +
+      '<div class="lu-inner ' + stateClass + '">' +
+        '<div class="lu-dot"></div>' +
+        '<div class="lu-text"><strong>' + statusText + '</strong><span>Last updated: ' + dateStr + ' • ' + timeStr + '</span></div>' +
+        '<span class="lu-chip">' + chipText + '</span>' +
+      '</div>' +
+    '</div>';
+}
+
+// ════ STUDENT DASHBOARD ════
+var sCharts = {};
+
+function renderStudent(d) {
+  _sCurrentData = d;  // store for subject filter
+  var name = d.name, examNo = d.examNo, section = d.section, exams = d.exams;
+  var fn = name.split(' ')[0];
+
+  // ── TOPBAR: "Name · RollNo" ──
+  document.getElementById('sAv').textContent = name[0];
+  document.getElementById('sName').textContent = name;
+  document.getElementById('sMeta').textContent = examNo;   // just roll no
+
+  // ── SUBJECT FILTER BAR ──
+  var allSubjects = d.subjects && d.subjects.length ? d.subjects : [];
+  var sbEl = document.getElementById('sSubjectBar');
+  if (sbEl) {
+    var pillsHtml = allSubjects.map(function(s, i){
+      return '<button class="sf-pill'+(i===0?' active':'')+'" onclick="filterSubject(\''+s+'\',this)">'+s+'</button>';
+    }).join('');
+    sbEl.innerHTML =
+      '<div class="lu-bar">' +
+        '<div class="lu-inner lu-ok">' +
+          '<div class="lu-dot"></div>' +
+          '<span style="font-size:.72rem;font-weight:700;color:var(--green);margin-right:6px">Live</span>' +
+          (pillsHtml ? '<div class="sf-pills">'+pillsHtml+'</div>' : '') +
+        '</div>' +
+      '</div>';
+  }
+  // Filter to first subject — pass filtered data directly to renderStudentCharts
+  if (allSubjects.length > 0) {
+    var firstSubj = allSubjects[0];
+    d = JSON.parse(JSON.stringify(d));
+    d.exams = d.exams.filter(function(e){ return e.subject === firstSubj; });
+  }
+
+  // Hero avatar + name
+  document.getElementById('sHeroAv').textContent = name[0];
+  document.getElementById('sHeroName').textContent = name;
+  document.getElementById('sHeroMeta').textContent = 'Class ' + section;
+
+  // Compute hero stats from ALL exams
+  var takenAll    = exams.filter(function(e){ return !e.absent && e.score > 0; });
+  var drtTakenAll = exams.filter(function(e){ return e.type === 'DRT' && !e.absent && e.score > 0; });
+  var mainTakenAll= exams.filter(function(e){ return e.type !== 'DRT' && !e.absent && e.score > 0; });
+  var allPcts     = takenAll.map(function(e){ return e.pct; });
+  var overallAvg  = allPcts.length ? Math.round(allPcts.reduce(function(a,b){return a+b;},0)/allPcts.length) : 0;
+  var drtPct      = drtTakenAll.length ? Math.round(drtTakenAll.reduce(function(a,e){return a+e.pct;},0)/drtTakenAll.length) : null;
+  var examPct     = mainTakenAll.length ? Math.round(mainTakenAll.reduce(function(a,e){return a+e.pct;},0)/mainTakenAll.length) : null;
+  var bestRank    = takenAll.length ? takenAll.reduce(function(a,b){ return a.rank < b.rank ? a : b; }) : null;
+
+  function perfCat(p) {
+    if (p >= 90) return { label:'Excellent 🌟', cls:'shb-exc' };
+    if (p >= 75) return { label:'Very Good 👍', cls:'shb-vg' };
+    if (p >= 60) return { label:'Good ✅', cls:'shb-good' };
+    if (p >= 50) return { label:'Rising Star 🌱', cls:'shb-avg' };
+    return { label:'Keep Climbing 🚀', cls:'shb-ni' };
+  }
+
+  var perf = perfCat(overallAvg);
+  var badge = document.getElementById('sPerfBadge');
+  badge.textContent = perf.label;
+  badge.className = 'sh-perf-badge ' + perf.cls;
+
+  // ── HERO INLINE STATS — just a welcome, data is shown below ──
+  var shStats = document.getElementById('shStats');
+  shStats.innerHTML = '<div class="sh-stat" style="grid-column:1/-1;text-align:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:14px">'
+    + '<div class="sh-sv" style="font-size:1rem;color:#fff;font-weight:600;">👋 Welcome back, ' + name.split(' ')[0] + '!</div>'
+    + '<div class="sh-sl" style="color:rgba(255,255,255,.6);margin-top:4px;font-size:.75rem;text-transform:none;letter-spacing:0">Your results are ready · Select a subject below to filter</div>'
+    + '</div>';
+
+  // Render charts/table/cards based on current data
+  renderStudentCharts(d);
+}
+
+function renderStudentCharts(d) {
+  var exams = d.exams || [];
+
+  // ── Core data splits ──
+  var taken     = exams.filter(function(e){ return !e.absent && e.score > 0; });
+  var drtTaken  = taken.filter(function(e){ return e.type === 'DRT'; });
+  var mainTaken = taken.filter(function(e){ return e.type !== 'DRT'; });
+
+  // ── Averages ──
+  var overallAvg = taken.length ? Math.round(taken.reduce(function(a,e){return a+e.pct;},0)/taken.length) : 0;
+  var drtPct     = drtTaken.length  ? Math.round(drtTaken.reduce(function(a,e){return a+e.pct;},0)/drtTaken.length)  : null;
+  var examPct    = mainTaken.length ? Math.round(mainTaken.reduce(function(a,e){return a+e.pct;},0)/mainTaken.length) : null;
+  var drtRawAvg  = drtTaken.length  ? Math.round(drtTaken.reduce(function(a,e){return a+e.score;},0)/drtTaken.length*10)/10 : null;
+  var examRawAvg = mainTaken.length ? Math.round(mainTaken.reduce(function(a,e){return a+e.score;},0)/mainTaken.length*10)/10 : null;
+  var drtMaxMark  = drtTaken.length  ? drtTaken[0].max  : 15;
+  var examMaxMark = mainTaken.length ? mainTaken[0].max : 100;
+
+  // ── Best ranks ──
+  var bestDrtRank  = drtTaken.length  ? drtTaken.reduce(function(a,b){return a.rank<b.rank?a:b;})  : null;
+  var bestExamRank = mainTaken.length ? mainTaken.reduce(function(a,b){return a.rank<b.rank?a:b;}) : null;
+
+  // ── Grade badge ──
+  function gb(p) {
+    if (p>=90) return '<span class="gb gb-aplus">A+</span>';
+    if (p>=75) return '<span class="gb gb-a">A</span>';
+    if (p>=60) return '<span class="gb gb-b">B</span>';
+    if (p>=50) return '<span class="gb gb-c">C</span>';
+    return '<span class="gb gb-d">D</span>';
+  }
+
+  // ══════════════════════════════════════
+  // 1. OVERVIEW CARDS
+  // ══════════════════════════════════════
+  var sg = document.getElementById('sSumGrid');
+  if (!sg) return;
+  if (!taken.length) {
+    sg.innerHTML = '<div class="sd-sum sds1" style="grid-column:1/-1"><div class="sd-sum-val" style="font-size:1rem;color:var(--g400)">No exam data yet</div><div class="sd-sum-lbl">Results will appear here once marks are entered</div></div>';
+  } else {
+    var c1 = '<div class="sd-sum sds1"><div class="sd-sum-emoji">📊</div><div class="sd-sum-val">'+overallAvg+'%</div><div class="sd-sum-lbl">Overall Average</div><div class="sd-sum-sub">across '+taken.length+' exam'+(taken.length>1?'s':'')+'</div></div>';
+    var c2 = drtTaken.length
+      ? '<div class="sd-sum sds2"><div class="sd-sum-emoji">📝</div><div class="sd-sum-val">'+drtRawAvg+'/'+drtMaxMark+'</div><div class="sd-sum-lbl">DRT Avg · '+drtPct+'%</div><div class="sd-sum-sub">across '+drtTaken.length+' DRT'+(drtTaken.length>1?'s':'')+'</div></div>'
+      : '<div class="sd-sum sds2"><div class="sd-sum-emoji">📝</div><div class="sd-sum-val" style="font-size:.9rem;color:var(--g400)">—</div><div class="sd-sum-lbl">DRT Avg</div><div class="sd-sum-sub">Not yet conducted</div></div>';
+    var c3 = mainTaken.length
+      ? '<div class="sd-sum sds3"><div class="sd-sum-emoji">📋</div><div class="sd-sum-val">'+examRawAvg+'/'+examMaxMark+'</div><div class="sd-sum-lbl">Exam Avg · '+examPct+'%</div><div class="sd-sum-sub">'+mainTaken.map(function(e){return e.name;}).join(' · ')+'</div></div>'
+      : '<div class="sd-sum sds3"><div class="sd-sum-emoji">📋</div><div class="sd-sum-val" style="font-size:.9rem;color:var(--g400)">—</div><div class="sd-sum-lbl">Exam Avg</div><div class="sd-sum-sub">Not yet conducted</div></div>';
+    var c4 = bestDrtRank
+      ? '<div class="sd-sum sds4"><div class="sd-sum-emoji">'+(bestDrtRank.rank===1?'🥇':bestDrtRank.rank<=3?'🥈':'🏅')+'</div><div class="sd-sum-val">#'+bestDrtRank.rank+'</div><div class="sd-sum-lbl">Best DRT Rank</div><div class="sd-sum-sub">of '+bestDrtRank.classSize+' · '+bestDrtRank.name+'</div></div>'
+      : '<div class="sd-sum sds4"><div class="sd-sum-emoji">🏅</div><div class="sd-sum-val" style="font-size:.9rem;color:var(--g400)">—</div><div class="sd-sum-lbl">Best DRT Rank</div><div class="sd-sum-sub">Not yet conducted</div></div>';
+    var c5 = bestExamRank
+      ? '<div class="sd-sum sds5"><div class="sd-sum-emoji">'+(bestExamRank.rank===1?'🥇':bestExamRank.rank<=3?'🥈':'🏆')+'</div><div class="sd-sum-val">#'+bestExamRank.rank+'</div><div class="sd-sum-lbl">Best Exam Rank</div><div class="sd-sum-sub">of '+bestExamRank.classSize+' · '+bestExamRank.name+'</div></div>'
+      : '<div class="sd-sum sds5"><div class="sd-sum-emoji">🏆</div><div class="sd-sum-val" style="font-size:.9rem;color:var(--g400)">—</div><div class="sd-sum-lbl">Best Exam Rank</div><div class="sd-sum-sub">Not yet conducted</div></div>';
+    sg.innerHTML = c1+c2+c3+c4+c5;
+  }
+
+  // ══════════════════════════════════════
+  // 2. MARKS TABLE
+  // ══════════════════════════════════════
+  var tbody = document.querySelector('#sMarksTable tbody');
+  if (tbody) {
+    if (!exams.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--g400)">No exams yet</td></tr>';
+    } else {
+      tbody.innerHTML = exams.map(function(e) {
+        var absent = e.absent === true;
+        var has = !absent && e.score > 0;
+        var rowCls = absent ? 'sd-absent' : !has ? 'sd-awaited' : e.pct>=90 ? 'sd-exc' : e.pct>=75 ? 'sd-vg' : e.pct<50 ? 'sd-ni' : '';
+        var vsAvg = has ? Math.round(e.pct - e.classAvgPct) : 0;
+        var vsHtml = has ? (vsAvg>0 ? '<span class="vs-up"> ▲+'+vsAvg+'%</span>' : vsAvg<0 ? '<span class="vs-down"> ▼'+vsAvg+'%</span>' : '<span class="vs-eq"> =avg</span>') : '';
+        var classAvgScore = has ? Math.round(e.classAvgPct/100*e.max) : '—';
+        var rankHtml = absent ? '<span style="color:var(--g400)">Absent</span>'
+          : has && e.rank ? '<span class="rank-pill '+(e.rank<=3?'rp-top':e.rank<=Math.ceil(e.classSize*0.5)?'rp-mid':'rp-low')+'">#'+e.rank+' of '+e.classSize+'</span>'
+          : '—';
+        return '<tr class="'+rowCls+'">'
+          +'<td class="exam-name">'+e.name+'</td>'
+          +'<td>'+e.max+'</td>'
+          +'<td class="mark-cell">'+(absent?'<span style="color:var(--org);font-weight:600">AB</span>':has?e.score:'Awaited')+'</td>'
+          +'<td>'+(has?e.pct+'% '+gb(e.pct):'—')+'</td>'
+          +'<td>'+(has?classAvgScore+' ('+e.classAvgPct+'%)'+vsHtml:'—')+'</td>'
+          +'<td>'+rankHtml+'</td>'
+          +'</tr>';
+      }).join('');
+    }
+  }
+
+  // ══════════════════════════════════════
+  // 3. PROGRESS CHART (Line)
+  // ══════════════════════════════════════
+  // Destroy all existing charts first
+  ['progress','drt','main','classStand'].forEach(function(k){
+    if (sCharts[k]) { sCharts[k].destroy(); sCharts[k] = null; }
+  });
+
+  var pw = document.getElementById('sProgressWrap');
+  if (pw) {
+    pw.innerHTML = '';
+    if (!taken.length) {
+      pw.innerHTML = '<div class="sd-no-data">📈 No data yet</div>';
+    } else {
+      var pc = document.createElement('canvas');
+      pw.appendChild(pc);
+      sCharts.progress = new Chart(pc, {
+        type: 'line',
+        data: {
+          labels: taken.map(function(e){return e.name;}),
+          datasets: [
+            { label:'Your %', data:taken.map(function(e){return e.pct;}),
+              borderColor:'#0a1f6e', backgroundColor:'rgba(10,31,110,.07)',
+              borderWidth:2.5, pointRadius:6, pointBackgroundColor:taken.map(function(e){return e.pct>=75?'#16a34a':e.pct>=50?'#e9a820':'#dc2626';}),
+              pointBorderColor:'#fff', pointBorderWidth:2, tension:.4, fill:true,
+              datalabels:{anchor:'end',align:'top',font:{size:10,weight:'bold'},formatter:function(v){return v+'%';},color:'#0a1f6e'} },
+            { label:'Class Avg %', data:taken.map(function(e){return e.classAvgPct;}),
+              borderColor:'#e9a820', backgroundColor:'transparent',
+              borderWidth:2, borderDash:[5,4], pointRadius:3, tension:.4,
+              datalabels:{display:false} }
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{position:'top'},datalabels:{}},
+          scales:{
+            y:{min:0,max:100,ticks:{callback:function(v){return v+'%';}}},
+            x:{grid:{display:false}}
+          }
+        }
+      });
+    }
+  }
+
+  // ══════════════════════════════════════
+  // 4. DRT CHART (Bar)
+  // ══════════════════════════════════════
+  var dw = document.getElementById('sDrtChartWrap');
+  if (dw) {
+    dw.innerHTML = '';
+    if (!drtTaken.length) {
+      dw.innerHTML = '<div class="sd-no-data">📝 No DRT results yet</div>';
+    } else {
+      var dc = document.createElement('canvas');
+      dw.appendChild(dc);
+      sCharts.drt = new Chart(dc, {
+        type:'bar',
+        data:{
+          labels:drtTaken.map(function(e){return e.name;}),
+          datasets:[
+            { label:'Your Marks', data:drtTaken.map(function(e){return e.score;}),
+              backgroundColor:drtTaken.map(function(e){return e.pct>=70?'rgba(22,163,74,.85)':e.pct>=45?'rgba(233,168,32,.9)':'rgba(220,38,38,.85)';}),
+              borderRadius:8,
+              datalabels:{anchor:'end',align:'end',font:{size:11,weight:'bold'},color:'#1e293b'} }
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{display:false},datalabels:{}},
+          scales:{
+            y:{beginAtZero:true, max:drtMaxMark+2},
+            x:{grid:{display:false}}
+          }
+        }
+      });
+    }
+  }
+
+  // ══════════════════════════════════════
+  // 5. MAIN EXAMS CHART (Bar)
+  // ══════════════════════════════════════
+  var mw = document.getElementById('sMainChartWrap');
+  if (mw) {
+    mw.innerHTML = '';
+    if (!mainTaken.length) {
+      mw.innerHTML = '<div class="sd-no-data">📋 No main exam results yet</div>';
+    } else {
+      var mc = document.createElement('canvas');
+      mw.appendChild(mc);
+      sCharts.main = new Chart(mc, {
+        type:'bar',
+        data:{
+          labels:mainTaken.map(function(e){return e.name;}),
+          datasets:[
+            { label:'Your Marks', data:mainTaken.map(function(e){return e.score;}),
+              backgroundColor:mainTaken.map(function(e){return e.pct>=75?'rgba(22,163,74,.85)':e.pct>=50?'rgba(233,168,32,.9)':'rgba(220,38,38,.85)';}),
+              borderRadius:8,
+              datalabels:{anchor:'end',align:'end',font:{size:11,weight:'bold'},color:'#1e293b'} }
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{display:false},datalabels:{}},
+          scales:{
+            y:{beginAtZero:true, max:examMaxMark+5},
+            x:{grid:{display:false}}
+          }
+        }
+      });
+    }
+  }
+
+  // ══════════════════════════════════════
+  // 6. CLASS STANDING CHART (Bar)
+  // ══════════════════════════════════════
+  var csw = document.getElementById('sCompareWrap');
+  if (csw) {
+    csw.innerHTML = '';
+    if (!taken.length) {
+      csw.innerHTML = '<div class="sd-no-data">🏫 No data yet</div>';
+    } else {
+      var csc = document.createElement('canvas');
+      csw.appendChild(csc);
+      sCharts.classStand = new Chart(csc, {
+        type:'bar',
+        data:{
+          labels:taken.map(function(e){return e.name;}),
+          datasets:[
+            { label:'You %', data:taken.map(function(e){return e.pct;}), backgroundColor:'rgba(10,31,110,.8)', borderRadius:6, datalabels:{anchor:'end',align:'end',font:{size:9,weight:'bold'},color:'#0a1f6e',formatter:function(v){return v+'%';}} },
+            { label:'Class Avg %', data:taken.map(function(e){return e.classAvgPct;}), backgroundColor:'rgba(233,168,32,.6)', borderRadius:6, datalabels:{display:false} }
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{position:'top'},datalabels:{}},
+          scales:{y:{min:0,max:100,ticks:{callback:function(v){return v+'%';}}},x:{grid:{display:false}}}
+        }
+      });
+    }
+  }
+
+  // ══════════════════════════════════════
+  // 7. CLASS RANK CARD
+  // ══════════════════════════════════════
+  var rkw = document.getElementById('sRankWrap');
+  if (rkw) {
+    if (!taken.length) {
+      rkw.innerHTML = '<div class="sd-no-data">🏅 No rank data yet</div>';
+    } else {
+      var rankRows = taken.map(function(e) {
+        if (!e.rank) return '';
+        var pct = Math.round(e.rank/e.classSize*100);
+        var cls = e.rank<=3?'rp-top':e.rank<=Math.ceil(e.classSize*0.5)?'rp-mid':'rp-low';
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--g100)">'
+          +'<div style="font-size:.85rem;font-weight:600;color:var(--g800)">'+e.name+'</div>'
+          +'<span class="rank-pill '+cls+'">#'+e.rank+' of '+e.classSize+'</span>'
+          +'</div>';
+      }).filter(Boolean).join('');
+      rkw.innerHTML = rankRows || '<div class="sd-no-data">No rank data</div>';
+    }
+  }
+
+  // ══════════════════════════════════════
+  // 8. ACHIEVEMENT BADGES
+  // ══════════════════════════════════════
+  var bw = document.getElementById('sBadgesWrap');
+  if (bw) {
+    var badges = [];
+    if (taken.length) {
+      var latE = taken[taken.length-1];
+      if (latE.rank===1) badges.push({cls:'ab-gold',icon:'🏆',title:'Top of Class',desc:'Ranked #1 in '+latE.name});
+      else if (latE.rank<=3) badges.push({cls:'ab-gold',icon:'🥇',title:'Podium Finish',desc:'Top 3 in '+latE.name});
+      if (taken.length>=2 && taken[taken.length-1].pct > taken[taken.length-2].pct+5)
+        badges.push({cls:'ab-green',icon:'⭐',title:'Improvement Star',desc:'Score jumped '+Math.round(taken[taken.length-1].pct-taken[taken.length-2].pct)+'% in latest exam'});
+      if (taken.length>=2 && taken.every(function(e){return e.pct>=60;}))
+        badges.push({cls:'ab-blue',icon:'🔥',title:'Consistent Performer',desc:'60%+ in all '+taken.length+' exams'});
+      if (taken.filter(function(e){return e.pct>e.classAvgPct;}).length===taken.length && taken.length>=2)
+        badges.push({cls:'ab-purple',icon:'🌟',title:'Above & Beyond',desc:'Above class average in every exam'});
+      if (drtTaken.length>=2 && drtTaken.every(function(e){return e.pct>=80;}))
+        badges.push({cls:'ab-green',icon:'✅',title:'DRT Champion',desc:'80%+ in all DRT tests'});
+      if (overallAvg>=85)
+        badges.push({cls:'ab-gold',icon:'💎',title:'High Achiever',desc:'Overall average above 85%'});
+    }
+    bw.innerHTML = badges.length
+      ? '<div class="badge-row">'+badges.map(function(b){return '<div class="ach-badge '+b.cls+'"><span class="ab-icon">'+b.icon+'</span><div class="ab-text"><strong>'+b.title+'</strong><span>'+b.desc+'</span></div></div>';}).join('')+'</div>'
+      : '<div class="no-badges">🎯 Keep giving your best — badges will appear as you achieve milestones!</div>';
+  }
+
+  // ══════════════════════════════════════
+  // 9. IMPROVEMENT TREND
+  // ══════════════════════════════════════
+  var tw = document.getElementById('sTrendWrap');
+  if (tw) {
+    if (taken.length<2) {
+      tw.innerHTML = '<div class="sd-no-data">Need at least 2 exams to show trend</div>';
+    } else {
+      var items = [];
+      for (var i=1; i<taken.length; i++) {
+        var curr=taken[i], prev=taken[i-1];
+        var delta=Math.round(curr.pct-prev.pct);
+        var icon=delta>=20?'🚀':delta>0?'📈':delta<-15?'🔴':delta<0?'📉':'➡️';
+        var msg=delta>=20?'Outstanding jump!':delta>=10?'Great improvement!':delta>=1?'Moving forward 👍':delta===0?'Consistent ➖':delta>=-10?'Slight dip — stay focused':' Needs attention ⚠️';
+        items.push('<div class="sd-trend-item '+(delta>0?'sdt-up':delta<0?'sdt-down':'sdt-same')+'">'
+          +'<div class="sdt-icon">'+icon+'</div>'
+          +'<div class="sdt-body"><div class="sdt-title">'+prev.name+' ('+prev.score+'/'+prev.max+') → '+curr.name+' ('+curr.score+'/'+curr.max+')</div>'
+          +'<div class="sdt-desc">'+msg+'</div></div>'
+          +'<div class="sdt-delta '+(delta>0?'sdt-delta-up':delta<0?'sdt-delta-down':'')+'">'+(delta>0?'+':'')+delta+'%</div>'
+          +'</div>');
+      }
+      tw.innerHTML = '<div class="sd-trend-list">'+items.join('')+'</div>';
+    }
+  }
+
+  // ══════════════════════════════════════
+  // 10. PERSONALISED INSIGHTS
+  // ══════════════════════════════════════
+  var iw = document.getElementById('sInsightsWrap');
+  if (iw) {
+    var ins = [];
+    if (!taken.length) {
+      ins.push({cls:'sdi-blue',icon:'ℹ️',title:'Results pending',body:'Your results will appear here once marks are entered.'});
+    } else {
+      if (taken.length>=2) {
+        var trend=Math.round(taken[taken.length-1].pct-taken[0].pct);
+        if (trend>0) ins.push({cls:'sdi-green',icon:'📈',title:'Great progress!',body:'Marks improved by '+trend+'% from '+taken[0].name+' to '+taken[taken.length-1].name+'.'});
+        else if (trend<0) ins.push({cls:'sdi-orange',icon:'💡',title:'Room to improve',body:'Score dipped '+Math.abs(trend)+'% overall. Consistent revision will help.'});
+      }
+      mainTaken.forEach(function(e){
+        if (e.pct>e.classAvgPct+5) ins.push({cls:'sdi-green',icon:'🌟',title:e.name+': Above class average!',body:'You scored '+Math.round(e.pct-e.classAvgPct)+'% above class average. Outstanding!'});
+        else if (e.pct<e.classAvgPct-5) ins.push({cls:'sdi-orange',icon:'⚡',title:e.name+': Below class average',body:'Focus on this area — you are '+Math.round(e.classAvgPct-e.pct)+'% below class average.'});
+      });
+      var perfLabel=overallAvg>=90?'Excellent':overallAvg>=75?'Very Good':overallAvg>=60?'Good':overallAvg>=50?'Rising Star':'Keep Climbing';
+      if (overallAvg>=75) ins.push({cls:'sdi-purple',icon:'🏆',title:'Strong performer!',body:'Your '+overallAvg+'% average places you in "'+perfLabel+'" category.'});
+      if (drtTaken.length>=2) {
+        var da=Math.round(drtTaken.reduce(function(a,e){return a+e.pct;},0)/drtTaken.length);
+        if (da>=80) ins.push({cls:'sdi-green',icon:'✅',title:'Great DRT performance!',body:da+'% DRT average — excellent daily preparation!'});
+        else if (da<50) ins.push({cls:'sdi-orange',icon:'📝',title:'DRTs need attention',body:'Your DRT average is '+da+'%. Regular revision will improve this.'});
+      }
+      if (ins.length<2) ins.push({cls:'sdi-blue',icon:'🎯',title:'Your next target',body:'Aim for 75%+ in all exams. You are currently at '+overallAvg+'%.'});
+    }
+    iw.innerHTML='<div class="sd-insight-list">'+ins.slice(0,5).map(function(i){
+      return '<div class="sd-insight '+i.cls+'"><div class="sdi-icon">'+i.icon+'</div><div class="sdi-content"><strong>'+i.title+'</strong><span>'+i.body+'</span></div></div>';
+    }).join('')+'</div>';
+  }
+}
+
+
+
+
+// ── Subject filter for student dashboard ──
+var _sCurrentData = null;
+function filterSubject(subj, btn) {
+  document.querySelectorAll('.sf-pill').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  if (!_sCurrentData) return;
+  var filtered = JSON.parse(JSON.stringify(_sCurrentData));
+  filtered.exams = _sCurrentData.exams.filter(function(e){ return e.subject === subj; });
+  renderStudentCharts(filtered);
+}
+
+// ════ TEACHER ANALYTICS STATE ════
+var T = { cls:'12D', examType:'DRT', data:null, charts:{}, drtPass:6, examPass:40 };
+
+function setClass(cls, btn) {
+  document.querySelectorAll('#classFilters .tf-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  T.cls = cls;
+  renderTeacherDash();
+}
+
+function setExamType(type, btn) {
+  document.querySelectorAll('#typeFilters .tf-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  T.examType = type;
+  document.getElementById('drtSection').classList.toggle('hidden', type !== 'DRT');
+  document.getElementById('mainSection').classList.toggle('hidden', type !== 'Main');
+  renderTeacherDash();
+}
+
+function renderTeacher(d, sf) {
+  renderLastUpdated('tLastUpdated');
+  T.data = d;
+  // ── Update topbar with real teacher info ──
+  var tName = d.teacherName || 'Teacher';
+  var tSubj = d.subject || 'CS';
+  document.getElementById('tAv').textContent = tName[0].toUpperCase();
+  document.getElementById('tNavName').textContent = tName;
+  document.getElementById('tNavSub').textContent = tSubj + ' · Teacher';
+  document.getElementById('tbSubjectLabel').textContent = 'Teacher · ' + tSubj;
+  // ── Pass marks from API cfg ──
+  if (d.cfg) { T.drtPass = d.cfg.drtPass || 6; T.examPass = d.cfg.examPass || 40; }
+  // populate class filter dynamically from sections in data
+  var sections = [...new Set(d.students.map(function(s){return s.section;}))].sort();
+  if (sections.length) {
+    T.cls = sections[0];
+    var cf = document.getElementById('classFilters');
+    cf.innerHTML = sections.map(function(s,i){
+      return '<button class="tf-btn'+(i===0?' active':'')+'" onclick="setClass(\''+s+'\',this)">'+s+'</button>';
+    }).join('');
+  }
+  populateProgressSelect(d);
+  renderTeacherDash();
+}
+
+function getStudents() {
+  if (!T.data) return [];
+  return T.cls ? T.data.students.filter(function(s){return s.section===T.cls;}) : T.data.students;
+}
+
+function getExams() { return T.data ? T.data.exams : []; }
+
+function getExamIdx(name) {
+  return getExams().findIndex(function(e){return e.name===name;});
+}
+
+function getMark(student, examName) {
+  var idx = getExamIdx(examName);
+  return idx >= 0 ? (student.marks[idx] || 0) : null;
+}
+
+function getMarksByType(student, type) {
+  var exams = getExams();
+  return exams.map(function(e,i){
+    return e.type === type ? {name:e.name, max:e.max, score:student.marks[i]||0} : null;
+  }).filter(Boolean);
+}
+
+function pctOf(score, max) { return max > 0 ? Math.round(score/max*100) : 0; }
+function avg(arr) { return arr.length ? arr.reduce(function(a,b){return a+b;},0)/arr.length : 0; }
+function stddev(arr) {
+  if (arr.length < 2) return 0;
+  var m = avg(arr);
+  return Math.sqrt(arr.reduce(function(a,b){return a+Math.pow(b-m,2);},0)/arr.length);
+}
+
+function destroyChart(key) {
+  if (T.charts[key]) { T.charts[key].destroy(); T.charts[key] = null; }
+}
+
+// ── Safe helper: set innerHTML only if element exists ──
+function safeHTML(id, html) {
+  var el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+}
+function safeQHTML(sel, html) {
+  var el = document.querySelector(sel);
+  if (el) el.innerHTML = html;
+}
+var NO_DATA_ROW = '<tr><td colspan="99" class="no-data"><div class="ni">📭</div>No data yet — results will appear once marks are entered.</td></tr>';
+var NO_DATA_DIV = '<div class="no-data"><div class="ni">📭</div>No data yet — results will appear once marks are entered.</div>';
+
+// ── MAIN RENDER ──
+function renderTeacherDash() {
+  if (!T.data) return;
+  var students = getStudents();
+  var exams = getExams();
+
+  if (!students.length) {
+    var noStu = '<div class="no-data" style="padding:32px"><div class="ni">🏫</div>No students found for class <strong>'+T.cls+'</strong>.<br>Check that the Results sheet has rows for this class.</div>';
+    safeHTML('insightStrip', noStu);
+    safeHTML('summaryGrid', '');
+    ['drtCompWrap','drtHistWrap','mainCompWrap','mainHistWrap','progressWrap','heatmapWrap','scatterWrap','quadGrid','attentionList','classLeaderboard'].forEach(function(id){ safeHTML(id, NO_DATA_DIV); });
+    ['#drtTopTable tbody','#drtWeakTable tbody','#mainTopTable tbody','#mainWeakTable tbody','#improvTable tbody','#consistTable tbody','#riskTable tbody','#classCompTable tbody','#diffTable tbody'].forEach(function(sel){ safeQHTML(sel, NO_DATA_ROW); });
+    return;
+  }
+
+  renderInsights(students, exams);
+  renderSummary(students, exams);
+  if (T.examType === 'DRT') renderDRT(students, exams);
+  else renderMain(students, exams);
+  renderImprovementTracker(students, exams);
+  renderConsistency(students, exams);
+  renderRisk(students, exams);
+  renderQuadrant(students, exams);
+  renderHeatmap(students, exams);
+  renderScatter(students, exams);
+  renderClassComparison();
+  renderDifficulty(exams);
+}
+
+// ── 1. INSIGHTS ──
+function renderInsights(students, exams) {
+  var drtExams = exams.filter(function(e){return e.type==='DRT';});
+  var mainExams = exams.filter(function(e){return e.type!=='DRT';});
+  var cards = [];
+
+  // Class avg improved since PT?
+  var ptIdx = getExamIdx('PT1') >= 0 ? getExamIdx('PT1') : exams.findIndex(function(e){return e.type==='PT';});
+  var preIdx = exams.findIndex(function(e){return e.type==='Preboard';});
+  if (ptIdx >= 0 && preIdx >= 0) {
+    var ptAvg = avg(students.map(function(s){return pctOf(s.marks[ptIdx]||0, exams[ptIdx].max);}));
+    var preAvg = avg(students.map(function(s){return pctOf(s.marks[preIdx]||0, exams[preIdx].max);}));
+    var diff = Math.round(preAvg - ptAvg);
+    if (diff > 0) cards.push({type:'green',icon:'📈',title:'Class improved by '+diff+'% since PT',sub:'Preboard average is higher than PT average'});
+    else if (diff < 0) cards.push({type:'red',icon:'📉',title:'Class dropped by '+Math.abs(diff)+'% since PT',sub:'Preboard average is lower than PT average'});
+  }
+
+  // Students likely to fail
+  var atRisk = students.filter(function(s){
+    var scores = exams.map(function(e,i){return pctOf(s.marks[i]||0,e.max);});
+    return avg(scores) < T.examPass;
+  }).length;
+  if (atRisk > 0) cards.push({type:atRisk>3?'red':'orange',icon:'⚠️',title:atRisk+' student'+(atRisk>1?'s':'')+' predicted to need attention',sub:'Average score below 40% across all exams'});
+
+  // High scorers (>= 80% avg)
+  var high = students.filter(function(s){
+    var scores = exams.map(function(e,i){return pctOf(s.marks[i]||0,e.max);});
+    return avg(scores) >= 80;
+  }).length;
+  if (high > 0) cards.push({type:'green',icon:'🌟',title:high+' student'+(high>1?'s':'')+' scoring above 80%',sub:'Excellent performers in '+T.cls});
+
+  // Latest exam difficulty
+  var latestExam = exams[exams.length-1];
+  if (latestExam) {
+    var latAvg = avg(students.map(function(s){return pctOf(s.marks[exams.length-1]||0,latestExam.max);}));
+    var diff2 = getDifficulty(latAvg);
+    cards.push({type:diff2==='Easy'?'green':diff2==='Hard'?'red':'blue',icon:'📋',title:latestExam.name+' rated '+diff2,sub:'Class average: '+Math.round(latAvg)+'%'});
+  }
+
+  // Total students info
+  cards.push({type:'blue',icon:'👥',title:students.length+' students in '+T.cls,sub:(T.data&&T.data.subject?T.data.subject:'CS')+' · 2025–26'});
+
+  var insightEl=document.getElementById('insightStrip'); if(!insightEl) return;
+  insightEl.innerHTML = cards.map(function(c){
+    return '<div class="insight-card ic-'+c.type+'"><div class="ic-icon">'+c.icon+'</div><div class="ic-text"><strong>'+c.title+'</strong><span>'+c.sub+'</span></div></div>';
+  }).join('');
+}
+
+// ── 2. SUMMARY ──
+function renderSummary(students, exams) {
+  var allPcts = students.map(function(s){return avg(exams.map(function(e,i){return pctOf(s.marks[i]||0,e.max);}));});
+  var highest = Math.max.apply(null, allPcts);
+  var lowest = Math.min.apply(null, allPcts);
+  var classAvg = Math.round(avg(allPcts));
+  var passCount = allPcts.filter(function(p){return p>=T.examPass;}).length;
+  var failCount = allPcts.filter(function(p){return p<T.examPass;}).length;
+
+  var sgEl=document.getElementById('summaryGrid'); if(!sgEl) return;
+  sgEl.innerHTML =
+    sumCard(students.length,'Total Students','')+
+    sumCard(Math.round(highest)+'%','Highest Avg','s-high')+
+    sumCard(Math.round(lowest)+'%','Lowest Avg','s-fail')+
+    sumCard(classAvg+'%','Class Average','')+
+    sumCard(passCount,'Pass Count','s-pass')+
+    sumCard(failCount,'Need Attention','s-fail');
+}
+function sumCard(v,l,cls){return '<div class="sum-card '+cls+'"><div class="sv">'+v+'</div><div class="sl">'+l+'</div></div>';}
+
+// ── 3. DRT ANALYTICS ──
+var NOT_CONDUCTED = '<div class="no-data"><div class="ni">📋</div>Not yet conducted — marks will appear once entered.</div>';
+var NOT_CONDUCTED_ROW = '<tr><td colspan="99" class="no-data">📋 Not yet conducted — marks will appear once entered.</td></tr>';
+
+function allZero(students, exams, examObj) {
+  var idx = exams.indexOf(examObj);
+  return idx < 0 || students.every(function(s){ return !(s.marks[idx]||0); });
+}
+function renderDRT(students, exams) {
+  var drtExams = exams.filter(function(e){return e.type==='DRT';});
+  var drtCompWrap = document.getElementById('drtCompWrap');
+  var drtHistWrap = document.getElementById('drtHistWrap');
+  var noData = !drtExams.length || drtExams.every(function(e){ return allZero(students,exams,e); });
+  if (noData) {
+    if (drtCompWrap) drtCompWrap.innerHTML = NOT_CONDUCTED;
+    if (drtHistWrap) drtHistWrap.innerHTML = NOT_CONDUCTED;
+    safeQHTML('#drtTopTable tbody', NOT_CONDUCTED_ROW);
+    safeQHTML('#drtWeakTable tbody', NOT_CONDUCTED_ROW);
+    return;
+  }
+
+  // DRT comparison bar chart
+  destroyChart('drtComp');
+  if (drtCompWrap) {
+    drtCompWrap.innerHTML = '<canvas id="drtCompChart"></canvas>';
+    var drtAvgs = drtExams.map(function(e){
+      var idx = exams.indexOf(e);
+      return Math.round(avg(students.map(function(s){return s.marks[idx]||0;})) * 10) / 10;
+    });
+    T.charts.drtComp = new Chart(document.getElementById('drtCompChart'), {
+      type:'bar',
+      data:{labels:drtExams.map(function(e){return e.name;}),datasets:[{label:'Class Avg',data:drtAvgs,backgroundColor:drtExams.map(function(_,i){return ['rgba(10,31,110,.85)','rgba(41,82,217,.85)','rgba(22,163,74,.85)','rgba(233,168,32,.9)'][i%4];}),borderRadius:7,borderSkipped:false}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{anchor:'end',align:'end',offset:-2,font:{size:11,weight:'bold'},color:'#1e293b',formatter:function(v,ctx){var maxV=drtExams[ctx.dataIndex]?drtExams[ctx.dataIndex].max:15;return v+'/'+maxV;}}},scales:{y:{beginAtZero:true,max:drtExams[0]?drtExams[0].max:15,title:{display:true,text:'Avg Score',font:{size:10,weight:'600'},color:'#64748b'},ticks:{stepSize:3,font:{size:10}},grid:{color:'#f1f5f9'}},x:{title:{display:true,text:'DRT',font:{size:10,weight:'600'},color:'#64748b'},ticks:{font:{size:10}},grid:{display:false}}}}
+    });
+  }
+
+  // DRT histogram
+  destroyChart('drtHist');
+  if (drtHistWrap) {
+    drtHistWrap.innerHTML = '<canvas id="drtHistChart"></canvas>';
+    var drtMax = drtExams[0] ? drtExams[0].max : 15;
+    var step = Math.ceil(drtMax/5); var ranges = [];
+    for (var ri=0; ri<drtMax; ri+=step) ranges.push([ri, Math.min(ri+step-1, drtMax)]);
+    var rangeLabels = ranges.map(function(r){return r[0]+'-'+r[1];});
+    var latestDRT = drtExams[drtExams.length-1];
+    var latIdx = exams.indexOf(latestDRT);
+    var counts = ranges.map(function(r){return students.filter(function(s){var m=s.marks[latIdx]||0;return m>=r[0]&&m<=r[1];}).length;});
+    T.charts.drtHist = new Chart(document.getElementById('drtHistChart'), {
+      type:'bar',
+      data:{labels:rangeLabels,datasets:[{label:'Students',data:counts,backgroundColor:['#fee2e2','#ffedd5','#fef9c3','#dcfce7','#bbf7d0'].slice(0,ranges.length),borderRadius:6,borderSkipped:false}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{anchor:'end',align:'end',offset:-2,font:{size:11,weight:'bold'},color:'#1e293b'}},scales:{y:{beginAtZero:true,title:{display:true,text:'No. of Students',font:{size:10,weight:'600'},color:'#64748b'},ticks:{stepSize:1,font:{size:10}},grid:{color:'#f1f5f9'}},x:{title:{display:true,text:'Score Range',font:{size:10,weight:'600'},color:'#64748b'},ticks:{font:{size:10}},grid:{display:false}}}}
+    });
+  }
+
+  // Top students by DRT avg
+  var topBody = document.querySelector('#drtTopTable tbody');
+  if (topBody) {
+    var drtScored = students.map(function(s){
+      var drtMarks = drtExams.map(function(e){return s.marks[exams.indexOf(e)]||0;});
+      return {name:s.name, avgMark:Math.round(avg(drtMarks)*10)/10};
+    }).sort(function(a,b){return b.avgMark-a.avgMark;});
+    topBody.innerHTML = drtScored.slice(0,5).map(function(s,i){
+      var mx = drtExams[0]?drtExams[0].max:15;
+      return '<tr><td><span class="rk-chip '+(i<3?'rk-'+(i+1):'rk-n')+'">'+(i+1)+'</span></td><td><strong>'+s.name+'</strong></td><td>'+s.avgMark+'/'+mx+'</td></tr>';
+    }).join('');
+  }
+  // Update subtitle with actual threshold
+  var drtWeakSub = document.getElementById('drtWeakSub');
+  if (drtWeakSub) drtWeakSub.textContent = 'Scored below ' + T.drtPass + ' in any DRT · needs extra support';
+  var weakBody = document.querySelector('#drtWeakTable tbody');
+  if (weakBody) {
+    var weakDRT = students.filter(function(s){
+      return drtExams.some(function(e){return (s.marks[exams.indexOf(e)]||0) < T.drtPass;});
+    });
+    weakBody.innerHTML = weakDRT.length ? weakDRT.map(function(s){
+      return '<tr><td><strong>'+s.name+'</strong></td>'+drtExams.slice(0,2).map(function(e){
+        var m=s.marks[exams.indexOf(e)]||0;
+        return '<td style="color:'+(m<T.drtPass?'var(--red)':'inherit')+';font-weight:'+(m<T.drtPass?'700':'400')+'">'+m+'</td>';
+      }).join('')+'</tr>';
+    }).join('') : '<tr><td colspan="3" class="no-data">No weak students 🎉</td></tr>';
+  }
+}
+
+// ── 4. MAIN EXAM ANALYTICS ──
+function renderMain(students, exams) {
+  var mainTypes = ['PT','Term','Preboard'];
+  var mainExams = exams.filter(function(e){return mainTypes.indexOf(e.type)>=0;});
+  var compWrap = document.getElementById('mainCompWrap');
+  var histWrap = document.getElementById('mainHistWrap');
+  var allZeroMain = !mainExams.length || mainExams.every(function(e){
+    var idx=exams.indexOf(e);
+    return idx<0||students.every(function(s){return !(s.marks[idx]||0);});
+  });
+  if (allZeroMain) {
+    if(compWrap) compWrap.innerHTML = NOT_CONDUCTED;
+    if(histWrap) histWrap.innerHTML = NOT_CONDUCTED;
+    safeQHTML('#mainTopTable tbody', NOT_CONDUCTED_ROW);
+    safeQHTML('#mainWeakTable tbody', NOT_CONDUCTED_ROW);
+    return;
+  }
+
+  // Comparison bar
+  destroyChart('mainComp');
+  if (compWrap) {
+    compWrap.innerHTML = '<canvas id="mainCompChart"></canvas>';
+    var mainAvgs = mainExams.map(function(e){
+      var idx=exams.indexOf(e);
+      return Math.round(avg(students.map(function(s){return s.marks[idx]||0;})));
+    });
+    var mainColors={PT:'rgba(41,82,217,.85)',Term:'rgba(22,163,74,.85)',Preboard:'rgba(233,168,32,.9)'};
+    T.charts.mainComp = new Chart(document.getElementById('mainCompChart'),{
+      type:'bar',
+      data:{labels:mainExams.map(function(e){return e.name;}),datasets:[{label:'Avg',data:mainAvgs,backgroundColor:mainExams.map(function(e){return mainColors[e.type]||'rgba(10,31,110,.8)';}),borderRadius:7,borderSkipped:false}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{anchor:'end',align:'end',offset:-2,font:{size:11,weight:'bold'},color:'#1e293b',formatter:function(v,ctx){return v+'/'+mainExams[ctx.dataIndex].max;}}},scales:{y:{beginAtZero:true,max:100,title:{display:true,text:'Avg Score',font:{size:10,weight:'600'},color:'#64748b'},ticks:{stepSize:20,font:{size:10}},grid:{color:'#f1f5f9'}},x:{title:{display:true,text:'Exam',font:{size:10,weight:'600'},color:'#64748b'},ticks:{font:{size:10}},grid:{display:false}}}}
+    });
+  }
+
+  // Histogram
+  destroyChart('mainHist');
+  if (histWrap) {
+    histWrap.innerHTML = '<canvas id="mainHistChart"></canvas>';
+    var latMain=mainExams[mainExams.length-1], latMainIdx=exams.indexOf(latMain);
+    var pass=T.examPass, maxM=latMain.max||100;
+    var mRanges=[[Math.round(maxM*.9),maxM],[Math.round(maxM*.8),Math.round(maxM*.89)],[Math.round(maxM*.7),Math.round(maxM*.79)],[Math.round(maxM*.6),Math.round(maxM*.69)],[Math.round(maxM*.5),Math.round(maxM*.59)],[pass,Math.round(maxM*.49)],[0,pass-1]];
+    var mLabels=mRanges.map(function(r){return r[0]===0?'Below '+pass:r[0]+'-'+r[1];});
+    var mCounts=mRanges.map(function(r){return students.filter(function(s){var m=s.marks[latMainIdx]||0;return m>=r[0]&&m<=r[1];}).length;});
+    T.charts.mainHist = new Chart(document.getElementById('mainHistChart'),{
+      type:'bar',
+      data:{labels:mLabels,datasets:[{label:'Students',data:mCounts,backgroundColor:['#bbf7d0','#86efac','#a7f3d0','#fde68a','#fed7aa','#fca5a5','#f87171'],borderRadius:6,borderSkipped:false}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{anchor:'end',align:'end',offset:-2,font:{size:11,weight:'bold'},color:'#1e293b'}},scales:{y:{beginAtZero:true,title:{display:true,text:'No. of Students',font:{size:10,weight:'600'},color:'#64748b'},ticks:{stepSize:1,font:{size:10}},grid:{color:'#f1f5f9'}},x:{title:{display:true,text:'Score Range',font:{size:10,weight:'600'},color:'#64748b'},ticks:{font:{size:10}},grid:{display:false}}}}
+    });
+  }
+
+  // Top students
+  var topBody=document.querySelector('#mainTopTable tbody');
+  if (topBody) {
+    var latMain2=mainExams[mainExams.length-1], latIdx2=exams.indexOf(latMain2);
+    var mainScored=students.map(function(s){return{name:s.name,score:s.marks[latIdx2]||0};}).sort(function(a,b){return b.score-a.score;});
+    topBody.innerHTML=mainScored.slice(0,5).map(function(s,i){
+      return '<tr><td><span class="rk-chip '+(i<3?'rk-'+(i+1):'rk-n')+'">'+(i+1)+'</span></td><td><strong>'+s.name+'</strong></td><td>'+s.score+'/'+(latMain2.max||100)+'</td></tr>';
+    }).join('');
+  }
+
+  // Weak students
+  var weakBody=document.querySelector('#mainWeakTable tbody');
+  if (weakBody) {
+    var weakMain=students.filter(function(s){return mainExams.some(function(e){return (s.marks[exams.indexOf(e)]||0)<T.examPass;});});
+    var mainTypes3=mainExams.slice(0,3);
+    weakBody.innerHTML=weakMain.length?weakMain.map(function(s){
+      return '<tr><td><strong>'+s.name+'</strong></td>'+mainTypes3.map(function(e){
+        var m=s.marks[exams.indexOf(e)]||0;
+        return '<td style="color:'+(m<T.examPass?'var(--red)':'inherit')+';font-weight:'+(m<T.examPass?'700':'400')+'">'+m+'</td>';
+      }).join('')+'</tr>';
+    }).join(''):'<tr><td colspan="4" class="no-data">No weak students 🎉</td></tr>';
+  }
+}
+
+// ── 5. PROGRESS TRACKER ──
+function populateProgressSelect(d) {
+  var sel = document.getElementById('progressSelect');
+  var allStudents = d.students.slice().sort(function(a,b){return a.name.localeCompare(b.name);});
+  sel.innerHTML = '<option value="">— Select Student —</option>' + allStudents.map(function(s){
+    return '<option value="'+s.examNo+'">'+s.name+' ('+s.section+')</option>';
+  }).join('');
+}
+
+function renderProgressChart() {
+  var sel = document.getElementById('progressSelect');
+  var examNo = sel.value;
+  var wrap = document.getElementById('progressWrap');
+  if (!examNo) { wrap.innerHTML='<div class="no-data"><div class="ni">👤</div>Select a student above</div>'; return; }
+  var student = T.data.students.find(function(s){return s.examNo===examNo;});
+  if (!student) return;
+  var exams = getExams();
+  var labels = exams.map(function(e){return e.name;});
+  var pcts = exams.map(function(e,i){return pctOf(student.marks[i]||0,e.max);});
+  destroyChart('progress');
+  wrap.innerHTML = '<canvas id="progressChart"></canvas>';
+  T.charts.progress = new Chart(document.getElementById('progressChart'), {
+    type:'line',
+    data:{labels:labels,datasets:[{label:student.name,data:pcts,borderColor:'#0a1f6e',backgroundColor:'rgba(10,31,110,.08)',borderWidth:2.5,pointBackgroundColor:'#0a1f6e',pointRadius:5,tension:.4,fill:true,datalabels:{anchor:'end',align:'top',offset:2,font:{size:9,weight:'bold'},color:'#0a1f6e',formatter:function(v){return v+'%';}}}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{}},scales:{y:{min:0,max:100,title:{display:true,text:'Score %',font:{size:10,weight:'600'},color:'#64748b'},ticks:{callback:function(v){return v+'%';},font:{size:10}},grid:{color:'#f1f5f9'}},x:{title:{display:true,text:'Exam',font:{size:10,weight:'600'},color:'#64748b'},ticks:{font:{size:9},maxRotation:40},grid:{display:false}}}}
+  });
+}
+
+// ── 6. IMPROVEMENT TRACKER ──
+function renderImprovementTracker(students, exams) {
+  var mainExams = exams.filter(function(e){return ['PT','Term','Preboard'].indexOf(e.type)>=0;});
+  var drtExams  = exams.filter(function(e){return e.type==='DRT';});
+  var tbody = document.querySelector('#improvTable tbody');
+  if (!tbody) return;
+
+  // If no main exams yet, show DRT trend instead
+  var useExams = mainExams.length >= 2 ? mainExams : exams;
+
+  if (!useExams.length) { tbody.innerHTML = NO_DATA_ROW; return; }
+
+  // Build header row dynamically
+  var thead = document.querySelector('#improvTable thead tr');
+  if (thead) {
+    thead.innerHTML = '<th>Student</th>' + useExams.map(function(e){return '<th>'+e.name+'</th>';}).join('') + '<th>Trend</th>';
+  }
+
+  var rows = students.map(function(s){
+    var marks = useExams.map(function(e){
+      var idx = exams.indexOf(e);
+      return idx >= 0 ? (s.marks[idx] || 0) : null;
+    });
+    var validPcts = marks.map(function(m,i){ return m !== null ? pctOf(m, useExams[i].max) : null; }).filter(function(p){return p!==null;});
+    var trend='➖ Stable', trendCls='trend-stb';
+    if (validPcts.length >= 2) {
+      var diff = validPcts[validPcts.length-1] - validPcts[validPcts.length-2];
+      if (diff >= 3)  { trend='📈 Improving'; trendCls='trend-imp'; }
+      else if (diff <= -3) { trend='📉 Declining'; trendCls='trend-dec'; }
+    }
+    return {name:s.name, marks, trend, trendCls};
+  }).sort(function(a,b){return a.name.localeCompare(b.name);});
+
+  tbody.innerHTML = rows.map(function(r){
+    return '<tr><td><strong>'+r.name+'</strong></td>'
+      + r.marks.map(function(m,i){
+          return '<td style="color:'+(m!==null&&m<(useExams[i].type==='DRT'?T.drtPass:T.examPass)?'var(--red)':'inherit')+'">'+(m!==null?m:'—')+'</td>';
+        }).join('')
+      + '<td class="'+r.trendCls+'">'+r.trend+'</td></tr>';
+  }).join('');
+}
+
+// ── 7. CONSISTENCY ──
+function renderConsistency(students, exams) {
+  var tbody = document.querySelector('#consistTable tbody');
+  if (!tbody) return;
+  var hasData = students.some(function(s){ return exams.some(function(e,i){ return s.marks[i]>0; }); });
+  if (!hasData) { tbody.innerHTML = NOT_CONDUCTED_ROW; return; }
+  var rows = students.map(function(s){
+    var pcts = exams.map(function(e,i){return pctOf(s.marks[i]||0,e.max);}).filter(function(p){return p>0;});
+    var a = Math.round(avg(pcts));
+    var sd = Math.round(stddev(pcts));
+    var level, chip;
+    if (sd<=10){level='⭐ Very Consistent';chip='cons-great';}
+    else if (sd<=20){level='⚠ Fluctuating';chip='cons-ok';}
+    else{level='❗ Unstable';chip='cons-bad';}
+    return {name:s.name,avg:a,sd,level,chip};
+  }).sort(function(a,b){return a.sd-b.sd;});
+  tbody.innerHTML = rows.map(function(r){
+    return '<tr><td><strong>'+r.name+'</strong></td><td>'+r.avg+'%</td><td>±'+r.sd+'</td><td><span class="'+r.chip+'">'+r.level+'</span></td></tr>';
+  }).join('');
+}
+
+// ── 8. RISK PREDICTION ──
+function renderRisk(students, exams) {
+  var ptIdx   = exams.findIndex(function(e){return e.type==='PT';});
+  var termIdx = exams.findIndex(function(e){return e.type==='Term';});
+  var preIdx  = exams.findIndex(function(e){return e.type==='Preboard';});
+  var drt1Idx = exams.findIndex(function(e){return e.name.indexOf('DRT1')>=0;});
+  var drt2Idx = exams.findIndex(function(e){return e.name.indexOf('DRT2')>=0;});
+  var tbody = document.querySelector('#riskTable tbody');
+  if (!tbody) return;
+
+  // Dynamic header based on available exams
+  var thead = document.querySelector('#riskTable thead tr');
+  var usedCols = [
+    ptIdx>=0   ? {label:'PT1',   idx:ptIdx}   : null,
+    termIdx>=0 ? {label:'Term',  idx:termIdx} : null,
+    preIdx>=0  ? {label:'Preboard', idx:preIdx} : null,
+    drt1Idx>=0 && ptIdx<0 ? {label:'DRT1', idx:drt1Idx} : null,
+    drt2Idx>=0 && ptIdx<0 ? {label:'DRT2', idx:drt2Idx} : null,
+  ].filter(Boolean).slice(0,3);
+  if (thead) thead.innerHTML = '<th>Student</th>' + usedCols.map(function(c){return '<th>'+c.label+'</th>';}).join('') + '<th>Risk</th>';
+
+  var rows = students.map(function(s){
+    var cols = usedCols.map(function(c){return s.marks[c.idx]||0;});
+    var pass = T.examPass;
+    var failCount = cols.filter(function(m){return m>0&&m<pass;}).length;
+    var allZero = cols.every(function(m){return m===0;});
+    var risk, chip;
+    if (allZero) { risk='No Data'; chip='risk-low'; }
+    else if (failCount >= 2) { risk='High Risk'; chip='risk-high'; }
+    else if (failCount === 1) { risk='Medium Risk'; chip='risk-med'; }
+    else { risk='Low Risk'; chip='risk-low'; }
+    return {name:s.name, cols, risk, chip};
+  }).sort(function(a,b){
+    var order={'High Risk':0,'Medium Risk':1,'Low Risk':2,'No Data':3};
+    return (order[a.risk]||3)-(order[b.risk]||3);
+  });
+
+  tbody.innerHTML = rows.map(function(r){
+    return '<tr><td><strong>'+r.name+'</strong></td>'
+      + r.cols.map(function(m){return '<td style="color:'+(m>0&&m<T.examPass?'var(--red)':'inherit')+';font-weight:'+(m>0&&m<T.examPass?'700':'400')+'">'+(m||'—')+'</td>';}).join('')
+      + '<td><span class="'+r.chip+'">'+r.risk+'</span></td></tr>';
+  }).join('');
+
+  var attn = rows.filter(function(r){return r.risk==='High Risk'||r.risk==='Medium Risk';});
+  var al = document.getElementById('attentionList');
+  if (!al) return;
+  al.innerHTML = attn.length ? attn.map(function(r){
+    return '<div class="att-item"><div><div class="att-name">'+r.name+'</div><div class="att-sub">'+r.cols.map(function(m,i){return usedCols[i].label+': '+(m||'—');}).join(' · ')+'</div></div><span class="'+r.chip+'">'+r.risk+'</span></div>';
+  }).join('') : '<div class="no-data">No high-risk students 🎉</div>';
+}
+
+// ── 9. QUADRANT ──
+function renderQuadrant(students, exams) {
+  var mainExams = exams.filter(function(e){return e.type!=='DRT';});
+  var el = document.getElementById('quadGrid');
+  if (!el) return;
+  if (!mainExams.length) { el.innerHTML = NO_DATA_DIV; return; }
+  var quads = {excellent:[],monitor:[],progress:[],risk:[]};
+  students.forEach(function(s){
+    var pcts = mainExams.map(function(e){return pctOf(s.marks[exams.indexOf(e)]||0,e.max);});
+    var a = avg(pcts);
+    // trend: need at least 2 points; if only 1, compare to 50 as baseline
+    var trend = pcts.length >= 2 ? (pcts[pcts.length-1] - pcts[pcts.length-2]) : (pcts[0] - 50);
+    var highScore = a >= 55;
+    var improving = trend >= 0;
+    if (highScore&&improving) quads.excellent.push(s.name);
+    else if (highScore&&!improving) quads.monitor.push(s.name);
+    else if (!highScore&&improving) quads.progress.push(s.name);
+    else quads.risk.push(s.name);
+  });
+  function quadBox(cls,icon,title,names){
+    return '<div class="quad '+cls+'"><div class="quad-title">'+icon+' '+title+'</div>'+
+      (names.length?names.map(function(n){return '<div class="quad-student">'+n+'</div>';}).join(''):'<div class="quad-student" style="color:var(--g400)">None</div>')+
+      '</div>';
+  }
+  el.innerHTML =
+    quadBox('q-excellent','🏆','Excellent — High Score + Improving',quads.excellent)+
+    quadBox('q-monitor','👁','Needs Monitoring — High Score + Declining',quads.monitor)+
+    quadBox('q-progress','📈','Good Progress — Low Score + Improving',quads.progress)+
+    quadBox('q-risk','🚨','At Risk — Low Score + Declining',quads.risk);
+}
+
+// ── 10. HEATMAP ──
+function renderHeatmap(students, exams) {
+  function heatColor(pct) {
+    if (pct===0) return 'hm-na';
+    if (pct>=65) return 'hm-green';
+    if (pct>=40) return 'hm-yellow';
+    return 'hm-red';
+  }
+  var html = '<table class="heatmap-table"><thead><tr><th>Student</th>'+exams.map(function(e){return '<th>'+e.name+'</th>';}).join('')+'</tr></thead><tbody>';
+  html += students.slice().sort(function(a,b){return a.name.localeCompare(b.name);}).map(function(s){
+    return '<tr><td style="font-weight:700;background:#fff">'+s.name+'</td>'+exams.map(function(e,i){
+      var m=s.marks[i]||0;
+      var p=pctOf(m,e.max);
+      var cls=m===0?'hm-na':heatColor(p);
+      return '<td class="'+cls+'">'+(m===0?'—':m)+'</td>';
+    }).join('')+'</tr>';
+  }).join('');
+  html += '</tbody></table>';
+  var hw=document.getElementById('heatmapWrap'); if(hw) hw.innerHTML = html;
+}
+
+// ── 11. SCATTER ──
+function renderScatter(students, exams) {
+  destroyChart('scatter');
+  var wrap = document.getElementById('scatterWrap');
+  if (!wrap) return;
+  wrap.innerHTML = '<canvas id="scatterChart"></canvas>';
+  var points = students.map(function(s){
+    var pcts = exams.map(function(e,i){return pctOf(s.marks[i]||0,e.max);});
+    var a = Math.round(avg(pcts));
+    // Safe trend: need at least 2 points
+    var trend = pcts.length >= 2 ? Math.round(pcts[pcts.length-1] - pcts[pcts.length-2]) : 0;
+    var highScore=a>=55, improving=trend>=0;
+    var color = highScore&&improving?'rgba(22,163,74,.8)':!highScore&&improving?'rgba(41,82,217,.8)':highScore&&!improving?'rgba(234,88,12,.8)':'rgba(220,38,38,.8)';
+    return {x:a,y:trend,label:s.name,color:color};
+  });
+  T.charts.scatter = new Chart(document.getElementById('scatterChart'), {
+    type:'scatter',
+    data:{datasets:[{data:points.map(function(p){return {x:p.x,y:p.y};}),backgroundColor:points.map(function(p){return p.color;}),pointRadius:8,pointHoverRadius:10}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        datalabels:{display:true,anchor:'end',align:'top',offset:2,font:{size:8},color:'#475569',formatter:function(_,ctx){return points[ctx.dataIndex].label.split(' ')[0];}},
+        tooltip:{callbacks:{label:function(ctx){return points[ctx.dataIndex].label+': Avg '+ctx.parsed.x+'%, Trend '+ctx.parsed.y+'%';}}}
+      },
+      scales:{
+        x:{title:{display:true,text:'Average Marks %',font:{size:10}},min:0,max:100,ticks:{font:{size:10}},grid:{color:'#f1f5f9'}},
+        y:{title:{display:true,text:'Improvement Trend %',font:{size:10}},ticks:{font:{size:10}},grid:{color:'#f1f5f9'}}
+      }
+    }
+  });
+}
+
+// ── 12. CLASS COMPARISON ──
+function renderClassComparison() {
+  if (!T.data) return;
+  var exams = T.data.exams;
+  var sections = [...new Set(T.data.students.map(function(s){return s.section;}))].sort();
+  var tbody = document.querySelector('#classCompTable tbody');
+  var lb = document.getElementById('classLeaderboard');
+  if (!tbody) return;
+
+  if (sections.length < 2) {
+    tbody.innerHTML = '<tr><td colspan="99" class="no-data">Only one class — comparison needs 2+ classes.</td></tr>';
+    if (lb) lb.innerHTML = '<div class="no-data">Multiple classes needed for comparison.</div>';
+    return;
+  }
+
+  // Update header dynamically
+  var thead = document.querySelector('#classCompTable thead tr');
+  if (thead) thead.innerHTML = '<th>Class</th>'+exams.map(function(e){return '<th>'+e.name+' Avg</th>';}).join('')+'<th>Overall</th>';
+
+  var classData = sections.map(function(sec){
+    var ss = T.data.students.filter(function(s){return s.section===sec;});
+    var avgs = exams.map(function(e,i){
+      return ss.length ? Math.round(avg(ss.map(function(s){return s.marks[i]||0;}))) : null;
+    });
+    var overall = avgs.length ? Math.round(avg(avgs.filter(function(v){return v!==null;}))) : null;
+    return {sec:sec, avgs:avgs, overall:overall};
+  }).sort(function(a,b){return (b.overall||0)-(a.overall||0);});
+
+  tbody.innerHTML = classData.map(function(c){
+    return '<tr><td><strong>'+c.sec+'</strong></td>'
+      + c.avgs.map(function(v){return '<td>'+(v!==null?v:'—')+'</td>';}).join('')
+      + '<td><strong>'+(c.overall!==null?c.overall+'%':'—')+'</strong></td></tr>';
+  }).join('');
+
+  if (!lb) return;
+  var maxOverall = Math.max.apply(null, classData.map(function(c){return c.overall||0;}));
+  lb.innerHTML = classData.map(function(c,i){
+    var w = maxOverall>0?Math.round((c.overall||0)/maxOverall*100):0;
+    return '<div class="lb-item"><div class="lb-rank lb-'+(i+1<=3?i+1:'n')+'">'+(i+1)+'</div><div class="lb-info"><div class="lb-name">Class '+c.sec+'</div><div class="lb-avg">Overall avg: '+(c.overall!==null?c.overall+'%':'No data')+'</div></div><div class="lb-bar-wrap"><div class="lb-bar" style="width:'+w+'%"></div></div></div>';
+  }).join('');
+}
+
+// ── 13. DIFFICULTY ──
+function getDifficulty(pct) {
+  if (pct>=70) return 'Easy';
+  if (pct>=45) return 'Medium';
+  return 'Hard';
+}
+function renderDifficulty(exams) {
+  var students = T.data ? T.data.students : [];
+  var tbody = document.querySelector('#diffTable tbody');
+  if (!tbody) return;
+  tbody.innerHTML = exams.map(function(e,i){
+    var secStudents = students.filter(function(s){return s.section===T.cls;});
+    var scores = secStudents.map(function(s){return s.marks[i]||0;});
+    var a = Math.round(avg(scores));
+    var p = pctOf(a, e.max);
+    var d = getDifficulty(p);
+    var chipClass = d==='Easy'?'diff-easy':d==='Medium'?'diff-med':'diff-hard';
+    return '<tr><td><strong>'+e.name+'</strong></td><td>'+e.max+'</td><td>'+a+'</td><td>'+p+'%</td><td><span class="'+chipClass+'">'+d+'</span></td></tr>';
+  }).join('') || NO_DATA_ROW;
+}
+
+// ── STUDENT SEARCH ──
+function renderStudentSearch() {
+  var q = document.getElementById('studentSearch').value.trim().toLowerCase();
+  var title = document.getElementById('searchTitle');
+  var card = document.getElementById('searchCard');
+  var res = document.getElementById('searchResults');
+  if (!q || !T.data) { title.style.display='none'; card.classList.add('hidden'); return; }
+  title.style.display='block'; card.classList.remove('hidden');
+  var exams = T.data.exams;
+  var matches = T.data.students.filter(function(s){return s.name.toLowerCase().includes(q)||s.examNo.includes(q);});
+  if (!matches.length) { res.innerHTML='<div class="no-data">No students found</div>'; return; }
+  res.innerHTML = matches.map(function(s){
+    var pcts = exams.map(function(e,i){return pctOf(s.marks[i]||0,e.max);});
+    var a = Math.round(avg(pcts));
+    return '<div style="padding:10px 0;border-bottom:1px solid var(--g100)"><div style="font-weight:700;font-size:.9rem">'+s.name+' <small style="color:var(--g400);font-weight:400">('+s.section+')</small></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">'+exams.map(function(e,i){var m=s.marks[i]||0;return '<span style="background:var(--g100);padding:2px 8px;border-radius:6px;font-size:.75rem;font-weight:600">'+e.name+': '+m+'</span>';}).join('')+'</div><div style="margin-top:5px;font-size:.78rem;color:var(--g600)">Overall average: <strong>'+a+'%</strong></div></div>';
+  }).join('');
+}
+
+
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Enter')return;
+  if(!document.getElementById('tForm').classList.contains('hidden')) teacherLogin();
+  else studentLogin();
+});
+
+// ── Restore session on page refresh ──
+(function(){
+  try{
+    var saved=sessionStorage.getItem('vva_session');
+    if(saved){
+      CU=JSON.parse(saved);
+      if(CU.type==='student'){showDash('sDash');renderStudent(CU.data);}
+      else if(CU.type==='teacher'){
+        showDash('tDash');
+        renderTeacher(CU.data,null);
+      }
+    }
+  }catch(e){sessionStorage.removeItem('vva_session');}
+})();
+
+// ══════════════════════════════════════════
+// POLISH LAYER — Performance + UX
+// ══════════════════════════════════════════
+
+// ── Horizontal scroll overflow detection ──
+// Adds a subtle right-fade on t-scroll wrappers that overflow
+function markScrollable() {
+  document.querySelectorAll('.t-scroll').forEach(function(el) {
+    if (el.scrollWidth > el.clientWidth + 4) {
+      el.style.background = 'linear-gradient(to right, transparent calc(100% - 24px), rgba(255,255,255,.9)) no-repeat right / 24px 100%';
+    } else {
+      el.style.background = '';
+    }
+  });
+}
+// Run after each render
+var _origRenderTeacher = renderTeacher;
+renderTeacher = function(d, sf) {
+  _origRenderTeacher(d, sf);
+  setTimeout(markScrollable, 100);
+};
+var _origRenderStudent = renderStudent;
+renderStudent = function(d) {
+  _origRenderStudent(d);
+  setTimeout(markScrollable, 100);
+};
+window.addEventListener('resize', markScrollable);
+
+// ── Lazy chart rendering via IntersectionObserver ──
+// Charts in the teacher dashboard are deferred until visible
+var _lazyQueue = [];
+var _lazyObserver = null;
+
+function lazyChart(wrapperId, renderFn) {
+  var el = document.getElementById(wrapperId);
+  if (!el) { renderFn(); return; }
+  // If already visible, render immediately
+  var rect = el.getBoundingClientRect();
+  if (rect.top < window.innerHeight + 200) {
+    renderFn();
+    return;
+  }
+  // Queue for observation
+  if (!_lazyObserver && 'IntersectionObserver' in window) {
+    _lazyObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          var id = entry.target.dataset.lazyId;
+          var item = _lazyQueue.find(function(q){ return q.id === id; });
+          if (item && !item.done) { item.done = true; item.fn(); }
+          _lazyObserver.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: '200px 0px' });
+  }
+  var uid = wrapperId + '_' + Date.now();
+  el.dataset.lazyId = uid;
+  _lazyQueue.push({ id: uid, fn: renderFn, done: false });
+  if (_lazyObserver) _lazyObserver.observe(el);
+  else renderFn(); // fallback
+}
+
+// ── Chart animation restart on filter change ──
+// Briefly removes animation class so CSS re-triggers
+function animateCards() {
+  document.querySelectorAll('.card,.sd-card,.sum-card,.sd-sum,.insight-card').forEach(function(el) {
+    el.classList.add('anim-reset');
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        el.classList.remove('anim-reset');
+      });
+    });
+  });
+}
+var _origRenderTeacher2 = renderTeacher;
+renderTeacher = function(d, sf) {
+  _origRenderTeacher2(d, sf);
+  animateCards();
+};
+
+// ── Large table virtual cap for perf ──
+// Limit heatmap rows rendered at once (max 30 visible, rest on scroll)
+var _origRenderHeatmap = renderHeatmap;
+renderHeatmap = function(students, exams) {
+  // If > 30 students, render in chunks to avoid long paint
+  if (students && students.length > 30) {
+    var chunk1 = students.slice(0, 30);
+    var rest = students.slice(30);
+    _origRenderHeatmap(chunk1, exams);
+    setTimeout(function() {
+      var wrap = document.getElementById('heatmapWrap');
+      if (!wrap) return;
+      var table = wrap.querySelector('.heatmap-table');
+      if (!table) return;
+      // Build extra rows for rest
+      var headers = exams.map(function(e){ return e.name; });
+      var extra = rest.map(function(s){
+        var row = '<tr>';
+        row += '<td style="font-weight:600">'+s.name+'</td>';
+        exams.forEach(function(e, i){
+          var m = s.marks[i]||0;
+          var pct = e.max>0?Math.round(m/e.max*100):0;
+          var cls = pct>=65?'hm-green':pct>=40?'hm-yellow':'hm-red';
+          row += '<td class="'+cls+'">'+m+'</td>';
+        });
+        row += '</tr>';
+        return row;
+      }).join('');
+      table.querySelector('tbody').innerHTML += extra;
+    }, 80);
+  } else {
+    _origRenderHeatmap(students, exams);
+  }
+};
+// ══════════════════════════════════════════
+// FEATURE: Dynamic sticky filter offset
+// Calculates real lu-bar height so filter
+// bar stacks perfectly below it on all screens
+// ══════════════════════════════════════════
+function fixFilterSticky() {
+  var topbar = document.querySelector('.topbar');
+  var luBar  = document.getElementById('tLastUpdated');
+  var filter = document.getElementById('tFilterBar');
+  if (!filter) return;
+  var topH = topbar ? topbar.offsetHeight : 54;
+  var luH  = (luBar && luBar.firstChild) ? luBar.firstChild.offsetHeight : 0;
+  filter.style.top = (topH + luH) + 'px';
+}
+// Run after render and on resize
+window.addEventListener('resize', fixFilterSticky);
+var _origRT_sticky = renderTeacher;
+renderTeacher = function(d, sf) {
+  _origRT_sticky(d, sf);
+  setTimeout(fixFilterSticky, 60);
+};
+
+// ══════════════════════════════════════════
+// FEATURE: Loading skeletons
+// Shows skeleton placeholders while the
+// teacher dashboard is fetching data
+// ══════════════════════════════════════════
+// ══════════════════════════════════════════
+// FEATURE: Loading skeletons — safe overlay approach
+// Uses a CSS overlay instead of replacing innerHTML,
+// so all element IDs stay alive during the fetch.
+// ══════════════════════════════════════════
+
+// Inject overlay CSS once
+(function injectOverlayCSS() {
+  var s = document.createElement('style');
+  s.textContent = [
+    '#tDashOverlay{position:fixed;inset:0;z-index:199;background:rgba(255,255,255,.82);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;}',
+    '#tDashOverlay.show{display:flex;}',
+    '.tdo-spinner{width:48px;height:48px;border:4px solid var(--blue-border);border-top-color:var(--blue);border-radius:50%;animation:tdo-spin .75s linear infinite;}',
+    '@keyframes tdo-spin{to{transform:rotate(360deg);}}',
+    '.tdo-text{font-size:.88rem;font-weight:700;color:var(--blue);letter-spacing:.4px;}'
+  ].join('');
+  document.head.appendChild(s);
+  // Create overlay element attached to tDash (not tDashBody, so it covers it)
+  var tDash = document.getElementById('tDash');
+  if (tDash) {
+    var overlay = document.createElement('div');
+    overlay.id = 'tDashOverlay';
+    overlay.innerHTML = '<div class="tdo-spinner"></div><div class="tdo-text">Loading dashboard data…</div>';
+    tDash.appendChild(overlay);
+  }
+}());
+
+function showTeacherSkeleton() {
+  var ov = document.getElementById('tDashOverlay');
+  if (ov) ov.classList.add('show');
+}
+function clearTeacherSkeleton() {
+  var ov = document.getElementById('tDashOverlay');
+  if (ov) ov.classList.remove('show');
+}
+
+// Wrap teacherLogin to show overlay before fetch completes
+var _origTeacherLogin = teacherLogin;
+teacherLogin = async function() {
+  var u = document.getElementById('tUser').value.trim();
+  var p = document.getElementById('tPass').value.trim();
+  if (!u || !p) { return _origTeacherLogin(); }
+  var btn = document.getElementById('tBtn');
+  var err = document.getElementById('tErr');
+  err.style.display = 'none';
+  btn.textContent = 'Loading…'; btn.disabled = true;
+  try {
+    showDash('tDash');
+    showTeacherSkeleton();
+    var d = await api({ role: 'teacher', username: u, password: p });
+    CU = { type: 'teacher', data: d };
+    sessionStorage.setItem('vva_session', JSON.stringify(CU));
+    clearTeacherSkeleton();
+    renderTeacher(d, null);
+  } catch(e) {
+    clearTeacherSkeleton();
+    document.getElementById('loginPage').style.display = 'flex';
+    document.getElementById('tDash').style.display = 'none';
+    err.textContent = e.message; err.style.display = 'block';
+  } finally {
+    btn.textContent = 'Login'; btn.disabled = false;
+  }
+};
+
+// ══════════════════════════════════════════
+// FEATURE: Export functions
+// ══════════════════════════════════════════
+
+// ── CSV export: reads any etable by ID ──
+function exportCSV(tableId, filename) {
+  var table = document.getElementById(tableId);
+  if (!table) { alert('No data to export.'); return; }
+  var rows = [];
+  // Headers
+  var ths = table.querySelectorAll('thead th');
+  rows.push(Array.from(ths).map(function(th){ return '"' + th.innerText.replace(/"/g,'""') + '"'; }).join(','));
+  // Body rows — get plain text, strip emoji/chips
+  table.querySelectorAll('tbody tr').forEach(function(tr) {
+    var cols = Array.from(tr.querySelectorAll('td')).map(function(td){
+      var t = td.innerText.trim().replace(/\n+/g,' ').replace(/"/g,'""');
+      return '"' + t + '"';
+    });
+    if (cols.length) rows.push(cols.join(','));
+  });
+  if (rows.length <= 1) { alert('Table is empty — nothing to export.'); return; }
+  var csv = '\uFEFF' + rows.join('\r\n'); // BOM for Excel UTF-8
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = filename + '_' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ── PDF export: print a styled version using browser print ──
+function exportPDF(tableId, title, subtitle) {
+  var table = document.getElementById(tableId);
+  if (!table) { alert('No data to export.'); return; }
+  var cls = T && T.cls ? T.cls : '';
+  var today = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  // Build clean HTML for printing
+  var ths = Array.from(table.querySelectorAll('thead th')).map(function(th){ return '<th>'+th.innerText+'</th>'; }).join('');
+  var trs = Array.from(table.querySelectorAll('tbody tr')).map(function(tr){
+    var tds = Array.from(tr.querySelectorAll('td')).map(function(td){
+      return '<td>'+td.innerText.trim().replace(/\n+/g,' ')+'</td>';
+    }).join('');
+    return '<tr>'+tds+'</tr>';
+  }).join('');
+  if (!trs) { alert('Table is empty — nothing to export.'); return; }
+  var html =
+    '<h2>' + title + '</h2>'
+    + '<p>Class: <strong>' + cls + '</strong> &nbsp;·&nbsp; Velammal Computer Science &nbsp;·&nbsp; ' + today + '</p>'
+    + '<p style="color:#6b7280;font-size:10px;">' + subtitle + '</p>'
+    + '<table><thead><tr>' + ths + '</tr></thead><tbody>' + trs + '</tbody></table>';
+  var pz = document.getElementById('printZone');
+  pz.innerHTML = html;
+  pz.style.display = 'block';
+  // Small delay so browser can paint, then print
+  setTimeout(function() {
+    window.print();
+    // Restore after print dialog closes
+    setTimeout(function() {
+      pz.style.display = 'none';
+      pz.innerHTML = '';
+    }, 1500);
+  }, 120);
+}
+
+</script>
