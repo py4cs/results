@@ -6,7 +6,22 @@
 <title>Velammal Results Portal v3</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<script>
+// chartjs-plugin-datalabels is loaded ONLY when teacher dashboard first renders.
+// Loading it in <head> causes auto-registration which breaks all student charts.
+var _datalabelsLoaded = false;
+function loadDatalabels(callback) {
+  if (_datalabelsLoaded) { callback(); return; }
+  var s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js';
+  s.onload = function() {
+    _datalabelsLoaded = true;
+    Chart.register(ChartDataLabels);
+    callback();
+  };
+  document.head.appendChild(s);
+}
+</script>
 <style>
 :root{
   --blue:#0a1f6e;--blue-mid:#1535a8;--blue-lt:#2952d9;--blue-pale:#eef2ff;--blue-border:#c7d2fe;
@@ -1509,7 +1524,7 @@ var CU = null;
 //  Replace YOUR_WEB_APP_URL below after deploying GAS
 // ══════════════════════════════════════════════════════════════
 
-var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz5kqod48dDLF7nd2N842-2OR-QXAvb4-rWjPRUL3ARF0OSJDoQGnJz4KHoG2fKaYQs/exec';
+var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxWTDo72HncEQlpzruVS5NfurDPfA7H4LBFCnBHBXHfilbvCVgTEpKf5NpiYq8diDCuRA/exec';
 
 async function api(p) {
   var url = new URL(WEB_APP_URL);
@@ -1586,9 +1601,6 @@ function calcPct(s,m){return m>0?Math.round(s/m*100):0;}
 function calcAvg(arr){return arr.length?Math.round(arr.reduce(function(a,b){return a+b;},0)/arr.length):null;}
 function grade(p){if(p>=90)return'A+';if(p>=75)return'A';if(p>=60)return'B';if(p>=45)return'C';return'D';}
 function typeChip(t){var m={DRT:'ch-drt',PT:'ch-pt',Term:'ch-term',Preboard:'ch-pre'};return'<span class="chip '+(m[t]||'ch-drt')+'">'+t+'</span>';}
-
-// Register datalabels plugin globally
-Chart.register(ChartDataLabels);
 
 // ── Chart.js global defaults ──
 Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
@@ -1712,6 +1724,7 @@ function renderStudent(d) {
 
 function renderStudentCharts(d) {
   var exams = d.exams || [];
+  console.log('[Charts] renderStudentCharts called. exams count:', exams.length, exams);
 
   // ── Core data splits ──
   var taken     = exams.filter(function(e){ return !e.absent && e.score > 0; });
@@ -1797,10 +1810,10 @@ function renderStudentCharts(d) {
   // ══════════════════════════════════════
   // 3. PROGRESS CHART (Line)
   // ══════════════════════════════════════
-  // Destroy all existing charts first
   ['progress','drt','main','classStand'].forEach(function(k){
     if (sCharts[k]) { sCharts[k].destroy(); sCharts[k] = null; }
   });
+  console.log('[Charts] taken:', taken.length, 'drtTaken:', drtTaken.length, 'mainTaken:', mainTaken.length);
 
   var pw = document.getElementById('sProgressWrap');
   if (pw) {
@@ -1810,28 +1823,44 @@ function renderStudentCharts(d) {
     } else {
       var pc = document.createElement('canvas');
       pw.appendChild(pc);
-      sCharts.progress = new Chart(pc, {
+      sCharts.progress = new Chart(pc.getContext('2d'), {
         type: 'line',
         data: {
-          labels: taken.map(function(e){return e.name;}),
+          labels: taken.map(function(e){ return e.name; }),
           datasets: [
-            { label:'Your %', data:taken.map(function(e){return e.pct;}),
-              borderColor:'#0a1f6e', backgroundColor:'rgba(10,31,110,.07)',
-              borderWidth:2.5, pointRadius:6, pointBackgroundColor:taken.map(function(e){return e.pct>=75?'#16a34a':e.pct>=50?'#e9a820':'#dc2626';}),
-              pointBorderColor:'#fff', pointBorderWidth:2, tension:.4, fill:true,
-              datalabels:{anchor:'end',align:'top',font:{size:10,weight:'bold'},formatter:function(v){return v+'%';},color:'#0a1f6e'} },
-            { label:'Class Avg %', data:taken.map(function(e){return e.classAvgPct;}),
-              borderColor:'#e9a820', backgroundColor:'transparent',
-              borderWidth:2, borderDash:[5,4], pointRadius:3, tension:.4,
-              datalabels:{display:false} }
+            {
+              label: 'Your %',
+              data: taken.map(function(e){ return e.pct; }),
+              borderColor: '#0a1f6e',
+              backgroundColor: 'rgba(10,31,110,.08)',
+              borderWidth: 2.5,
+              pointRadius: 6,
+              pointBackgroundColor: taken.map(function(e){ return e.pct>=75?'#16a34a':e.pct>=50?'#e9a820':'#dc2626'; }),
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              tension: 0.4,
+              fill: true
+            },
+            {
+              label: 'Class Avg %',
+              data: taken.map(function(e){ return e.classAvgPct; }),
+              borderColor: '#e9a820',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              borderDash: [5,4],
+              pointRadius: 3,
+              tension: 0.4,
+              fill: false
+            }
           ]
         },
-        options:{
-          responsive:true, maintainAspectRatio:false,
-          plugins:{legend:{position:'top'},datalabels:{}},
-          scales:{
-            y:{min:0,max:100,ticks:{callback:function(v){return v+'%';}}},
-            x:{grid:{display:false}}
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top' } },
+          scales: {
+            y: { min:0, max:100, ticks:{ callback:function(v){ return v+'%'; } } },
+            x: { grid:{ display:false } }
           }
         }
       });
@@ -1842,6 +1871,7 @@ function renderStudentCharts(d) {
   // 4. DRT CHART (Bar)
   // ══════════════════════════════════════
   var dw = document.getElementById('sDrtChartWrap');
+  console.log('[Charts] sDrtChartWrap element:', dw, '| drtTaken:', drtTaken.length);
   if (dw) {
     dw.innerHTML = '';
     if (!drtTaken.length) {
@@ -1849,26 +1879,28 @@ function renderStudentCharts(d) {
     } else {
       var dc = document.createElement('canvas');
       dw.appendChild(dc);
-      sCharts.drt = new Chart(dc, {
-        type:'bar',
-        data:{
-          labels:drtTaken.map(function(e){return e.name;}),
-          datasets:[
-            { label:'Your Marks', data:drtTaken.map(function(e){return e.score;}),
-              backgroundColor:drtTaken.map(function(e){return e.pct>=70?'rgba(22,163,74,.85)':e.pct>=45?'rgba(233,168,32,.9)':'rgba(220,38,38,.85)';}),
-              borderRadius:8,
-              datalabels:{anchor:'end',align:'end',font:{size:11,weight:'bold'},color:'#1e293b'} }
-          ]
+      sCharts.drt = new Chart(dc.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: drtTaken.map(function(e){ return e.name; }),
+          datasets: [{
+            label: 'Your Marks',
+            data: drtTaken.map(function(e){ return e.score; }),
+            backgroundColor: drtTaken.map(function(e){ return e.pct>=70?'rgba(22,163,74,.85)':e.pct>=45?'rgba(233,168,32,.9)':'rgba(220,38,38,.85)'; }),
+            borderRadius: 8
+          }]
         },
-        options:{
-          responsive:true, maintainAspectRatio:false,
-          plugins:{legend:{display:false},datalabels:{}},
-          scales:{
-            y:{beginAtZero:true, max:drtMaxMark+2},
-            x:{grid:{display:false}}
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, max: drtMaxMark + 2, ticks:{ stepSize:1 } },
+            x: { grid: { display: false } }
           }
         }
       });
+      console.log('[Charts] DRT chart created:', sCharts.drt);
     }
   }
 
@@ -1876,6 +1908,7 @@ function renderStudentCharts(d) {
   // 5. MAIN EXAMS CHART (Bar)
   // ══════════════════════════════════════
   var mw = document.getElementById('sMainChartWrap');
+  console.log('[Charts] sMainChartWrap element:', mw, '| mainTaken:', mainTaken.length);
   if (mw) {
     mw.innerHTML = '';
     if (!mainTaken.length) {
@@ -1883,23 +1916,24 @@ function renderStudentCharts(d) {
     } else {
       var mc = document.createElement('canvas');
       mw.appendChild(mc);
-      sCharts.main = new Chart(mc, {
-        type:'bar',
-        data:{
-          labels:mainTaken.map(function(e){return e.name;}),
-          datasets:[
-            { label:'Your Marks', data:mainTaken.map(function(e){return e.score;}),
-              backgroundColor:mainTaken.map(function(e){return e.pct>=75?'rgba(22,163,74,.85)':e.pct>=50?'rgba(233,168,32,.9)':'rgba(220,38,38,.85)';}),
-              borderRadius:8,
-              datalabels:{anchor:'end',align:'end',font:{size:11,weight:'bold'},color:'#1e293b'} }
-          ]
+      sCharts.main = new Chart(mc.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: mainTaken.map(function(e){ return e.name; }),
+          datasets: [{
+            label: 'Your Marks',
+            data: mainTaken.map(function(e){ return e.score; }),
+            backgroundColor: mainTaken.map(function(e){ return e.pct>=75?'rgba(22,163,74,.85)':e.pct>=50?'rgba(233,168,32,.9)':'rgba(220,38,38,.85)'; }),
+            borderRadius: 8
+          }]
         },
-        options:{
-          responsive:true, maintainAspectRatio:false,
-          plugins:{legend:{display:false},datalabels:{}},
-          scales:{
-            y:{beginAtZero:true, max:examMaxMark+5},
-            x:{grid:{display:false}}
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, max: examMaxMark + 5 },
+            x: { grid: { display: false } }
           }
         }
       });
@@ -1917,26 +1951,30 @@ function renderStudentCharts(d) {
     } else {
       var csc = document.createElement('canvas');
       csw.appendChild(csc);
-      sCharts.classStand = new Chart(csc, {
-        type:'bar',
-        data:{
-          labels:taken.map(function(e){return e.name;}),
-          datasets:[
-            { label:'You %', data:taken.map(function(e){return e.pct;}), backgroundColor:'rgba(10,31,110,.8)', borderRadius:6, datalabels:{anchor:'end',align:'end',font:{size:9,weight:'bold'},color:'#0a1f6e',formatter:function(v){return v+'%';}} },
-            { label:'Class Avg %', data:taken.map(function(e){return e.classAvgPct;}), backgroundColor:'rgba(233,168,32,.6)', borderRadius:6, datalabels:{display:false} }
+      sCharts.classStand = new Chart(csc.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: taken.map(function(e){ return e.name; }),
+          datasets: [
+            { label:'You %',        data:taken.map(function(e){ return e.pct; }),        backgroundColor:'rgba(10,31,110,.8)',  borderRadius:6 },
+            { label:'Class Avg %',  data:taken.map(function(e){ return e.classAvgPct; }),backgroundColor:'rgba(233,168,32,.6)', borderRadius:6 }
           ]
         },
-        options:{
-          responsive:true, maintainAspectRatio:false,
-          plugins:{legend:{position:'top'},datalabels:{}},
-          scales:{y:{min:0,max:100,ticks:{callback:function(v){return v+'%';}}},x:{grid:{display:false}}}
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top' } },
+          scales: {
+            y: { min:0, max:100, ticks:{ callback:function(v){ return v+'%'; } } },
+            x: { grid:{ display:false } }
+          }
         }
       });
     }
   }
 
   // ══════════════════════════════════════
-  // 7. CLASS RANK CARD
+  // 7. CLASS RANK CARD — improved
   // ══════════════════════════════════════
   var rkw = document.getElementById('sRankWrap');
   if (rkw) {
@@ -1945,12 +1983,15 @@ function renderStudentCharts(d) {
     } else {
       var rankRows = taken.map(function(e) {
         if (!e.rank) return '';
-        var pct = Math.round(e.rank/e.classSize*100);
-        var cls = e.rank<=3?'rp-top':e.rank<=Math.ceil(e.classSize*0.5)?'rp-mid':'rp-low';
+        var topPct  = Math.round((1 - (e.rank-1)/e.classSize)*100);
+        var cls     = e.rank<=3?'rp-top':e.rank<=Math.ceil(e.classSize*0.5)?'rp-mid':'rp-low';
+        var medal   = e.rank===1?'🥇':e.rank===2?'🥈':e.rank===3?'🥉':'';
         return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--g100)">'
-          +'<div style="font-size:.85rem;font-weight:600;color:var(--g800)">'+e.name+'</div>'
-          +'<span class="rank-pill '+cls+'">#'+e.rank+' of '+e.classSize+'</span>'
-          +'</div>';
+          +'<div style="font-size:.85rem;font-weight:600;color:var(--g800)">'+(medal?medal+' ':'')+e.name+'</div>'
+          +'<div style="display:flex;align-items:center;gap:6px">'
+          +'<span style="font-size:.72rem;color:var(--g400)">Top '+topPct+'%</span>'
+          +'<span class="rank-pill '+cls+'">#'+e.rank+' / '+e.classSize+'</span>'
+          +'</div></div>';
       }).filter(Boolean).join('');
       rkw.innerHTML = rankRows || '<div class="sd-no-data">No rank data</div>';
     }
@@ -2026,13 +2067,43 @@ function renderStudentCharts(d) {
         else if (e.pct<e.classAvgPct-5) ins.push({cls:'sdi-orange',icon:'⚡',title:e.name+': Below class average',body:'Focus on this area — you are '+Math.round(e.classAvgPct-e.pct)+'% below class average.'});
       });
       var perfLabel=overallAvg>=90?'Excellent':overallAvg>=75?'Very Good':overallAvg>=60?'Good':overallAvg>=50?'Rising Star':'Keep Climbing';
-      if (overallAvg>=75) ins.push({cls:'sdi-purple',icon:'🏆',title:'Strong performer!',body:'Your '+overallAvg+'% average places you in "'+perfLabel+'" category.'});
-      if (drtTaken.length>=2) {
+
+      // Insight 1: Overall standing
+      if (overallAvg>=75) ins.push({cls:'sdi-purple',icon:'🏆',title:'Strong Performer',body:'Your overall average is '+overallAvg+'% — '+perfLabel+' category. Keep it up!'});
+      else if (overallAvg>=50) ins.push({cls:'sdi-blue',icon:'📈',title:'On the Right Track',body:'You are at '+overallAvg+'% overall. Aim for 75%+ to reach Very Good category.'});
+      else ins.push({cls:'sdi-orange',icon:'💪',title:'Room to Grow',body:'Your current average is '+overallAvg+'%. Focus on understanding key concepts — improvement is possible!'});
+
+      // Insight 2: DRT analysis
+      if (drtTaken.length>=1) {
         var da=Math.round(drtTaken.reduce(function(a,e){return a+e.pct;},0)/drtTaken.length);
-        if (da>=80) ins.push({cls:'sdi-green',icon:'✅',title:'Great DRT performance!',body:da+'% DRT average — excellent daily preparation!'});
-        else if (da<50) ins.push({cls:'sdi-orange',icon:'📝',title:'DRTs need attention',body:'Your DRT average is '+da+'%. Regular revision will improve this.'});
+        var bestDrt=drtTaken.reduce(function(a,b){return a.pct>b.pct?a:b;});
+        var worstDrt=drtTaken.reduce(function(a,b){return a.pct<b.pct?a:b;});
+        if (da>=80) ins.push({cls:'sdi-green',icon:'✅',title:'DRT Champion',body:'Your DRT average is '+da+'% — excellent daily preparation! Best: '+bestDrt.name+' ('+bestDrt.score+'/'+bestDrt.max+')'});
+        else if (da<50) ins.push({cls:'sdi-orange',icon:'📝',title:'DRTs Need Attention',body:'DRT average is '+da+'%. Weakest: '+worstDrt.name+' ('+worstDrt.score+'/'+worstDrt.max+'). Daily revision will help!'});
+        else ins.push({cls:'sdi-blue',icon:'📝',title:'DRT Performance',body:'DRT average: '+da+'%. Best score: '+bestDrt.name+' ('+bestDrt.score+'/'+bestDrt.max+'). Keep practising!'});
       }
-      if (ins.length<2) ins.push({cls:'sdi-blue',icon:'🎯',title:'Your next target',body:'Aim for 75%+ in all exams. You are currently at '+overallAvg+'%.'});
+
+      // Insight 3: Rank analysis
+      if (taken.length) {
+        var aboveAvg=taken.filter(function(e){return e.pct>e.classAvgPct;}).length;
+        var belowAvg=taken.filter(function(e){return e.pct<e.classAvgPct;}).length;
+        if (aboveAvg===taken.length) ins.push({cls:'sdi-green',icon:'🌟',title:'Above Class Average',body:'You scored above the class average in all '+taken.length+' exams. Outstanding consistency!'});
+        else if (aboveAvg>belowAvg) ins.push({cls:'sdi-blue',icon:'📊',title:'Mostly Above Average',body:'Above class average in '+aboveAvg+' out of '+taken.length+' exams. Keep pushing!'});
+        else ins.push({cls:'sdi-orange',icon:'📊',title:'Push Past the Average',body:'Below class average in '+belowAvg+' exams. Identify weak areas and seek help early.'});
+      }
+
+      // Insight 4: Trend
+      if (taken.length>=2) {
+        var first=taken[0], last=taken[taken.length-1];
+        var trend=Math.round(last.pct-first.pct);
+        if (trend>10) ins.push({cls:'sdi-green',icon:'🚀',title:'Great Improvement!',body:'You improved by '+trend+'% from '+first.name+' to '+last.name+'. Excellent progress!'});
+        else if (trend<-10) ins.push({cls:'sdi-orange',icon:'⚠️',title:'Score Dip Noticed',body:'Scores dropped by '+Math.abs(trend)+'% from '+first.name+'. Review and refocus — you can bounce back!'});
+        else ins.push({cls:'sdi-blue',icon:'➡️',title:'Consistent Performance',body:'Scores are stable across exams ('+first.pct+'% → '+last.pct+'%). Aim to break the ceiling!'});
+      }
+
+      // Insight 5: Next target
+      var nextTarget=overallAvg<50?50:overallAvg<60?60:overallAvg<75?75:overallAvg<90?90:null;
+      if (nextTarget) ins.push({cls:'sdi-purple',icon:'🎯',title:'Your Next Target',body:'You are at '+overallAvg+'%. Reach '+nextTarget+'% to move to the next performance band. You can do it!'});
     }
     iw.innerHTML='<div class="sd-insight-list">'+ins.slice(0,5).map(function(i){
       return '<div class="sd-insight '+i.cls+'"><div class="sdi-icon">'+i.icon+'</div><div class="sdi-content"><strong>'+i.title+'</strong><span>'+i.body+'</span></div></div>';
@@ -2147,6 +2218,10 @@ var NO_DATA_DIV = '<div class="no-data"><div class="ni">📭</div>No data yet �
 
 // ── MAIN RENDER ──
 function renderTeacherDash() {
+  if (!T.data) return;
+  loadDatalabels(function() { _renderTeacherDashInner(); });
+}
+function _renderTeacherDashInner() {
   if (!T.data) return;
   var students = getStudents();
   var exams = getExams();
