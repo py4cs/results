@@ -16,7 +16,14 @@ function loadDatalabels(callback) {
   s.src = 'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js';
   s.onload = function() {
     _datalabelsLoaded = true;
-    Chart.register(ChartDataLabels);
+    try { Chart.register(ChartDataLabels); } catch(e) { console.warn('[Charts] datalabels register failed:', e); }
+    callback();
+  };
+  // FIX: If CDN fails (network issue, ad-blocker, etc.), proceed without datalabels
+  // rather than silently blocking ALL teacher charts forever.
+  s.onerror = function() {
+    console.warn('[Charts] chartjs-plugin-datalabels failed to load — rendering charts without data labels.');
+    _datalabelsLoaded = true; // mark as "done" so we don't retry
     callback();
   };
   document.head.appendChild(s);
@@ -1524,7 +1531,7 @@ var CU = null;
 //  Replace YOUR_WEB_APP_URL below after deploying GAS
 // ══════════════════════════════════════════════════════════════
 
-var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbywXlQTMtOYoxD-4OqH_6lpcp3RbXubtnGf2g3DI-VzL0TCEwgbd_XePydZIjBMeE1RMQ/exec';
+var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxWTDo72HncEQlpzruVS5NfurDPfA7H4LBFCnBHBXHfilbvCVgTEpKf5NpiYq8diDCuRA/exec';
 
 async function api(p) {
   return new Promise(function(resolve, reject) {
@@ -1576,40 +1583,37 @@ async function studentLogin(){
   if(!en||!ph){err.textContent='Please enter both fields.';err.style.display='block';return;}
   btn.textContent='Checking…';btn.disabled=true;
   try{
-    var d=await api({role:'student',examNo:en,phone:ph});  // FIX: always send role explicitly
+    var d=await api({examNo:en,phone:ph});
     CU={type:'student',data:d};
     sessionStorage.setItem('vva_session',JSON.stringify(CU));
     showDash('sDash');
-    setTimeout(function(){ renderStudent(d); }, 50);
+    // FIX: Use double requestAnimationFrame instead of unreliable setTimeout(50).
+    // First rAF = browser schedules paint. Second rAF = layout is committed and
+    // container dimensions are readable. Chart.js then measures real px sizes.
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        renderStudent(d);
+      });
+    });
   }catch(e){err.textContent=e.message;err.style.display='block';}
   finally{btn.textContent='Login';btn.disabled=false;}
 }
 
 async function teacherLogin(){
-  // FIX: Merged skeleton-overlay logic that was previously monkey-patched below.
-  // Having two versions of teacherLogin (original + override) was fragile and
-  // confusing — consolidated into one authoritative function here.
   var u=document.getElementById('tUser').value.trim();
   var p=document.getElementById('tPass').value.trim();
   var btn=document.getElementById('tBtn');
   var err=document.getElementById('tErr');
   err.style.display='none';
-  if(!u||!p){err.textContent='Please enter both fields.';err.style.display='block';return;}
   btn.textContent='Loading…';btn.disabled=true;
   try{
-    showDash('tDash');
-    showTeacherSkeleton();
     var d=await api({role:'teacher',username:u,password:p});
     CU={type:'teacher',data:d};
     sessionStorage.setItem('vva_session',JSON.stringify(CU));
-    clearTeacherSkeleton();
+    showDash('tDash');
     renderTeacher(d,null);
-  }catch(e){
-    clearTeacherSkeleton();
-    document.getElementById('loginPage').style.display='flex';
-    document.getElementById('tDash').style.display='none';
-    err.textContent=e.message;err.style.display='block';
-  }finally{btn.textContent='Login';btn.disabled=false;}
+  }catch(e){err.textContent=e.message;err.style.display='block';}
+  finally{btn.textContent='Login';btn.disabled=false;}
 }
 
 function showDash(id){
@@ -1639,6 +1643,14 @@ function grade(p){if(p>=90)return'A+';if(p>=75)return'A';if(p>=60)return'B';if(p
 function typeChip(t){var m={DRT:'ch-drt',PT:'ch-pt',Term:'ch-term',Preboard:'ch-pre'};return'<span class="chip '+(m[t]||'ch-drt')+'">'+t+'</span>';}
 
 // ── Chart.js global defaults ──
+// FIX #10: Startup diagnostics — check browser console for these lines
+console.log('[VVA] Chart.js loaded. Version:', (typeof Chart !== 'undefined' ? Chart.version : 'NOT LOADED'));
+console.log('[VVA] Page ready. DOM IDs check:', {
+  sDash: !!document.getElementById('sDash'),
+  tDash: !!document.getElementById('tDash'),
+  sProgressWrap: !!document.getElementById('sProgressWrap'),
+  sDrtChartWrap: !!document.getElementById('sDrtChartWrap')
+});
 Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
 Chart.defaults.animation.duration = 500;
 Chart.defaults.animation.easing = 'easeOutQuart';
@@ -1653,7 +1665,9 @@ Chart.defaults.plugins.legend.labels.usePointStyle = true;
 Chart.defaults.datasets.bar.barPercentage = 0.65;
 Chart.defaults.datasets.bar.categoryPercentage = 0.75;
 // Default grid: cleaner lines, no border
-Chart.defaults.scale.grid = { color: '#f1f5f9', drawBorder: false };
+// FIX #8: drawBorder was removed in Chart.js v4 — replaced by border.display
+Chart.defaults.scale.grid = { color: '#f1f5f9' };
+Chart.defaults.scale.border = { display: false };
 // Smaller tick font on mobile for breathing room
 var _mFont = window.innerWidth < 500 ? 8 : 10;
 Chart.defaults.scale.ticks = { font: { size: _mFont }, padding: 4 };
@@ -1685,6 +1699,36 @@ function renderLastUpdated(targetId) {
 
 // ════ STUDENT DASHBOARD ════
 var sCharts = {};
+
+// FIX #7: ResizeObserver — when chart container changes size (orientation
+// change, sidebar open/close, font resize), tell Chart.js to reflow.
+// This prevents charts being stuck at their initial rendered size.
+(function() {
+  if (typeof ResizeObserver === 'undefined') return;
+  var _roTimer = null;
+  var _ro = new ResizeObserver(function(entries) {
+    clearTimeout(_roTimer);
+    _roTimer = setTimeout(function() {
+      Object.keys(sCharts).forEach(function(k) {
+        if (sCharts[k]) {
+          try { sCharts[k].resize(); } catch(e) {}
+        }
+      });
+      Object.keys(T.charts).forEach(function(k) {
+        if (T.charts[k]) {
+          try { T.charts[k].resize(); } catch(e) {}
+        }
+      });
+    }, 60);
+  });
+  // Observe chart wrapper sections (once DOM is ready)
+  document.addEventListener('DOMContentLoaded', function() {
+    ['sDash','tDash'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) _ro.observe(el);
+    });
+  });
+}());
 
 function renderStudent(d) {
   _sCurrentData = d;  // store for subject filter
@@ -1732,7 +1776,11 @@ function renderStudent(d) {
   var overallAvg  = allPcts.length ? Math.round(allPcts.reduce(function(a,b){return a+b;},0)/allPcts.length) : 0;
   var drtPct      = drtTakenAll.length ? Math.round(drtTakenAll.reduce(function(a,e){return a+e.pct;},0)/drtTakenAll.length) : null;
   var examPct     = mainTakenAll.length ? Math.round(mainTakenAll.reduce(function(a,e){return a+e.pct;},0)/mainTakenAll.length) : null;
-  var bestRank    = takenAll.length ? takenAll.reduce(function(a,b){ return a.rank < b.rank ? a : b; }) : null;
+  // FIX #9: Filter null-rank entries (absent students) before finding best rank.
+  // null coerces to 0 in numeric comparison, so an absent student would
+  // incorrectly be ranked #0 — lower than any real rank.
+  var rankedAll = takenAll.filter(function(e){ return e.rank !== null && e.rank !== undefined; });
+  var bestRank  = rankedAll.length ? rankedAll.reduce(function(a,b){ return a.rank < b.rank ? a : b; }) : null;
 
   function perfCat(p) {
     if (p >= 90) return { label:'Excellent 🌟', cls:'shb-exc' };
@@ -1862,14 +1910,23 @@ function renderStudentCharts(d) {
       return;
     }
     var canvas = document.createElement('canvas');
+    // FIX #3: Stamp explicit pixel dimensions on the canvas BEFORE Chart.js
+    // initialises it. When a container transitions from display:none to
+    // display:flex, its children may still report 0×0 during the same JS
+    // execution frame. Setting width/height explicitly prevents Chart.js
+    // from creating a 0-pixel chart that renders invisibly.
+    var w = wrap.offsetWidth || 300;
+    var h = wrap.offsetHeight || 200;
+    canvas.width  = w;
+    canvas.height = h;
     canvas.style.width  = '100%';
     canvas.style.height = '100%';
     wrap.appendChild(canvas);
     try {
       sCharts[chartKey] = new Chart(canvas, config);
-      console.log('[Charts] ' + chartKey + ' chart OK. Labels:', config.data.labels);
+      console.log('[Charts] ' + chartKey + ' chart rendered. Size:', w+'x'+h, 'Labels:', (config.data && config.data.labels) || []);
     } catch(err) {
-      console.error('[Charts] ' + chartKey + ' failed:', err);
+      console.error('[Charts] ' + chartKey + ' failed to render:', err.message, err);
       wrap.innerHTML = '<div class="sd-no-data">Chart error: ' + err.message + '</div>';
     }
   }
@@ -1953,8 +2010,7 @@ function renderStudentCharts(d) {
       rkw.innerHTML = '<div class="sd-no-data">🏅 No rank data yet</div>';
     } else {
       var rankRows = taken.map(function(e) {
-        // FIX #3: rank is null when student was absent — skip instead of showing #null
-        if (e.rank === null || e.rank === undefined) return '';
+        if (!e.rank) return '';
         var topPct  = Math.round((1 - (e.rank-1)/e.classSize)*100);
         var cls     = e.rank<=3?'rp-top':e.rank<=Math.ceil(e.classSize*0.5)?'rp-mid':'rp-low';
         var medal   = e.rank===1?'🥇':e.rank===2?'🥈':e.rank===3?'🥉':'';
@@ -2094,7 +2150,10 @@ function filterSubject(subj, btn) {
   if (!_sCurrentData) return;
   var filtered = JSON.parse(JSON.stringify(_sCurrentData));
   filtered.exams = _sCurrentData.exams.filter(function(e){ return e.subject === subj; });
-  renderStudentCharts(filtered);
+  // FIX #4: Use rAF to ensure DOM has repainted after pill switch before chart resize
+  requestAnimationFrame(function() {
+    renderStudentCharts(filtered);
+  });
 }
 
 // ════ TEACHER ANALYTICS STATE ════
@@ -2191,7 +2250,16 @@ var NO_DATA_DIV = '<div class="no-data"><div class="ni">📭</div>No data yet �
 // ── MAIN RENDER ──
 function renderTeacherDash() {
   if (!T.data) return;
-  loadDatalabels(function() { _renderTeacherDashInner(); });
+  loadDatalabels(function() {
+    // FIX #6: double-rAF ensures the teacher dashboard flex layout is
+    // fully painted and .cw containers have real pixel dimensions before
+    // any new Chart() call measures them.
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        _renderTeacherDashInner();
+      });
+    });
+  });
 }
 function _renderTeacherDashInner() {
   if (!T.data) return;
@@ -2228,8 +2296,7 @@ function renderInsights(students, exams) {
   var cards = [];
 
   // Class avg improved since PT?
-  // FIX: Was 'PT1' (missing hyphen) — exam is named 'PT-1' everywhere else, so this always returned -1.
-  var ptIdx = getExamIdx('PT-1') >= 0 ? getExamIdx('PT-1') : exams.findIndex(function(e){return e.type==='PT';});
+  var ptIdx = getExamIdx('PT1') >= 0 ? getExamIdx('PT1') : exams.findIndex(function(e){return e.type==='PT';});
   var preIdx = exams.findIndex(function(e){return e.type==='Preboard';});
   if (ptIdx >= 0 && preIdx >= 0) {
     var ptAvg = avg(students.map(function(s){return pctOf(s.marks[ptIdx]||0, exams[ptIdx].max);}));
@@ -2315,6 +2382,8 @@ function renderDRT(students, exams) {
   destroyChart('drtComp');
   if (drtCompWrap) {
     drtCompWrap.innerHTML = '<canvas id="drtCompChart"></canvas>';
+    // FIX #5: stamp px size so Chart.js doesn't see 0x0
+    (function(c,p){c.width=p.offsetWidth||300;c.height=p.offsetHeight||220;})(document.getElementById('drtCompChart'),drtCompWrap);
     var drtAvgs = drtExams.map(function(e){
       var idx = exams.indexOf(e);
       return Math.round(avg(students.map(function(s){return s.marks[idx]||0;})) * 10) / 10;
@@ -2330,6 +2399,7 @@ function renderDRT(students, exams) {
   destroyChart('drtHist');
   if (drtHistWrap) {
     drtHistWrap.innerHTML = '<canvas id="drtHistChart"></canvas>';
+    (function(c,p){c.width=p.offsetWidth||300;c.height=p.offsetHeight||220;})(document.getElementById('drtHistChart'),drtHistWrap);
     var drtMax = drtExams[0] ? drtExams[0].max : 15;
     var step = Math.ceil(drtMax/5); var ranges = [];
     for (var ri=0; ri<drtMax; ri+=step) ranges.push([ri, Math.min(ri+step-1, drtMax)]);
@@ -2395,6 +2465,7 @@ function renderMain(students, exams) {
   destroyChart('mainComp');
   if (compWrap) {
     compWrap.innerHTML = '<canvas id="mainCompChart"></canvas>';
+    (function(c,p){c.width=p.offsetWidth||300;c.height=p.offsetHeight||220;})(document.getElementById('mainCompChart'),compWrap);
     var mainAvgs = mainExams.map(function(e){
       var idx=exams.indexOf(e);
       return Math.round(avg(students.map(function(s){return s.marks[idx]||0;})));
@@ -2411,6 +2482,7 @@ function renderMain(students, exams) {
   destroyChart('mainHist');
   if (histWrap) {
     histWrap.innerHTML = '<canvas id="mainHistChart"></canvas>';
+    (function(c,p){c.width=p.offsetWidth||300;c.height=p.offsetHeight||220;})(document.getElementById('mainHistChart'),histWrap);
     var latMain=mainExams[mainExams.length-1], latMainIdx=exams.indexOf(latMain);
     var pass=T.examPass, maxM=latMain.max||100;
     var mRanges=[[Math.round(maxM*.9),maxM],[Math.round(maxM*.8),Math.round(maxM*.89)],[Math.round(maxM*.7),Math.round(maxM*.79)],[Math.round(maxM*.6),Math.round(maxM*.69)],[Math.round(maxM*.5),Math.round(maxM*.59)],[pass,Math.round(maxM*.49)],[0,pass-1]];
@@ -2468,6 +2540,7 @@ function renderProgressChart() {
   var pcts = exams.map(function(e,i){return pctOf(student.marks[i]||0,e.max);});
   destroyChart('progress');
   wrap.innerHTML = '<canvas id="progressChart"></canvas>';
+  (function(c,p){c.width=p.offsetWidth||300;c.height=p.offsetHeight||220;})(document.getElementById('progressChart'),wrap);
   T.charts.progress = new Chart(document.getElementById('progressChart'), {
     type:'line',
     data:{labels:labels,datasets:[{label:student.name,data:pcts,borderColor:'#0a1f6e',backgroundColor:'rgba(10,31,110,.08)',borderWidth:2.5,pointBackgroundColor:'#0a1f6e',pointRadius:5,tension:.4,fill:true,datalabels:{anchor:'end',align:'top',offset:2,font:{size:9,weight:'bold'},color:'#0a1f6e',formatter:function(v){return v+'%';}}}]},
@@ -2647,6 +2720,7 @@ function renderScatter(students, exams) {
   var wrap = document.getElementById('scatterWrap');
   if (!wrap) return;
   wrap.innerHTML = '<canvas id="scatterChart"></canvas>';
+  (function(c,p){c.width=p.offsetWidth||300;c.height=p.offsetHeight||300;})(document.getElementById('scatterChart'),wrap);
   var points = students.map(function(s){
     var pcts = exams.map(function(e,i){return pctOf(s.marks[i]||0,e.max);});
     var a = Math.round(avg(pcts));
@@ -2953,7 +3027,33 @@ function clearTeacherSkeleton() {
   if (ov) ov.classList.remove('show');
 }
 
-// NOTE: teacherLogin overlay logic was merged into the main teacherLogin() function above — no override needed here.
+// Wrap teacherLogin to show overlay before fetch completes
+var _origTeacherLogin = teacherLogin;
+teacherLogin = async function() {
+  var u = document.getElementById('tUser').value.trim();
+  var p = document.getElementById('tPass').value.trim();
+  if (!u || !p) { return _origTeacherLogin(); }
+  var btn = document.getElementById('tBtn');
+  var err = document.getElementById('tErr');
+  err.style.display = 'none';
+  btn.textContent = 'Loading…'; btn.disabled = true;
+  try {
+    showDash('tDash');
+    showTeacherSkeleton();
+    var d = await api({ role: 'teacher', username: u, password: p });
+    CU = { type: 'teacher', data: d };
+    sessionStorage.setItem('vva_session', JSON.stringify(CU));
+    clearTeacherSkeleton();
+    renderTeacher(d, null);
+  } catch(e) {
+    clearTeacherSkeleton();
+    document.getElementById('loginPage').style.display = 'flex';
+    document.getElementById('tDash').style.display = 'none';
+    err.textContent = e.message; err.style.display = 'block';
+  } finally {
+    btn.textContent = 'Login'; btn.disabled = false;
+  }
+};
 
 // ══════════════════════════════════════════
 // FEATURE: Export functions
