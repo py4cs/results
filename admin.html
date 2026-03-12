@@ -18,52 +18,80 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
 .fg label{display:block;font-size:.78rem;font-weight:700;color:var(--g800);margin-bottom:6px;}
 .fg input,.fg select{width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:8px;font-size:.95rem;font-family:inherit;background:var(--g50);color:var(--g800);}
 .fg input:focus,.fg select:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(10,31,110,.08);}
-.btn{padding:12px 20px;border:none;border-radius:8px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;}
-.btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue-lt));color:#fff;width:100%;}
-.btn-primary:disabled{opacity:.6;cursor:not-allowed;}
-.btn-green{background:var(--green);color:#fff;}
-.btn-red{background:var(--red);color:#fff;}
-.btn-outline{background:#fff;color:var(--blue);border:1.5px solid var(--blue-border);}
 .l-err{background:var(--red-lt);color:var(--red);padding:10px 14px;border-radius:8px;font-size:.82rem;font-weight:500;margin-top:12px;display:none;border-left:3px solid var(--red);}
 .topbar{background:linear-gradient(135deg,var(--blue),var(--blue-lt));padding:0 var(--p);display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,48,135,.25);}
 .topbar h1{color:#fff;font-size:.95rem;font-weight:800;}
 .topbar small{color:rgba(255,255,255,.6);font-size:.7rem;display:block;font-weight:500;}
 .lo-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:6px 14px;border-radius:20px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;}
 .app-wrap{display:flex;min-height:calc(100vh - 54px);}
-.sidebar{width:200px;background:#fff;border-right:1px solid var(--g200);padding:16px 12px;flex-shrink:0;}
+.sidebar{width:210px;background:#fff;border-right:1px solid var(--g200);padding:16px 12px;flex-shrink:0;overflow-y:auto;}
 .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;font-size:.84rem;font-weight:600;color:var(--g600);cursor:pointer;margin-bottom:4px;border:none;background:none;font-family:inherit;width:100%;text-align:left;}
 .nav-item:hover{background:var(--blue-pale);color:var(--blue);}
 .nav-item.active{background:var(--blue-pale);color:var(--blue);}
-.main-content{flex:1;padding:var(--p);overflow-y:auto;}
+.nav-sep{font-size:.68rem;font-weight:800;color:var(--g400);text-transform:uppercase;letter-spacing:1px;padding:10px 12px 4px;display:block;}
+.main-content{flex:1;padding:var(--p);overflow-y:auto;max-width:100%;}
 .card{background:#fff;border-radius:var(--r);padding:20px;box-shadow:var(--sh-sm);border:1px solid var(--g100);margin-bottom:16px;}
 .card-title{font-size:1rem;font-weight:700;color:var(--g800);margin-bottom:4px;}
 .card-sub{font-size:.78rem;color:var(--g400);margin-bottom:16px;}
+.btn{padding:10px 18px;border:none;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue-lt));color:#fff;width:100%;padding:13px;}
+.btn-green{background:var(--green);color:#fff;}
+.btn-red{background:var(--red);color:#fff;}
+.btn-gold{background:var(--gold);color:var(--blue);}
+.btn-outline{background:#fff;color:var(--blue);border:1.5px solid var(--blue-border);}
+.btn-sm{padding:4px 10px;font-size:.74rem;border-radius:6px;}
 .upload-box{border:2px dashed var(--blue-border);border-radius:10px;padding:28px;text-align:center;background:var(--blue-pale);cursor:pointer;margin-bottom:14px;}
 .upload-box:hover{border-color:var(--blue);}
 .upload-box .ub-icon{font-size:2rem;margin-bottom:8px;}
 .upload-box p{font-size:.84rem;color:var(--g600);margin-bottom:6px;}
 .upload-box small{font-size:.74rem;color:var(--g400);}
-#fileInput,#marksFileInput{display:none;}
-.tscroll{overflow-x:auto;margin-top:12px;}
-.ptable{width:100%;border-collapse:collapse;font-size:.82rem;}
-.ptable th{background:var(--g50);padding:9px 12px;text-align:left;font-size:.74rem;font-weight:700;color:var(--g600);border-bottom:2px solid var(--g200);}
-.ptable td{padding:9px 12px;border-bottom:1px solid var(--g100);}
 .status-bar{padding:12px 16px;border-radius:8px;font-size:.84rem;font-weight:600;margin-bottom:14px;display:none;}
 .status-ok{background:var(--green-lt);color:var(--green);border:1px solid #bbf7d0;}
 .status-err{background:var(--red-lt);color:var(--red);border:1px solid #fecaca;}
 .status-info{background:var(--blue-pale);color:var(--blue);border:1px solid var(--blue-border);}
+.status-warn{background:#fefce8;color:#a16207;border:1px solid #fde68a;}
 .prog-wrap{background:var(--g100);border-radius:20px;height:8px;overflow:hidden;margin:10px 0;}
 .prog-bar{height:100%;background:var(--blue);border-radius:20px;transition:width .3s;}
 .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
 .stat-card{background:#fff;border-radius:10px;padding:14px;text-align:center;box-shadow:var(--sh-sm);border:1px solid var(--g100);}
 .stat-card .sv{font-size:1.4rem;font-weight:800;color:var(--blue);}
-.stat-card .sl{font-size:.72rem;font-weight:600;color:var(--g600);margin-top:4px;text-transform:uppercase;}
+.stat-card .sl{font-size:.7rem;font-weight:600;color:var(--g600);margin-top:4px;text-transform:uppercase;}
+.tscroll{overflow-x:auto;margin-top:8px;}
+.ptable{width:100%;border-collapse:collapse;font-size:.82rem;}
+.ptable th{background:var(--g50);padding:9px 12px;text-align:left;font-size:.74rem;font-weight:700;color:var(--g600);border-bottom:2px solid var(--g200);white-space:nowrap;}
+.ptable td{padding:9px 12px;border-bottom:1px solid var(--g100);vertical-align:middle;}
+.ptable tr:hover td{background:var(--g50);}
 .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.72rem;font-weight:700;}
 .badge-blue{background:var(--blue-pale);color:var(--blue);}
 .badge-green{background:var(--green-lt);color:var(--green);}
+.badge-red{background:var(--red-lt);color:var(--red);}
+.badge-gold{background:#fef9c3;color:#a16207;}
+.badge-grey{background:var(--g100);color:var(--g600);}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-@media(max-width:600px){.form-row{grid-template-columns:1fr;}.stats-row{grid-template-columns:1fr 1fr;}.sidebar{display:none;}}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
 .info-box{background:var(--blue-pale);padding:10px 14px;border-radius:8px;color:var(--blue);font-weight:600;font-size:.82rem;margin-bottom:12px;}
+.warn-box{background:#fefce8;padding:10px 14px;border-radius:8px;color:#a16207;font-weight:600;font-size:.82rem;margin-bottom:12px;border:1px solid #fde68a;}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;}
+.modal{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:440px;box-shadow:0 16px 48px rgba(10,31,110,.2);}
+.modal h3{font-size:1rem;font-weight:800;color:var(--blue);margin-bottom:16px;}
+.modal-btns{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.bar-lbl{font-size:.75rem;font-weight:600;color:var(--g600);width:68px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bar-track{flex:1;background:var(--g100);border-radius:4px;height:14px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:4px;transition:width .6s;}
+.bar-val{font-size:.74rem;font-weight:700;color:var(--g800);width:36px;text-align:right;flex-shrink:0;}
+.miss-chip{display:inline-block;padding:1px 6px;border-radius:4px;font-size:.7rem;font-weight:700;background:var(--red-lt);color:var(--red);margin:1px;}
+.ok-chip{display:inline-block;padding:1px 6px;border-radius:4px;font-size:.7rem;font-weight:700;background:var(--green-lt);color:var(--green);margin:1px;}
+.ana-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0;}
+.ana-card{background:var(--g50);border-radius:10px;padding:16px;border:1px solid var(--g200);}
+.ana-card h4{font-size:.84rem;font-weight:700;color:var(--g800);margin-bottom:12px;}
+@media(max-width:700px){
+  .sidebar{display:none;}
+  .form-row,.form-row-3{grid-template-columns:1fr;}
+  .stats-row{grid-template-columns:1fr 1fr;}
+  .ana-grid{grid-template-columns:1fr;}
+}
 </style>
 </head>
 <body>
@@ -74,12 +102,12 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
     <h1>Admin Panel</h1>
     <p>Velammal Results Portal</p>
     <div class="fg"><label>Admin Password</label><input type="password" id="adminPass" placeholder="Enter admin password"></div>
-    <button class="btn btn-primary" id="loginBtn" onclick="adminLogin()">Login</button>
+    <button class="btn btn-primary" onclick="adminLogin()">Login</button>
     <div class="l-err" id="loginErr"></div>
   </div>
 </div>
 
-<!-- MAIN -->
+<!-- MAIN APP -->
 <div id="appWrap" class="hidden">
   <div class="topbar">
     <div><h1>Velammal Admin Panel</h1><small>Results Portal Management</small></div>
@@ -87,30 +115,39 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
   </div>
   <div class="app-wrap">
     <div class="sidebar">
-      <button class="nav-item active" onclick="showSec('secStudents',this)">👥 Students</button>
-      <button class="nav-item"        onclick="showSec('secMarks',this)">📝 Upload Marks</button>
-      <button class="nav-item"        onclick="showSec('secTeachers',this)">👩‍🏫 Teachers</button>
-      <button class="nav-item"        onclick="showSec('secView',this)">👁 View Data</button>
+      <span class="nav-sep">Students</span>
+      <button class="nav-item active" onclick="showSec('secStudents',this)">👥 Upload Students</button>
+      <button class="nav-item" onclick="showSec('secViewStudents',this)">👁 View &amp; Edit</button>
+      <span class="nav-sep">Marks</span>
+      <button class="nav-item" onclick="showSec('secMarks',this)">📝 Upload Marks</button>
+      <button class="nav-item" onclick="showSec('secViewMarks',this)">🔍 View Marks</button>
+      <button class="nav-item" onclick="showSec('secEditMark',this)">✏️ Edit a Mark</button>
+      <span class="nav-sep">Reports</span>
+      <button class="nav-item" onclick="showSec('secAnalytics',this)">📊 Analytics</button>
+      <button class="nav-item" onclick="showSec('secMissing',this)">⚠️ Missing Marks</button>
+      <button class="nav-item" onclick="showSec('secDupes',this)">🔁 Duplicate Phones</button>
+      <button class="nav-item" onclick="showSec('secPreview',this)">👀 Student Preview</button>
+      <span class="nav-sep">Other</span>
+      <button class="nav-item" onclick="showSec('secExport',this)">⬇️ Export CSV</button>
+      <button class="nav-item" onclick="showSec('secTeachers',this)">👩‍🏫 Teachers</button>
     </div>
     <div class="main-content">
 
-      <!-- STUDENTS -->
+      <!-- UPLOAD STUDENTS -->
       <div id="secStudents">
         <div class="card">
           <div class="card-title">Upload Students</div>
-          <div class="card-sub">CSV with student details. Existing records will be updated.</div>
+          <div class="card-sub">Bulk upload or update student records. Existing records will be updated.</div>
           <div class="info-box">Required columns: <code>Examno, Name, Class, Gender, Phoneno</code></div>
           <div class="upload-box" onclick="document.getElementById('fileInput').click()">
-            <div class="ub-icon">📂</div>
-            <p>Click to select students CSV file</p>
-            <small>Supports .csv files</small>
+            <div class="ub-icon">📂</div><p>Click to select students CSV file</p><small>Supports .csv files</small>
           </div>
-          <input type="file" id="fileInput" accept=".csv" onchange="handleStudentFile(this)">
+          <input type="file" id="fileInput" accept=".csv" onchange="handleStudentFile(this)" style="display:none">
           <div id="stuStatus" class="status-bar"></div>
           <div id="stuPreviewWrap" class="hidden">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
               <strong id="stuPreviewTitle"></strong>
-              <button class="btn btn-green" onclick="uploadStudents()">Upload to Firebase</button>
+              <button class="btn btn-green" onclick="uploadStudents()">⬆ Upload to Firebase</button>
             </div>
             <div class="prog-wrap hidden" id="stuProgWrap"><div class="prog-bar" id="stuProgBar" style="width:0%"></div></div>
             <div class="tscroll"><table class="ptable" id="stuPreviewTable"><thead></thead><tbody></tbody></table></div>
@@ -123,39 +160,204 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
             <div class="stat-card"><div class="sv" id="statClasses">--</div><div class="sl">Classes</div></div>
             <div class="stat-card"><div class="sv" id="statWithResults">--</div><div class="sl">With Results</div></div>
           </div>
-          <button class="btn btn-outline" onclick="loadStats()">Refresh Stats</button>
+          <button class="btn btn-outline" onclick="loadStats()">↻ Refresh</button>
         </div>
       </div>
 
-      <!-- MARKS -->
+      <!-- VIEW & EDIT STUDENTS -->
+      <div id="secViewStudents" class="hidden">
+        <div class="card">
+          <div class="card-title">All Students</div>
+          <div class="card-sub">Edit individual records or bulk delete an entire class.</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
+            <button class="btn btn-outline" onclick="loadAllStudents()">↻ Load / Refresh</button>
+            <select id="bulkClass" style="padding:9px 12px;border:1.5px solid var(--g200);border-radius:8px;font-family:inherit;font-size:.84rem;">
+              <option value="">Select class to bulk delete</option>
+              <option value="12D">12D</option><option value="12E">12E</option>
+            </select>
+            <button class="btn btn-red" onclick="bulkDeleteClass()">🗑 Delete Class</button>
+          </div>
+          <div id="viewStatus" class="status-bar"></div>
+          <div class="tscroll">
+            <table class="ptable" id="allStudentsTable">
+              <thead><tr><th>Exam No</th><th>Name</th><th>Class</th><th>Gender</th><th>Phone</th><th>Actions</th></tr></thead>
+              <tbody><tr><td colspan="6" style="text-align:center;color:var(--g400);padding:20px">Click Load / Refresh</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- UPLOAD MARKS -->
       <div id="secMarks" class="hidden">
         <div class="card">
           <div class="card-title">Upload Marks</div>
-          <div class="card-sub">Select subject and exam, then upload CSV.</div>
-          <div class="form-row" style="margin-bottom:14px">
+          <div class="card-sub">Ranks are auto-calculated. Existing exam data for the same subject will be merged.</div>
+          <div class="form-row" style="margin-bottom:12px">
             <div class="fg" style="margin:0"><label>Subject</label><select id="selSubject"><option value="CS">CS</option><option value="Maths">Maths</option></select></div>
-            <div class="fg" style="margin:0"><label>Exam</label><select id="selExam" onchange="updateMaxMarks()"><option value="DRT-1">DRT-1</option><option value="DRT-2">DRT-2</option><option value="PT-1">PT-1</option><option value="Term">Term</option><option value="Preboard">Preboard</option></select></div>
+            <div class="fg" style="margin:0"><label>Exam</label>
+              <select id="selExam" onchange="updateMaxMarks()">
+                <option value="DRT-1">DRT-1</option><option value="DRT-2">DRT-2</option>
+                <option value="PT-1">PT-1</option><option value="Term">Term</option><option value="Preboard">Preboard</option>
+              </select>
+            </div>
           </div>
-          <div class="form-row" style="margin-bottom:14px">
+          <div class="form-row" style="margin-bottom:12px">
             <div class="fg" style="margin:0"><label>Max Marks</label><input type="number" id="maxMarks" value="15" min="1" max="200"></div>
-            <div class="fg" style="margin:0"><label>Class (optional filter)</label><select id="selClass"><option value="">All Classes</option><option value="12D">12D</option><option value="12E">12E</option></select></div>
+            <div class="fg" style="margin:0"><label>Class Filter (optional)</label>
+              <select id="selClass"><option value="">All Classes</option><option value="12D">12D</option><option value="12E">12E</option></select>
+            </div>
           </div>
-          <div class="info-box">Required columns: <code>Examno, Marks</code></div>
+          <div class="info-box">Required columns: <code>Examno, Marks</code> — use 0 for absent</div>
           <div class="upload-box" onclick="document.getElementById('marksFileInput').click()">
-            <div class="ub-icon">📊</div>
-            <p>Click to select marks CSV file</p>
-            <small>Two columns: Examno and Marks</small>
+            <div class="ub-icon">📊</div><p>Click to select marks CSV file</p><small>Two columns: Examno and Marks</small>
           </div>
-          <input type="file" id="marksFileInput" accept=".csv" onchange="handleMarksFile(this)">
+          <input type="file" id="marksFileInput" accept=".csv" onchange="handleMarksFile(this)" style="display:none">
           <div id="marksStatus" class="status-bar"></div>
           <div id="marksPreviewWrap" class="hidden">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
               <strong id="marksPreviewTitle"></strong>
-              <button class="btn btn-green" onclick="uploadMarks()">Calculate Ranks &amp; Upload</button>
+              <button class="btn btn-green" onclick="uploadMarks()">⬆ Calculate Ranks &amp; Upload</button>
             </div>
             <div class="prog-wrap hidden" id="marksProgWrap"><div class="prog-bar" id="marksProgBar" style="width:0%"></div></div>
             <div class="tscroll"><table class="ptable" id="marksPreviewTable"><thead></thead><tbody></tbody></table></div>
           </div>
+        </div>
+        <div class="card">
+          <div class="card-title">⚠️ Delete Exam Marks</div>
+          <div class="card-sub">Remove all marks for a specific subject + exam. Use this before re-uploading corrected data.</div>
+          <div class="warn-box">Deletes the exam column for ALL students in that subject. Cannot be undone.</div>
+          <div class="form-row" style="margin-bottom:12px">
+            <div class="fg" style="margin:0"><label>Subject</label><select id="delSubject"><option value="CS">CS</option><option value="Maths">Maths</option></select></div>
+            <div class="fg" style="margin:0"><label>Exam</label>
+              <select id="delExam"><option value="DRT-1">DRT-1</option><option value="DRT-2">DRT-2</option><option value="PT-1">PT-1</option><option value="Term">Term</option><option value="Preboard">Preboard</option></select>
+            </div>
+          </div>
+          <div id="delStatus" class="status-bar"></div>
+          <button class="btn btn-red" onclick="deleteExamMarks()">🗑 Delete This Exam's Marks</button>
+        </div>
+      </div>
+
+      <!-- VIEW MARKS -->
+      <div id="secViewMarks" class="hidden">
+        <div class="card">
+          <div class="card-title">View Uploaded Marks</div>
+          <div class="card-sub">Review what has been uploaded for any subject + exam combination.</div>
+          <div class="form-row" style="margin-bottom:12px">
+            <div class="fg" style="margin:0"><label>Subject</label><select id="vmSubject"><option value="CS">CS</option><option value="Maths">Maths</option></select></div>
+            <div class="fg" style="margin:0"><label>Exam</label>
+              <select id="vmExam"><option value="DRT-1">DRT-1</option><option value="DRT-2">DRT-2</option><option value="PT-1">PT-1</option><option value="Term">Term</option><option value="Preboard">Preboard</option></select>
+            </div>
+          </div>
+          <button class="btn btn-outline" onclick="viewMarks()">↻ Load Marks</button>
+          <div id="vmStatus" class="status-bar" style="margin-top:12px"></div>
+          <div class="tscroll">
+            <table class="ptable" id="vmTable">
+              <thead><tr><th>Exam No</th><th>Marks</th><th>Max</th><th>%</th><th>Rank</th><th>Class Size</th><th>Class Avg</th></tr></thead>
+              <tbody><tr><td colspan="7" style="text-align:center;color:var(--g400);padding:20px">Select and load</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- EDIT A MARK -->
+      <div id="secEditMark" class="hidden">
+        <div class="card">
+          <div class="card-title">Edit a Single Student's Mark</div>
+          <div class="card-sub">Find a student, update their mark. Ranks recalculate automatically for the whole class.</div>
+          <div class="form-row-3" style="margin-bottom:12px">
+            <div class="fg" style="margin:0"><label>Exam No</label><input type="text" id="emExamNo" placeholder="e.g. 1001"></div>
+            <div class="fg" style="margin:0"><label>Subject</label><select id="emSubject"><option value="CS">CS</option><option value="Maths">Maths</option></select></div>
+            <div class="fg" style="margin:0"><label>Exam</label>
+              <select id="emExam"><option value="DRT-1">DRT-1</option><option value="DRT-2">DRT-2</option><option value="PT-1">PT-1</option><option value="Term">Term</option><option value="Preboard">Preboard</option></select>
+            </div>
+          </div>
+          <button class="btn btn-outline" onclick="findStudentMark()" style="margin-bottom:12px">🔍 Find Current Mark</button>
+          <div id="emInfo" class="status-bar"></div>
+          <div id="emEditWrap" class="hidden">
+            <div class="fg"><label>New Mark</label><input type="number" id="emNewMark" min="0" max="200" placeholder="Enter corrected mark"></div>
+            <div class="warn-box">Saving will recalculate ranks for ALL students in this subject + exam.</div>
+            <button class="btn btn-gold" onclick="saveEditedMark()">💾 Save &amp; Recalculate Ranks</button>
+          </div>
+          <div id="emStatus" class="status-bar" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <!-- ANALYTICS -->
+      <div id="secAnalytics" class="hidden">
+        <div class="card">
+          <div class="card-title">Class Analytics</div>
+          <div class="card-sub">Pass/fail summary, subject comparison, and top performers across all classes.</div>
+          <button class="btn btn-outline" onclick="loadAnalytics()" style="margin-bottom:14px">↻ Load Analytics</button>
+          <div id="anaStatus" class="status-bar"></div>
+          <div id="anaContent"></div>
+        </div>
+      </div>
+
+      <!-- MISSING MARKS -->
+      <div id="secMissing" class="hidden">
+        <div class="card">
+          <div class="card-title">Missing Marks Checker</div>
+          <div class="card-sub">See which students are missing marks for any subject or exam.</div>
+          <button class="btn btn-outline" onclick="loadMissing()" style="margin-bottom:14px">↻ Check Now</button>
+          <div id="missingStatus" class="status-bar"></div>
+          <div id="missingContent"></div>
+        </div>
+      </div>
+
+      <!-- DUPLICATE PHONES -->
+      <div id="secDupes" class="hidden">
+        <div class="card">
+          <div class="card-title">Duplicate Phone Numbers</div>
+          <div class="card-sub">Students sharing the same phone number will have login conflicts.</div>
+          <button class="btn btn-outline" onclick="loadDupes()" style="margin-bottom:14px">↻ Check Now</button>
+          <div id="dupesStatus" class="status-bar"></div>
+          <div id="dupesContent"></div>
+        </div>
+      </div>
+
+      <!-- STUDENT PREVIEW -->
+      <div id="secPreview" class="hidden">
+        <div class="card">
+          <div class="card-title">Student Preview</div>
+          <div class="card-sub">See exactly what a student will see when they log in.</div>
+          <div class="form-row" style="margin-bottom:12px">
+            <div class="fg" style="margin:0"><label>Exam Number</label><input type="text" id="prevExamNo" placeholder="e.g. 1001"></div>
+            <div class="fg" style="margin:0;display:flex;align-items:flex-end"><button class="btn btn-outline" onclick="loadPreview()" style="width:100%">👀 Preview</button></div>
+          </div>
+          <div id="previewStatus" class="status-bar"></div>
+          <div id="previewContent"></div>
+        </div>
+      </div>
+
+      <!-- EXPORT -->
+      <div id="secExport" class="hidden">
+        <div class="card">
+          <div class="card-title">Export Data as CSV</div>
+          <div class="card-sub">Download records for backup or offline analysis.</div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="padding:16px;border:1px solid var(--g200);border-radius:10px">
+              <strong style="font-size:.88rem">All Students</strong>
+              <p style="font-size:.78rem;color:var(--g600);margin:4px 0 10px">Exam No, Name, Class, Gender, Phone</p>
+              <button class="btn btn-outline" onclick="exportStudents()">⬇ Download Students CSV</button>
+            </div>
+            <div style="padding:16px;border:1px solid var(--g200);border-radius:10px">
+              <strong style="font-size:.88rem">Marks by Subject + Exam</strong>
+              <p style="font-size:.78rem;color:var(--g600);margin:4px 0 10px">Marks, %, rank for one exam</p>
+              <div class="form-row" style="margin-bottom:10px">
+                <div class="fg" style="margin:0"><label>Subject</label><select id="expSubject"><option value="CS">CS</option><option value="Maths">Maths</option></select></div>
+                <div class="fg" style="margin:0"><label>Exam</label>
+                  <select id="expExam"><option value="DRT-1">DRT-1</option><option value="DRT-2">DRT-2</option><option value="PT-1">PT-1</option><option value="Term">Term</option><option value="Preboard">Preboard</option></select>
+                </div>
+              </div>
+              <button class="btn btn-outline" onclick="exportMarks()">⬇ Download Marks CSV</button>
+            </div>
+            <div style="padding:16px;border:1px solid var(--g200);border-radius:10px">
+              <strong style="font-size:.88rem">Full Results Report</strong>
+              <p style="font-size:.78rem;color:var(--g600);margin:4px 0 10px">All students × all subjects × all exams in one file</p>
+              <button class="btn btn-outline" onclick="exportFullReport()">⬇ Download Full Report CSV</button>
+            </div>
+          </div>
+          <div id="exportStatus" class="status-bar" style="margin-top:14px"></div>
         </div>
       </div>
 
@@ -163,27 +365,14 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <div id="secTeachers" class="hidden">
         <div class="card">
           <div class="card-title">Current Teachers</div>
-          <div class="card-sub">Configured in index.html. To change, update the TEACHERS object there.</div>
+          <div class="card-sub">Configured in index.html → TEACHERS object. Edit that file to change credentials.</div>
           <table class="ptable">
             <thead><tr><th>ID</th><th>Name</th><th>Subject</th><th>Classes</th><th>Password</th></tr></thead>
             <tbody>
-              <tr><td><strong>7567</strong></td><td>Leo</td><td><span class="badge badge-blue">CS</span></td><td>12D, 12E</td><td>vval@123</td></tr>
-              <tr><td><strong>8765</strong></td><td>Ramu</td><td><span class="badge badge-green">Maths</span></td><td>12E</td><td>vval@123</td></tr>
+              <tr><td><strong>7567</strong></td><td>Leo</td><td><span class="badge badge-blue">CS</span></td><td>12D, 12E</td><td><code>vval@123</code></td></tr>
+              <tr><td><strong>8765</strong></td><td>Ramu</td><td><span class="badge badge-green">Maths</span></td><td>12E</td><td><code>vval@123</code></td></tr>
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <!-- VIEW DATA -->
-      <div id="secView" class="hidden">
-        <div class="card">
-          <div class="card-title">All Students in Firebase</div>
-          <button class="btn btn-outline" onclick="loadAllStudents()" style="margin-bottom:14px">Load Students</button>
-          <div id="viewStatus" class="status-bar"></div>
-          <div class="tscroll"><table class="ptable" id="allStudentsTable">
-            <thead><tr><th>Exam No</th><th>Name</th><th>Class</th><th>Gender</th><th>Phone</th><th>Action</th></tr></thead>
-            <tbody><tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:20px">Click Load Students</td></tr></tbody>
-          </table></div>
         </div>
       </div>
 
@@ -191,320 +380,541 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
   </div>
 </div>
 
-<script>
-// ═══════════════════════════════════════════
-// FIREBASE REST API
-// ═══════════════════════════════════════════
-var PROJECT = "velammal-results";
-var API_KEY = "AIzaSyC79jcB_6TgJIG4ngXmPDY6Zjmg8PC0-pU";
-var BASE    = "https://firestore.googleapis.com/v1/projects/" + PROJECT + "/databases/(default)/documents";
+<!-- EDIT STUDENT MODAL -->
+<div id="editModal" class="modal-bg hidden">
+  <div class="modal">
+    <h3>✏️ Edit Student</h3>
+    <input type="hidden" id="editExamNo">
+    <div class="fg"><label>Name</label><input type="text" id="editName"></div>
+    <div class="fg"><label>Class</label><select id="editClass"><option value="12D">12D</option><option value="12E">12E</option></select></div>
+    <div class="fg"><label>Gender</label><select id="editGender"><option value="Male">Male</option><option value="Female">Female</option></select></div>
+    <div class="fg"><label>Phone</label><input type="tel" id="editPhone"></div>
+    <div id="editStatus" class="status-bar"></div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
+      <button class="btn btn-green" onclick="saveStudent()">💾 Save</button>
+    </div>
+  </div>
+</div>
 
-async function fsSet(col, id, data) {
-  var url = BASE + "/" + col + "/" + id + "?key=" + API_KEY;
-  var r = await fetch(url, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fields: toFsFields(data) })
-  });
-  if (!r.ok) { var e=await r.json(); throw new Error(JSON.stringify(e)); }
+<script>
+var PROJECT="velammal-results",API_KEY="AIzaSyC79jcB_6TgJIG4ngXmPDY6Zjmg8PC0-pU";
+var BASE="https://firestore.googleapis.com/v1/projects/"+PROJECT+"/databases/(default)/documents";
+
+async function fsSet(col,id,data){
+  var r=await fetch(BASE+"/"+col+"/"+id+"?key="+API_KEY,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({fields:toFsFields(data)})});
+  if(!r.ok){var e=await r.json();throw new Error((e.error&&e.error.message)||"Write failed");}
   return r.json();
 }
-
-async function fsGet(col, id) {
-  var r = await fetch(BASE + "/" + col + "/" + id + "?key=" + API_KEY);
-  if (!r.ok) return null;
+async function fsGet(col,id){
+  var r=await fetch(BASE+"/"+col+"/"+id+"?key="+API_KEY);
+  if(!r.ok) return null;
   return parseDoc(await r.json());
 }
-
-async function fsGetAll(col) {
-  var r = await fetch(BASE + "/" + col + "?key=" + API_KEY + "&pageSize=500");
-  if (!r.ok) return [];
-  var data = await r.json();
-  return (data.documents || []).map(function(d) {
-    return Object.assign({ _id: d.name.split("/").pop() }, parseDoc(d));
-  });
+async function fsGetAll(col){
+  var url=BASE+"/"+col+"?key="+API_KEY+"&pageSize=500",docs=[];
+  while(url){
+    var r=await fetch(url);if(!r.ok)break;
+    var data=await r.json();
+    (data.documents||[]).forEach(function(d){docs.push(Object.assign({_id:d.name.split("/").pop()},parseDoc(d)));});
+    url=data.nextPageToken?BASE+"/"+col+"?key="+API_KEY+"&pageSize=500&pageToken="+data.nextPageToken:null;
+  }
+  return docs;
 }
+async function fsDelete(col,id){await fetch(BASE+"/"+col+"/"+id+"?key="+API_KEY,{method:"DELETE"});}
 
-async function fsDelete(col, id) {
-  await fetch(BASE + "/" + col + "/" + id + "?key=" + API_KEY, { method: "DELETE" });
+function toFsValue(v){
+  if(v===null||v===undefined)return{nullValue:null};
+  if(typeof v==="boolean")return{booleanValue:v};
+  if(typeof v==="number")return{doubleValue:v};
+  if(typeof v==="string")return{stringValue:v};
+  if(Array.isArray(v))return{arrayValue:{values:v.map(toFsValue)}};
+  if(typeof v==="object")return{mapValue:{fields:toFsFields(v)}};
+  return{stringValue:String(v)};
 }
-
-function toFsValue(v) {
-  if (v === null || v === undefined) return { nullValue: null };
-  if (typeof v === "boolean") return { booleanValue: v };
-  if (typeof v === "number") return { doubleValue: v };
-  if (typeof v === "string") return { stringValue: v };
-  if (typeof v === "object") return { mapValue: { fields: toFsFields(v) } };
-  return { stringValue: String(v) };
-}
-
-function toFsFields(obj) {
-  var fields = {};
-  Object.keys(obj).forEach(function(k) { fields[k] = toFsValue(obj[k]); });
-  return fields;
-}
-
-function parseDoc(doc) {
-  if (!doc || !doc.fields) return {};
-  var out = {};
-  Object.keys(doc.fields).forEach(function(k) { out[k] = parseFsVal(doc.fields[k]); });
-  return out;
-}
-
-function parseFsVal(v) {
-  if (v.stringValue  !== undefined) return v.stringValue;
-  if (v.integerValue !== undefined) return Number(v.integerValue);
-  if (v.doubleValue  !== undefined) return Number(v.doubleValue);
-  if (v.booleanValue !== undefined) return v.booleanValue;
-  if (v.nullValue    !== undefined) return null;
-  if (v.mapValue)  return parseDoc(v.mapValue);
-  if (v.arrayValue) return (v.arrayValue.values || []).map(parseFsVal);
+function toFsFields(obj){var f={};Object.keys(obj).forEach(function(k){f[k]=toFsValue(obj[k]);});return f;}
+function parseDoc(doc){if(!doc||!doc.fields)return{};var o={};Object.keys(doc.fields).forEach(function(k){o[k]=parseFsVal(doc.fields[k]);});return o;}
+function parseFsVal(v){
+  if(v.stringValue!==undefined)return v.stringValue;
+  if(v.integerValue!==undefined)return Number(v.integerValue);
+  if(v.doubleValue!==undefined)return Number(v.doubleValue);
+  if(v.booleanValue!==undefined)return v.booleanValue;
+  if(v.nullValue!==undefined)return null;
+  if(v.mapValue)return parseDoc(v.mapValue);
+  if(v.arrayValue)return(v.arrayValue.values||[]).map(parseFsVal);
   return null;
 }
 
-// ═══════════════════════════════════════════
-// CONSTANTS
-// ═══════════════════════════════════════════
-var ADMIN_PASS = "admin@123";
-var EXAM_DEFAULTS = { "DRT-1":15, "DRT-2":15, "PT-1":100, "Term":100, "Preboard":100 };
-var _stuRows = [], _marksRows = [];
+var ADMIN_PASS="admin@123";
+var EXAMS=["DRT-1","DRT-2","PT-1","Term","Preboard"];
+var EXAM_MAX_DEF={"DRT-1":15,"DRT-2":15,"PT-1":100,"Term":100,"Preboard":100};
+var SUBJECTS=["CS","Maths"];
+var _stuRows=[],_marksRows=[],_allStudents=[];
 
-// ═══════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════
-function $(id){ return document.getElementById(id); }
-function showStatus(id, msg, type){ var el=$(id); el.textContent=msg; el.className='status-bar status-'+type; el.style.display='block'; }
-function hideStatus(id){ $(id).style.display='none'; }
-function setProgress(barId, wrapId, p){ $(wrapId).classList.remove('hidden'); $(barId).style.width=p+'%'; }
+function $(id){return document.getElementById(id);}
+function showStatus(id,msg,type){var e=$(id);e.textContent=msg;e.className="status-bar status-"+type;e.style.display="block";}
+function hideStatus(id){$(id).style.display="none";}
+function setProgress(bar,wrap,p){$(wrap).classList.remove("hidden");$(bar).style.width=p+"%";}
+function pct(s,m){return m>0?Math.round(s/m*100):0;}
+function avg(a){return a.length?a.reduce(function(s,v){return s+v;},0)/a.length:0;}
 
-function parseCSV(text) {
-  var lines = text.trim().split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
-  var headers = lines[0].split(',').map(function(h){ return h.trim().replace(/^"|"$/g,''); });
-  var rows = lines.slice(1).map(function(line) {
-    var vals = line.split(',').map(function(v){ return v.trim().replace(/^"|"$/g,''); });
-    var obj = {};
-    headers.forEach(function(h,i){ obj[h] = vals[i]||''; });
-    return obj;
+function parseCSV(text){
+  var lines=text.trim().split("\n").map(function(l){return l.trim();}).filter(Boolean);
+  var headers=lines[0].split(",").map(function(h){return h.trim().replace(/^"|"$/g,"");});
+  var rows=lines.slice(1).map(function(line){
+    var vals=line.split(",").map(function(v){return v.trim().replace(/^"|"$/g,"");});
+    var obj={};headers.forEach(function(h,i){obj[h]=vals[i]||"";});return obj;
   });
-  return { headers: headers, rows: rows };
+  return{headers:headers,rows:rows};
+}
+function downloadCSV(filename,rows,headers){
+  var csv=[headers.join(",")].concat(rows.map(function(r){
+    return headers.map(function(h){var v=String(r[h]||"");return v.includes(",")?'"'+v+'"':v;}).join(",");
+  })).join("\n");
+  var a=document.createElement("a");
+  a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+  a.download=filename;a.click();
 }
 
-// ═══════════════════════════════════════════
-// LOGIN
-// ═══════════════════════════════════════════
-function adminLogin() {
-  var p = $('adminPass').value;
-  if (p !== ADMIN_PASS) { $('loginErr').textContent='Wrong password.'; $('loginErr').style.display='block'; return; }
-  $('loginWrap').style.display='none';
-  $('appWrap').classList.remove('hidden');
-  loadStats();
+/* LOGIN */
+function adminLogin(){
+  if($("adminPass").value!==ADMIN_PASS){$("loginErr").textContent="Wrong password.";$("loginErr").style.display="block";return;}
+  $("loginWrap").style.display="none";$("appWrap").classList.remove("hidden");loadStats();
 }
+function adminLogout(){$("appWrap").classList.add("hidden");$("loginWrap").style.display="flex";$("adminPass").value="";}
 
-function adminLogout() {
-  $('appWrap').classList.add('hidden');
-  $('loginWrap').style.display='flex';
-  $('adminPass').value='';
+/* NAV */
+var SECS=["secStudents","secViewStudents","secMarks","secViewMarks","secEditMark","secAnalytics","secMissing","secDupes","secPreview","secExport","secTeachers"];
+function showSec(id,btn){
+  SECS.forEach(function(s){$(s).classList.add("hidden");});$(id).classList.remove("hidden");
+  document.querySelectorAll(".nav-item").forEach(function(b){b.classList.remove("active");});
+  if(btn)btn.classList.add("active");
 }
+function updateMaxMarks(){$("maxMarks").value=EXAM_MAX_DEF[$("selExam").value]||100;}
 
-function showSec(id, btn) {
-  ['secStudents','secMarks','secTeachers','secView'].forEach(function(s){ $(s).classList.add('hidden'); });
-  $(id).classList.remove('hidden');
-  document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.remove('active'); });
-  if(btn) btn.classList.add('active');
-}
-
-function updateMaxMarks() {
-  var exam = $('selExam').value;
-  $('maxMarks').value = EXAM_DEFAULTS[exam] || 100;
-}
-
-// ═══════════════════════════════════════════
-// STUDENTS
-// ═══════════════════════════════════════════
-function handleStudentFile(input) {
-  var file = input.files[0]; if(!file) return;
-  showStatus('stuStatus','Reading file...','info');
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      var parsed = parseCSV(e.target.result);
-      var required = ['Examno','Name','Class','Gender','Phoneno'];
-      var missing = required.filter(function(r){
-        return !parsed.headers.some(function(h){ return h.toLowerCase()===r.toLowerCase(); });
-      });
-      if(missing.length){ showStatus('stuStatus','Missing columns: '+missing.join(', '),'err'); return; }
-      _stuRows = parsed.rows.map(function(r) {
-        var n={};
-        Object.keys(r).forEach(function(k){ n[k.toLowerCase()]=String(r[k]).trim(); });
-        return n;
-      });
-      var thead=$('stuPreviewTable').querySelector('thead');
-      var tbody=$('stuPreviewTable').querySelector('tbody');
-      thead.innerHTML='<tr><th>Exam No</th><th>Name</th><th>Class</th><th>Gender</th><th>Phone</th></tr>';
-      tbody.innerHTML=_stuRows.slice(0,10).map(function(r){
-        return '<tr><td>'+r.examno+'</td><td>'+r.name+'</td><td>'+r.class+'</td><td>'+r.gender+'</td><td>'+r.phoneno+'</td></tr>';
-      }).join('');
-      $('stuPreviewTitle').textContent='Preview - '+_stuRows.length+' students (first 10)';
-      $('stuPreviewWrap').classList.remove('hidden');
-      showStatus('stuStatus',_stuRows.length+' students loaded. Review and click Upload.','ok');
-    } catch(err){ showStatus('stuStatus','Error: '+err.message,'err'); }
+/* UPLOAD STUDENTS */
+function handleStudentFile(input){
+  var file=input.files[0];if(!file)return;
+  showStatus("stuStatus","Reading file...","info");
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var parsed=parseCSV(e.target.result);
+      var req=["Examno","Name","Class","Gender","Phoneno"];
+      var miss=req.filter(function(r){return!parsed.headers.some(function(h){return h.toLowerCase()===r.toLowerCase();});});
+      if(miss.length){showStatus("stuStatus","Missing columns: "+miss.join(", "),"err");return;}
+      _stuRows=parsed.rows.map(function(r){var n={};Object.keys(r).forEach(function(k){n[k.toLowerCase()]=String(r[k]).trim();});return n;}).filter(function(r){return r.examno;});
+      var thead=$("stuPreviewTable").querySelector("thead"),tbody=$("stuPreviewTable").querySelector("tbody");
+      thead.innerHTML="<tr><th>Exam No</th><th>Name</th><th>Class</th><th>Gender</th><th>Phone</th></tr>";
+      tbody.innerHTML=_stuRows.slice(0,10).map(function(r){return"<tr><td>"+r.examno+"</td><td>"+r.name+"</td><td>"+r.class+"</td><td>"+r.gender+"</td><td>"+r.phoneno+"</td></tr>";}).join("");
+      $("stuPreviewTitle").textContent="Preview — "+_stuRows.length+" students (first 10 shown)";
+      $("stuPreviewWrap").classList.remove("hidden");
+      showStatus("stuStatus",_stuRows.length+" students loaded. Review and click Upload.","ok");
+    }catch(err){showStatus("stuStatus","Error: "+err.message,"err");}
   };
   reader.readAsText(file);
 }
-
-async function uploadStudents() {
-  if(!_stuRows.length){ showStatus('stuStatus','No data to upload.','err'); return; }
-  showStatus('stuStatus','Uploading...','info');
-  $('stuProgWrap').classList.remove('hidden');
-  var done=0, errors=0;
+async function uploadStudents(){
+  if(!_stuRows.length){showStatus("stuStatus","No data.","err");return;}
+  showStatus("stuStatus","Uploading...","info");
+  var done=0,errors=0;
   for(var i=0;i<_stuRows.length;i++){
     var r=_stuRows[i];
-    try {
-      await fsSet('students', r.examno, { name:r.name, class:r.class, gender:r.gender, phone:r.phoneno, examNo:r.examno });
-      done++;
-    } catch(e){ errors++; console.error('Student upload error',r.examno,e); }
-    setProgress('stuProgBar','stuProgWrap',Math.round((i+1)/_stuRows.length*100));
+    try{await fsSet("students",r.examno,{name:r.name,class:r.class,gender:r.gender,phone:r.phoneno,examNo:r.examno});done++;}
+    catch(e){errors++;console.error(e);}
+    setProgress("stuProgBar","stuProgWrap",Math.round((i+1)/_stuRows.length*100));
   }
-  showStatus('stuStatus','Done! '+done+' uploaded'+(errors>0?', '+errors+' errors':'')+'.','ok');
+  showStatus("stuStatus","Done! "+done+" uploaded"+(errors?", "+errors+" errors":"")+".",errors?"warn":"ok");
   loadStats();
 }
 
-// ═══════════════════════════════════════════
-// MARKS
-// ═══════════════════════════════════════════
-function handleMarksFile(input) {
-  var file = input.files[0]; if(!file) return;
-  updateMaxMarks();
-  showStatus('marksStatus','Reading file...','info');
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      var parsed = parseCSV(e.target.result);
-      var hasExamno = parsed.headers.some(function(h){ return h.toLowerCase()==='examno'; });
-      var hasMarks  = parsed.headers.some(function(h){ return h.toLowerCase()==='marks'; });
-      if(!hasExamno||!hasMarks){ showStatus('marksStatus','File must have Examno and Marks columns.','err'); return; }
-      _marksRows = parsed.rows.map(function(r){
-        var n={}; Object.keys(r).forEach(function(k){ n[k.toLowerCase()]=r[k]; });
-        return { examno:String(n.examno||'').trim(), marks:Number(n.marks)||0 };
-      }).filter(function(r){ return r.examno; });
-      var maxM = Number($('maxMarks').value)||15;
-      var thead=$('marksPreviewTable').querySelector('thead');
-      var tbody=$('marksPreviewTable').querySelector('tbody');
-      thead.innerHTML='<tr><th>Exam No</th><th>Marks</th><th>%</th></tr>';
-      tbody.innerHTML=_marksRows.slice(0,15).map(function(r){
-        var p=Math.round(r.marks/maxM*100);
-        return '<tr><td>'+r.examno+'</td><td>'+r.marks+'</td><td>'+p+'%</td></tr>';
-      }).join('');
-      $('marksPreviewTitle').textContent='Preview - '+_marksRows.length+' students (first 15)';
-      $('marksPreviewWrap').classList.remove('hidden');
-      showStatus('marksStatus',_marksRows.length+' records loaded. Click Upload to calculate ranks and save.','ok');
-    } catch(err){ showStatus('marksStatus','Error: '+err.message,'err'); }
+/* STATS */
+async function loadStats(){
+  try{
+    var students=await fsGetAll("students");
+    $("statTotal").textContent=students.length;
+    var cls={};students.forEach(function(s){if(s.class)cls[s.class]=1;});
+    $("statClasses").textContent=Object.keys(cls).sort().join(", ")||"--";
+    var results=await fsGetAll("results");
+    var withR={};results.forEach(function(r){if(r.examNo)withR[r.examNo]=1;});
+    $("statWithResults").textContent=Object.keys(withR).length;
+  }catch(e){console.error(e);}
+}
+
+/* VIEW & EDIT STUDENTS */
+async function loadAllStudents(){
+  showStatus("viewStatus","Loading...","info");
+  try{
+    _allStudents=await fsGetAll("students");
+    _allStudents.sort(function(a,b){return(a.class||"").localeCompare(b.class||"")||(a.name||"").localeCompare(b.name||"");});
+    renderStudentsTable();hideStatus("viewStatus");
+  }catch(e){showStatus("viewStatus","Error: "+e.message,"err");}
+}
+function renderStudentsTable(){
+  var tbody=$("allStudentsTable").querySelector("tbody");
+  tbody.innerHTML=_allStudents.length
+    ?_allStudents.map(function(r){
+      var id=r._id||r.examNo;
+      return"<tr><td><strong>"+id+"</strong></td><td>"+r.name+"</td><td><span class='badge badge-blue'>"+r.class+"</span></td><td>"+(r.gender||"")+"</td><td>"+(r.phone||"")+"</td>"
+        +"<td style='display:flex;gap:6px'><button class='btn btn-outline btn-sm' onclick='openEditModal(\""+id+"\")'>✏️</button>"
+        +"<button class='btn btn-red btn-sm' onclick='deleteStudent(\""+id+"\",\""+r.name.replace(/"/g,"")+"\")'>🗑</button></td></tr>";
+    }).join("")
+    :"<tr><td colspan='6' style='text-align:center;color:var(--g400);padding:20px'>No students found</td></tr>";
+}
+function openEditModal(id){
+  var s=_allStudents.find(function(x){return(x._id||x.examNo)===id;});if(!s)return;
+  $("editExamNo").value=id;$("editName").value=s.name||"";$("editClass").value=s.class||"12D";
+  $("editGender").value=s.gender||"Male";$("editPhone").value=s.phone||"";
+  hideStatus("editStatus");$("editModal").classList.remove("hidden");
+}
+function closeEditModal(){$("editModal").classList.add("hidden");}
+async function saveStudent(){
+  var id=$("editExamNo").value;
+  var data={examNo:id,name:$("editName").value.trim(),class:$("editClass").value,gender:$("editGender").value,phone:$("editPhone").value.trim()};
+  if(!data.name||!data.phone){showStatus("editStatus","Name and phone required.","err");return;}
+  try{
+    await fsSet("students",id,data);
+    showStatus("editStatus","Saved!","ok");
+    var idx=_allStudents.findIndex(function(x){return(x._id||x.examNo)===id;});
+    if(idx>=0)_allStudents[idx]=Object.assign({},_allStudents[idx],data);
+    renderStudentsTable();setTimeout(closeEditModal,800);
+  }catch(e){showStatus("editStatus","Error: "+e.message,"err");}
+}
+async function deleteStudent(examNo,name){
+  if(!confirm("Delete student "+name+" ("+examNo+")? Cannot be undone."))return;
+  try{
+    await fsDelete("students",examNo);
+    showStatus("viewStatus","Deleted "+name,"ok");
+    _allStudents=_allStudents.filter(function(s){return(s._id||s.examNo)!==examNo;});
+    renderStudentsTable();
+  }catch(e){showStatus("viewStatus","Error: "+e.message,"err");}
+}
+async function bulkDeleteClass(){
+  var cls=$("bulkClass").value;
+  if(!cls){alert("Select a class first.");return;}
+  if(!confirm("Delete ALL students in class "+cls+"? Cannot be undone!"))return;
+  showStatus("viewStatus","Deleting "+cls+"...","info");
+  var toDelete=_allStudents.filter(function(s){return s.class===cls;});
+  if(!toDelete.length){showStatus("viewStatus","No students in "+cls,"warn");return;}
+  var done=0;
+  for(var i=0;i<toDelete.length;i++){try{await fsDelete("students",toDelete[i]._id||toDelete[i].examNo);done++;}catch(e){}}
+  showStatus("viewStatus","Deleted "+done+" students from "+cls,"ok");
+  await loadAllStudents();
+}
+
+/* UPLOAD MARKS */
+function handleMarksFile(input){
+  var file=input.files[0];if(!file)return;
+  updateMaxMarks();showStatus("marksStatus","Reading file...","info");
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var parsed=parseCSV(e.target.result);
+      if(!parsed.headers.some(function(h){return h.toLowerCase()==="examno";})||!parsed.headers.some(function(h){return h.toLowerCase()==="marks";})){
+        showStatus("marksStatus","File must have Examno and Marks columns.","err");return;
+      }
+      _marksRows=parsed.rows.map(function(r){var n={};Object.keys(r).forEach(function(k){n[k.toLowerCase()]=r[k];});return{examno:String(n.examno||"").trim(),marks:Number(n.marks)||0};}).filter(function(r){return r.examno;});
+      var maxM=Number($("maxMarks").value)||15;
+      var thead=$("marksPreviewTable").querySelector("thead"),tbody=$("marksPreviewTable").querySelector("tbody");
+      thead.innerHTML="<tr><th>Exam No</th><th>Marks</th><th>Max</th><th>%</th></tr>";
+      tbody.innerHTML=_marksRows.slice(0,15).map(function(r){return"<tr><td>"+r.examno+"</td><td>"+r.marks+"</td><td>"+maxM+"</td><td>"+Math.round(r.marks/maxM*100)+"%</td></tr>";}).join("");
+      $("marksPreviewTitle").textContent="Preview — "+_marksRows.length+" students";
+      $("marksPreviewWrap").classList.remove("hidden");
+      showStatus("marksStatus",_marksRows.length+" records loaded.","ok");
+    }catch(err){showStatus("marksStatus","Error: "+err.message,"err");}
   };
   reader.readAsText(file);
 }
-
-async function uploadMarks() {
-  if(!_marksRows.length){ showStatus('marksStatus','No data to upload.','err'); return; }
-  var subject  = $('selSubject').value;
-  var examCol  = $('selExam').value;
-  var maxMarks = Number($('maxMarks').value)||15;
-
-  showStatus('marksStatus','Calculating ranks...','info');
-
-  // Sort descending by marks for rank calculation
-  var sorted = _marksRows.slice().sort(function(a,b){ return b.marks-a.marks; });
+async function uploadMarks(){
+  if(!_marksRows.length){showStatus("marksStatus","No data.","err");return;}
+  var subject=$("selSubject").value,examCol=$("selExam").value,maxMarks=Number($("maxMarks").value)||15;
+  showStatus("marksStatus","Calculating ranks...","info");
+  var sorted=_marksRows.slice().sort(function(a,b){return b.marks-a.marks;});
   var rank=1;
-  for(var i=0;i<sorted.length;i++){
-    if(i>0&&sorted[i].marks<sorted[i-1].marks) rank=i+1;
-    sorted[i].rank = sorted[i].marks>0 ? rank : null;
-  }
-
-  var withMarks   = _marksRows.filter(function(r){ return r.marks>0; });
-  var classSize   = withMarks.length;
-  var classAvgRaw = classSize ? withMarks.reduce(function(s,r){ return s+r.marks; },0)/classSize : 0;
-  var classAvg    = Math.round(classAvgRaw*10)/10;
-  var classAvgPct = Math.round(classAvg/maxMarks*100);
-
-  var rankMap={};
-  sorted.forEach(function(r){ rankMap[r.examno]=r; });
-
-  showStatus('marksStatus','Uploading to Firebase...','info');
-  $('marksProgWrap').classList.remove('hidden');
-
-  var done=0, errors=0;
+  for(var i=0;i<sorted.length;i++){if(i>0&&sorted[i].marks<sorted[i-1].marks)rank=i+1;sorted[i].rank=sorted[i].marks>0?rank:null;}
+  var withM=_marksRows.filter(function(r){return r.marks>0;});
+  var classSize=withM.length;
+  var classAvg=classSize?Math.round(withM.reduce(function(s,r){return s+r.marks;},0)/classSize*10)/10:0;
+  var classAvgPct=Math.round(classAvg/maxMarks*100);
+  var rankMap={};sorted.forEach(function(r){rankMap[r.examno]=r;});
+  showStatus("marksStatus","Uploading...","info");
+  $("marksProgWrap").classList.remove("hidden");
+  var done=0,errors=0;
   for(var j=0;j<_marksRows.length;j++){
-    var r=_marksRows[j];
-    var info=rankMap[r.examno];
-    var resultId=r.examno+'_'+subject;
-    try {
-      // Get existing doc first to merge
-      var existing = await fsGet('results', resultId);
-      var data = existing || { examNo:r.examno, subject:subject };
-      data[examCol] = {
-        mark:       r.marks,
-        max:        maxMarks,
-        rank:       info&&info.rank!=null ? info.rank : null,
-        classSize:  classSize,
-        classAvg:   classAvg,
-        classAvgPct:classAvgPct
-      };
-      data.examNo  = r.examno;
-      data.subject = subject;
-      await fsSet('results', resultId, data);
-      done++;
-    } catch(e){ errors++; console.error('Marks upload error',r.examno,e); }
-    setProgress('marksProgBar','marksProgWrap',Math.round((j+1)/_marksRows.length*100));
+    var r=_marksRows[j],info=rankMap[r.examno],resultId=r.examno+"_"+subject;
+    try{
+      var existing=await fsGet("results",resultId);
+      var data=existing||{examNo:r.examno,subject:subject};
+      data[examCol]={mark:r.marks,max:maxMarks,rank:info&&info.rank!=null?info.rank:null,classSize:classSize,classAvg:classAvg,classAvgPct:classAvgPct};
+      data.examNo=r.examno;data.subject=subject;
+      await fsSet("results",resultId,data);done++;
+    }catch(e){errors++;console.error(e);}
+    setProgress("marksProgBar","marksProgWrap",Math.round((j+1)/_marksRows.length*100));
   }
-  showStatus('marksStatus','Done! '+done+' records saved for '+subject+' - '+examCol+'. Class size: '+classSize+', avg: '+classAvg+'/'+maxMarks+'.','ok');
+  showStatus("marksStatus","Done! "+done+" saved for "+subject+" – "+examCol+". Avg: "+classAvg+"/"+maxMarks+".",errors?"warn":"ok");
+}
+async function deleteExamMarks(){
+  var subj=$("delSubject").value,exam=$("delExam").value;
+  if(!confirm("Delete all "+subj+" – "+exam+" marks? Cannot be undone."))return;
+  showStatus("delStatus","Loading...","info");
+  try{
+    var results=await fsGetAll("results");
+    var matching=results.filter(function(r){return r.subject===subj&&r[exam]!==undefined;});
+    if(!matching.length){showStatus("delStatus","No marks found for "+subj+" – "+exam,"warn");return;}
+    var done=0;
+    for(var i=0;i<matching.length;i++){
+      var id=matching[i]._id,doc=Object.assign({},matching[i]);delete doc[exam];delete doc._id;
+      await fsSet("results",id,doc);done++;
+    }
+    showStatus("delStatus","Deleted "+exam+" marks for "+done+" students in "+subj,"ok");
+  }catch(e){showStatus("delStatus","Error: "+e.message,"err");}
 }
 
-// ═══════════════════════════════════════════
-// STATS & VIEW
-// ═══════════════════════════════════════════
-async function loadStats() {
-  try {
-    var students = await fsGetAll('students');
-    $('statTotal').textContent = students.length;
-    var classes = {};
-    students.forEach(function(s){ if(s.class) classes[s.class]=1; });
-    $('statClasses').textContent = Object.keys(classes).join(', ') || '--';
-    var results = await fsGetAll('results');
-    var withR = {};
-    results.forEach(function(r){ if(r.examNo) withR[r.examNo]=1; });
-    $('statWithResults').textContent = Object.keys(withR).length;
-  } catch(e){ console.error('Stats error',e); }
+/* VIEW MARKS */
+async function viewMarks(){
+  var subj=$("vmSubject").value,exam=$("vmExam").value;
+  showStatus("vmStatus","Loading...","info");
+  try{
+    var results=await fsGetAll("results");
+    var matching=results.filter(function(r){return r.subject===subj&&r[exam]&&r[exam].mark!=null;});
+    matching.sort(function(a,b){return(b[exam].mark||0)-(a[exam].mark||0);});
+    var tbody=$("vmTable").querySelector("tbody");
+    tbody.innerHTML=matching.length
+      ?matching.map(function(r){
+        var e=r[exam],p=Math.round(e.mark/e.max*100),pass=e.max>20?p>=40:e.mark>=6;
+        return"<tr><td><strong>"+r.examNo+"</strong></td><td>"+e.mark+"</td><td>"+e.max+"</td>"
+          +"<td><span class='badge "+(pass?"badge-green":"badge-red")+"'>"+p+"%</span></td>"
+          +"<td>"+(e.rank||"--")+"</td><td>"+(e.classSize||"--")+"</td><td>"+(e.classAvg||"--")+"</td></tr>";
+      }).join("")
+      :"<tr><td colspan='7' style='text-align:center;color:var(--g400);padding:20px'>No marks for "+subj+" – "+exam+"</td></tr>";
+    if(matching.length)showStatus("vmStatus",matching.length+" records for "+subj+" – "+exam,"ok");
+    else hideStatus("vmStatus");
+  }catch(e){showStatus("vmStatus","Error: "+e.message,"err");}
 }
 
-async function loadAllStudents() {
-  showStatus('viewStatus','Loading...','info');
-  try {
-    var students = await fsGetAll('students');
-    students.sort(function(a,b){ return (a.class||'').localeCompare(b.class||'') || (a.name||'').localeCompare(b.name||''); });
-    var tbody=$('allStudentsTable').querySelector('tbody');
-    tbody.innerHTML=students.length
-      ?students.map(function(r){
-        return '<tr><td><strong>'+(r._id||r.examNo)+'</strong></td><td>'+r.name+'</td>'
-          +'<td><span class="badge badge-blue">'+r.class+'</span></td>'
-          +'<td>'+(r.gender||'')+'</td><td>'+(r.phone||'')+'</td>'
-          +'<td><button class="btn btn-red" style="padding:4px 10px;font-size:.74rem" onclick="deleteStudent(\''+(r._id||r.examNo)+'\',\''+r.name+'\')">Delete</button></td></tr>';
-      }).join('')
-      :'<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:20px">No students found</td></tr>';
-    hideStatus('viewStatus');
-  } catch(e){ showStatus('viewStatus','Error: '+e.message,'err'); }
+/* EDIT A MARK */
+var _emCurrentData=null;
+async function findStudentMark(){
+  var en=$("emExamNo").value.trim(),subj=$("emSubject").value,exam=$("emExam").value;
+  if(!en){showStatus("emInfo","Enter an exam number.","err");return;}
+  showStatus("emInfo","Looking up...","info");$("emEditWrap").classList.add("hidden");
+  try{
+    var doc=await fsGet("results",en+"_"+subj);
+    if(!doc||!doc[exam]){showStatus("emInfo","No "+exam+" mark for Exam No "+en+" in "+subj,"warn");return;}
+    _emCurrentData={resultId:en+"_"+subj,doc:doc,exam:exam,subj:subj,en:en};
+    var e=doc[exam];
+    showStatus("emInfo","Current: "+e.mark+"/"+e.max+" ("+Math.round(e.mark/e.max*100)+"%) | Rank: "+(e.rank||"N/A")+"/"+e.classSize,"ok");
+    $("emNewMark").value=e.mark;$("emEditWrap").classList.remove("hidden");
+  }catch(e){showStatus("emInfo","Error: "+e.message,"err");}
+}
+async function saveEditedMark(){
+  if(!_emCurrentData){showStatus("emStatus","Find a student first.","err");return;}
+  var newMark=Number($("emNewMark").value);
+  if(isNaN(newMark)||newMark<0){showStatus("emStatus","Invalid mark.","err");return;}
+  showStatus("emStatus","Recalculating ranks for all students...","info");
+  try{
+    var allResults=await fsGetAll("results");
+    var subjResults=allResults.filter(function(r){return r.subject===_emCurrentData.subj&&r[_emCurrentData.exam]&&r[_emCurrentData.exam].mark!=null;});
+    subjResults.forEach(function(r){if(r.examNo===_emCurrentData.en)r[_emCurrentData.exam].mark=newMark;});
+    var withM=subjResults.filter(function(r){return r[_emCurrentData.exam].mark>0;});
+    var classSize=withM.length,maxM=subjResults[0]?subjResults[0][_emCurrentData.exam].max:100;
+    var classAvg=classSize?Math.round(withM.reduce(function(s,r){return s+r[_emCurrentData.exam].mark;},0)/classSize*10)/10:0;
+    var classAvgPct=Math.round(classAvg/maxM*100);
+    var sorted=subjResults.slice().sort(function(a,b){return b[_emCurrentData.exam].mark-a[_emCurrentData.exam].mark;});
+    var rank=1;
+    for(var i=0;i<sorted.length;i++){
+      if(i>0&&sorted[i][_emCurrentData.exam].mark<sorted[i-1][_emCurrentData.exam].mark)rank=i+1;
+      sorted[i][_emCurrentData.exam].rank=sorted[i][_emCurrentData.exam].mark>0?rank:null;
+      sorted[i][_emCurrentData.exam].classSize=classSize;
+      sorted[i][_emCurrentData.exam].classAvg=classAvg;
+      sorted[i][_emCurrentData.exam].classAvgPct=classAvgPct;
+    }
+    for(var j=0;j<subjResults.length;j++){var r=subjResults[j],id=r._id;delete r._id;await fsSet("results",id,r);}
+    showStatus("emStatus","Mark updated to "+newMark+"/"+maxM+". Ranks recalculated for "+subjResults.length+" students.","ok");
+    $("emEditWrap").classList.add("hidden");_emCurrentData=null;
+  }catch(e){showStatus("emStatus","Error: "+e.message,"err");}
 }
 
-async function deleteStudent(examNo, name) {
-  if(!confirm('Delete student '+name+' ('+examNo+')? This cannot be undone.')) return;
-  try {
-    await fsDelete('students', examNo);
-    showStatus('viewStatus','Deleted '+name,'ok');
-    loadAllStudents();
-  } catch(e){ showStatus('viewStatus','Error: '+e.message,'err'); }
+/* ANALYTICS */
+async function loadAnalytics(){
+  showStatus("anaStatus","Loading data...","info");
+  try{
+    var students=await fsGetAll("students");
+    var results=await fsGetAll("results");
+    var resMap={};results.forEach(function(r){resMap[r.examNo+"_"+r.subject]=r;});
+    hideStatus("anaStatus");
+    var html="";
+
+    // Class x Subject pass/fail table
+    var classes={};students.forEach(function(s){if(s.class){if(!classes[s.class])classes[s.class]=[];classes[s.class].push(s);}});
+    html+='<h4 style="font-size:.9rem;font-weight:700;margin-bottom:10px;color:var(--blue)">Class × Subject Pass/Fail</h4>';
+    html+='<div class="tscroll"><table class="ptable"><thead><tr><th>Class</th><th>Total</th>';
+    SUBJECTS.forEach(function(sub){EXAMS.forEach(function(ex){html+="<th>"+sub+"-"+ex+"</th>";});});
+    html+="</tr></thead><tbody>";
+    Object.keys(classes).sort().forEach(function(cls){
+      var st=classes[cls];html+="<tr><td><strong>"+cls+"</strong></td><td>"+st.length+"</td>";
+      SUBJECTS.forEach(function(sub){
+        EXAMS.forEach(function(ex){
+          var count=0,pass=0;
+          st.forEach(function(s){
+            var r=resMap[(s._id||s.examNo)+"_"+sub];
+            if(r&&r[ex]&&r[ex].mark!=null){count++;var m=r[ex].mark,mx=r[ex].max||15;if(mx>20&&m/mx>=0.4)pass++;else if(mx<=20&&m>=6)pass++;}
+          });
+          html+=count===0?"<td><span class='badge badge-grey'>--</span></td>":"<td><span class='badge "+(Math.round(pass/count*100)>=60?"badge-green":Math.round(pass/count*100)>=40?"badge-gold":"badge-red")+"'>"+pass+"/"+count+"</span></td>";
+        });
+      });
+      html+="</tr>";
+    });
+    html+="</tbody></table></div>";
+
+    // Subject avg bars
+    html+='<h4 style="font-size:.9rem;font-weight:700;margin:20px 0 10px;color:var(--blue)">Subject Average % per Exam</h4>';
+    html+='<div class="ana-grid">';
+    SUBJECTS.forEach(function(sub){
+      html+='<div class="ana-card"><h4>'+sub+'</h4>';
+      EXAMS.forEach(function(ex){
+        var marks=results.filter(function(r){return r.subject===sub&&r[ex]&&r[ex].mark>0;}).map(function(r){return r[ex].mark/(r[ex].max||15)*100;});
+        if(!marks.length){html+='<div class="bar-row"><span class="bar-lbl">'+ex+'</span><div class="bar-track"><div class="bar-fill" style="width:0%;background:var(--g200)"></div></div><span class="bar-val">--</span></div>';return;}
+        var a=Math.round(avg(marks)),col=a>=75?"var(--green)":a>=50?"var(--gold)":"var(--red)";
+        html+='<div class="bar-row"><span class="bar-lbl">'+ex+'</span><div class="bar-track"><div class="bar-fill" style="width:'+a+'%;background:'+col+'"></div></div><span class="bar-val">'+a+'%</span></div>';
+      });
+      html+="</div>";
+    });
+    html+="</div>";
+
+    // Top 10
+    html+='<h4 style="font-size:.9rem;font-weight:700;margin:20px 0 10px;color:var(--blue)">Top 10 Students (Overall Average)</h4>';
+    var stuScores=students.map(function(s){
+      var id=s._id||s.examNo,scores=[];
+      SUBJECTS.forEach(function(sub){var r=resMap[id+"_"+sub];if(r)EXAMS.forEach(function(ex){if(r[ex]&&r[ex].mark>0)scores.push(r[ex].mark/(r[ex].max||15)*100);});});
+      return{name:s.name,cls:s.class,avg:scores.length?Math.round(avg(scores)):null};
+    }).filter(function(s){return s.avg!=null;}).sort(function(a,b){return b.avg-a.avg;});
+    html+='<div class="tscroll"><table class="ptable"><thead><tr><th>#</th><th>Name</th><th>Class</th><th>Overall Avg %</th></tr></thead><tbody>';
+    stuScores.slice(0,10).forEach(function(s,i){
+      html+="<tr><td>"+(i+1)+"</td><td><strong>"+s.name+"</strong></td><td>"+s.cls+"</td><td><span class='badge "+(s.avg>=75?"badge-green":s.avg>=50?"badge-gold":"badge-red")+"'>"+s.avg+"%</span></td></tr>";
+    });
+    html+="</tbody></table></div>";
+    $("anaContent").innerHTML=html;
+  }catch(e){showStatus("anaStatus","Error: "+e.message,"err");}
 }
 
-// Enter key for login
-document.addEventListener('keydown', function(e){
-  if(e.key==='Enter' && $('loginWrap').style.display!=='none') adminLogin();
+/* MISSING MARKS */
+async function loadMissing(){
+  showStatus("missingStatus","Checking...","info");
+  try{
+    var students=await fsGetAll("students");
+    var results=await fsGetAll("results");
+    var resMap={};results.forEach(function(r){resMap[r.examNo+"_"+r.subject]=r;});
+    var html='<div class="tscroll"><table class="ptable"><thead><tr><th>Exam No</th><th>Name</th><th>Class</th>';
+    SUBJECTS.forEach(function(sub){EXAMS.forEach(function(ex){html+="<th>"+sub.slice(0,1)+"-"+ex+"</th>";});});
+    html+="</tr></thead><tbody>";
+    var issues=0;
+    students.forEach(function(s){
+      var id=s._id||s.examNo,cells="",hasIssue=false;
+      SUBJECTS.forEach(function(sub){EXAMS.forEach(function(ex){var r=resMap[id+"_"+sub],has=r&&r[ex]&&r[ex].mark!=null;cells+=has?"<td><span class='ok-chip'>✓</span></td>":"<td><span class='miss-chip'>✗</span></td>";if(!has)hasIssue=true;});});
+      if(hasIssue){issues++;html+="<tr><td><strong>"+id+"</strong></td><td>"+s.name+"</td><td>"+s.class+"</td>"+cells+"</tr>";}
+    });
+    html+="</tbody></table></div>";
+    if(!issues){showStatus("missingStatus","All students have marks for all exams!","ok");$("missingContent").innerHTML="";}
+    else{showStatus("missingStatus",issues+" students have missing marks","warn");$("missingContent").innerHTML=html;}
+  }catch(e){showStatus("missingStatus","Error: "+e.message,"err");}
+}
+
+/* DUPLICATE PHONES */
+async function loadDupes(){
+  showStatus("dupesStatus","Checking...","info");
+  try{
+    var students=await fsGetAll("students"),phoneMap={};
+    students.forEach(function(s){var ph=String(s.phone||"").trim();if(!ph)return;if(!phoneMap[ph])phoneMap[ph]=[];phoneMap[ph].push(s);});
+    var dupes=Object.keys(phoneMap).filter(function(p){return phoneMap[p].length>1;});
+    if(!dupes.length){showStatus("dupesStatus","No duplicate phone numbers found!","ok");$("dupesContent").innerHTML="";return;}
+    showStatus("dupesStatus",dupes.length+" duplicate phone number(s) found!","warn");
+    var html='<div class="tscroll"><table class="ptable"><thead><tr><th>Phone</th><th>Students Sharing</th></tr></thead><tbody>';
+    dupes.forEach(function(ph){
+      html+="<tr><td><strong>"+ph+"</strong></td><td>"+phoneMap[ph].map(function(s){return(s._id||s.examNo)+" – "+s.name+" ("+s.class+")";}).join("<br>")+"</td></tr>";
+    });
+    html+="</tbody></table></div>";
+    $("dupesContent").innerHTML=html;
+  }catch(e){showStatus("dupesStatus","Error: "+e.message,"err");}
+}
+
+/* STUDENT PREVIEW */
+async function loadPreview(){
+  var en=$("prevExamNo").value.trim();
+  if(!en){showStatus("previewStatus","Enter an exam number.","err");return;}
+  showStatus("previewStatus","Loading...","info");
+  try{
+    var student=await fsGet("students",en);
+    if(!student||!student.name){showStatus("previewStatus","Student not found: "+en,"err");return;}
+    var results={};
+    for(var i=0;i<SUBJECTS.length;i++){var r=await fsGet("results",en+"_"+SUBJECTS[i]);if(r)results[SUBJECTS[i]]=r;}
+    hideStatus("previewStatus");
+    var html='<div style="border:2px solid var(--blue-border);border-radius:12px;overflow:hidden;margin-top:12px">';
+    html+='<div style="background:var(--blue);padding:14px 16px;color:#fff"><strong>'+student.name+'</strong> — Exam No: '+en+' | Class: '+student.class+'</div>';
+    SUBJECTS.forEach(function(subj){
+      var res=results[subj];
+      html+='<div style="padding:14px 16px;border-bottom:1px solid var(--g100)"><strong style="font-size:.84rem;color:var(--blue)">'+subj+'</strong>';
+      if(!res){html+='<span style="color:var(--g400);font-size:.8rem;margin-left:8px">No results uploaded yet</span></div>';return;}
+      html+='<div class="tscroll"><table class="ptable" style="margin-top:8px"><thead><tr><th>Exam</th><th>Marks</th><th>Max</th><th>%</th><th>Rank</th><th>Class Avg</th></tr></thead><tbody>';
+      EXAMS.forEach(function(ex){
+        var e=res[ex];
+        if(!e){html+="<tr><td>"+ex+"</td><td colspan='5' style='color:var(--g400)'>Not uploaded</td></tr>";return;}
+        var p=Math.round(e.mark/e.max*100);
+        html+="<tr><td><strong>"+ex+"</strong></td><td>"+e.mark+"</td><td>"+e.max+"</td>"
+          +"<td><span class='badge "+(p>=60?"badge-green":p>=40?"badge-gold":"badge-red")+"'>"+p+"%</span></td>"
+          +"<td>"+(e.rank?"#"+e.rank+"/"+e.classSize:"--")+"</td><td>"+(e.classAvg||"--")+"</td></tr>";
+      });
+      html+="</tbody></table></div></div>";
+    });
+    html+="</div>";
+    $("previewContent").innerHTML=html;
+  }catch(e){showStatus("previewStatus","Error: "+e.message,"err");}
+}
+
+/* EXPORT */
+async function exportStudents(){
+  showStatus("exportStatus","Loading...","info");
+  try{
+    var students=await fsGetAll("students");
+    students.sort(function(a,b){return(a.class||"").localeCompare(b.class||"")||(a.name||"").localeCompare(b.name||"");});
+    downloadCSV("velammal_students.csv",students.map(function(s){return{ExamNo:s._id||s.examNo,Name:s.name,Class:s.class,Gender:s.gender,Phone:s.phone};}),["ExamNo","Name","Class","Gender","Phone"]);
+    showStatus("exportStatus","Students CSV downloaded!","ok");
+  }catch(e){showStatus("exportStatus","Error: "+e.message,"err");}
+}
+async function exportMarks(){
+  var subj=$("expSubject").value,exam=$("expExam").value;
+  showStatus("exportStatus","Loading...","info");
+  try{
+    var results=await fsGetAll("results");
+    var rows=results.filter(function(r){return r.subject===subj&&r[exam]&&r[exam].mark!=null;})
+      .sort(function(a,b){return(b[exam].mark||0)-(a[exam].mark||0);})
+      .map(function(r){var e=r[exam];return{ExamNo:r.examNo,Marks:e.mark,Max:e.max,Percent:Math.round(e.mark/e.max*100),Rank:e.rank||"",ClassSize:e.classSize||"",ClassAvg:e.classAvg||""};});
+    if(!rows.length){showStatus("exportStatus","No marks for "+subj+" – "+exam,"warn");return;}
+    downloadCSV("velammal_"+subj+"_"+exam+".csv",rows,["ExamNo","Marks","Max","Percent","Rank","ClassSize","ClassAvg"]);
+    showStatus("exportStatus",rows.length+" records downloaded!","ok");
+  }catch(e){showStatus("exportStatus","Error: "+e.message,"err");}
+}
+async function exportFullReport(){
+  showStatus("exportStatus","Loading full data...","info");
+  try{
+    var students=await fsGetAll("students");
+    var results=await fsGetAll("results");
+    var resMap={};results.forEach(function(r){resMap[r.examNo+"_"+r.subject]=r;});
+    var headers=["ExamNo","Name","Class","Gender","Phone"];
+    SUBJECTS.forEach(function(sub){EXAMS.forEach(function(ex){headers.push(sub+"_"+ex+"_Marks");headers.push(sub+"_"+ex+"_Pct");});});
+    var rows=students.map(function(s){
+      var id=s._id||s.examNo,row={ExamNo:id,Name:s.name,Class:s.class,Gender:s.gender,Phone:s.phone};
+      SUBJECTS.forEach(function(sub){var r=resMap[id+"_"+sub];EXAMS.forEach(function(ex){var e=r&&r[ex];row[sub+"_"+ex+"_Marks"]=e&&e.mark!=null?e.mark:"";row[sub+"_"+ex+"_Pct"]=e&&e.mark!=null?Math.round(e.mark/e.max*100):"";});});
+      return row;
+    });
+    downloadCSV("velammal_full_report.csv",rows,headers);
+    showStatus("exportStatus","Full report downloaded — "+rows.length+" students!","ok");
+  }catch(e){showStatus("exportStatus","Error: "+e.message,"err");}
+}
+
+document.addEventListener("keydown",function(e){
+  if(e.key==="Enter"&&$("loginWrap").style.display!=="none")adminLogin();
+  if(e.key==="Escape")closeEditModal();
 });
 </script>
 </body>
