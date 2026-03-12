@@ -122,8 +122,11 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <span class="nav-sep">Students</span>
       <button class="nav-item active" onclick="showSec('secStudents',this)">👥 Upload Students</button>
       <button class="nav-item" onclick="showSec('secViewStudents',this)">👁 View &amp; Edit</button>
+      <span class="nav-sep">Setup</span>
+      <button class="nav-item" onclick="showSec('secExams',this)">🗂 Exams &amp; Subjects</button>
+      <button class="nav-item" onclick="showSec('secClasses',this)">🏫 Classes</button>
+      <button class="nav-item" onclick="showSec('secTeacherMgmt',this)">👩‍🏫 Teachers</button>
       <span class="nav-sep">Marks</span>
-      <button class="nav-item" onclick="showSec('secExams',this)">🗂 Manage Exams</button>
       <button class="nav-item" onclick="showSec('secMarks',this)">📝 Upload Marks</button>
       <button class="nav-item" onclick="showSec('secViewMarks',this)">🔍 View Marks</button>
       <button class="nav-item" onclick="showSec('secEditMark',this)">✏️ Edit a Mark</button>
@@ -134,7 +137,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <button class="nav-item" onclick="showSec('secPreview',this)">👀 Student Preview</button>
       <span class="nav-sep">Other</span>
       <button class="nav-item" onclick="showSec('secExport',this)">⬇️ Export CSV</button>
-      <button class="nav-item" onclick="showSec('secTeachers',this)">👩‍🏫 Teachers</button>
+
     </div>
     <div class="main-content">
 
@@ -176,10 +179,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div class="card-sub">Edit individual records or bulk delete an entire class.</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
             <button class="btn btn-outline" onclick="loadAllStudents()">↻ Load / Refresh</button>
-            <select id="bulkClass" style="padding:9px 12px;border:1.5px solid var(--g200);border-radius:8px;font-family:inherit;font-size:.84rem;">
-              <option value="">Select class to bulk delete</option>
-              <option value="12D">12D</option><option value="12E">12E</option>
-            </select>
+            <select id="bulkClass" style="padding:9px 12px;border:1.5px solid var(--g200);border-radius:8px;font-family:inherit;font-size:.84rem;"><option value="">Select class to bulk delete</option></select>
             <button class="btn btn-red" onclick="bulkDeleteClass()">🗑 Delete Class</button>
           </div>
           <div id="viewStatus" class="status-bar"></div>
@@ -192,17 +192,16 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
         </div>
       </div>
 
-      <!-- MANAGE EXAMS -->
+      <!-- MANAGE EXAMS & SUBJECTS -->
       <div id="secExams" class="hidden">
         <div class="card">
           <div class="card-title">Manage Exams</div>
-          <div class="card-sub">Add or remove exams. All dropdowns across the portal update automatically.</div>
-          <div class="info-box">Only exams added here will appear in Upload Marks, View Marks, Analytics, Missing Marks, etc.</div>
+          <div class="card-sub">Add or remove exams. Removing an exam <strong>permanently deletes all marks</strong> for that exam.</div>
           <div id="examListWrap" style="margin-bottom:16px;min-height:32px">
-            <span style="color:var(--g400);font-size:.82rem">Loading exams...</span>
+            <span style="color:var(--g400);font-size:.82rem">Loading...</span>
           </div>
           <div class="form-row-3" style="margin-bottom:12px">
-            <div class="fg" style="margin:0"><label>Exam Name</label><input type="text" id="newExamName" placeholder="e.g. DRT-1, PT-2, Term"></div>
+            <div class="fg" style="margin:0"><label>Exam Name</label><input type="text" id="newExamName" placeholder="e.g. DRT-1, PT-2"></div>
             <div class="fg" style="margin:0"><label>Max Marks</label><input type="number" id="newExamMax" value="100" min="1" max="200"></div>
             <div class="fg" style="margin:0">
               <label>Pass Mark</label>
@@ -215,6 +214,51 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div id="examStatus" class="status-bar"></div>
           <button class="btn btn-green" onclick="addExam()">＋ Add Exam</button>
         </div>
+        <div class="card">
+          <div class="card-title">Manage Subjects</div>
+          <div class="card-sub">Add or remove subjects. Removing a subject <strong>permanently deletes all marks</strong> for that subject.</div>
+          <div id="subjectListWrap" style="margin-bottom:16px;min-height:32px">
+            <span style="color:var(--g400);font-size:.82rem">Loading...</span>
+          </div>
+          <div class="form-row" style="margin-bottom:12px">
+            <div class="fg" style="margin:0"><label>Subject Name</label><input type="text" id="newSubjectName" placeholder="e.g. CS, Maths, Physics"></div>
+            <div class="fg" style="margin:0;display:flex;align-items:flex-end">
+              <button class="btn btn-green" onclick="addSubject()" style="width:100%">＋ Add Subject</button>
+            </div>
+          </div>
+          <div id="subjectStatus" class="status-bar"></div>
+        </div>
+      </div>
+
+      <!-- MANAGE CLASSES -->
+      <div id="secClasses" class="hidden">
+        <div class="card">
+          <div class="card-title">Manage Classes</div>
+          <div class="card-sub">Add or remove classes. Removing a class <strong>permanently deletes all students and marks</strong> for that class.</div>
+          <div id="classListWrap" style="margin-bottom:16px;min-height:32px">
+            <span style="color:var(--g400);font-size:.82rem">Loading...</span>
+          </div>
+          <div class="form-row" style="margin-bottom:12px">
+            <div class="fg" style="margin:0"><label>Class Name</label><input type="text" id="newClassName" placeholder="e.g. 12D, 12E, 11A"></div>
+            <div class="fg" style="margin:0;display:flex;align-items:flex-end">
+              <button class="btn btn-green" onclick="addClass()" style="width:100%">＋ Add Class</button>
+            </div>
+          </div>
+          <div id="classStatus" class="status-bar"></div>
+        </div>
+      </div>
+
+      <!-- MANAGE TEACHERS -->
+      <div id="secTeacherMgmt" class="hidden">
+        <div class="card">
+          <div class="card-title">Manage Teachers</div>
+          <div class="card-sub">Add, edit or remove teachers. Changes take effect immediately on next login.</div>
+          <div id="teacherListWrap" style="margin-bottom:16px">
+            <span style="color:var(--g400);font-size:.82rem">Loading...</span>
+          </div>
+          <div id="teacherStatus" class="status-bar"></div>
+          <button class="btn btn-green" onclick="openTeacherModal()">＋ Add Teacher</button>
+        </div>
       </div>
 
       <!-- UPLOAD MARKS -->
@@ -223,13 +267,13 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div class="card-title">Upload Marks</div>
           <div class="card-sub">Ranks are calculated per class separately. AB or blank = Absent, 0 = Scored zero.</div>
           <div class="form-row" style="margin-bottom:12px">
-            <div class="fg" style="margin:0"><label>Subject</label><select id="selSubject"><option value="CS">CS</option><option value="Maths">Maths</option></select></div>
+            <div class="fg" style="margin:0"><label>Subject</label><select id="selSubject"></select></div>
             <div class="fg" style="margin:0"><label>Exam</label><select id="selExam" onchange="updateMaxMarks()"></select></div>
           </div>
           <div class="form-row" style="margin-bottom:12px">
             <div class="fg" style="margin:0"><label>Max Marks</label><input type="number" id="maxMarks" value="100" min="1" max="200"></div>
             <div class="fg" style="margin:0"><label>Class Filter (optional)</label>
-              <select id="selClass"><option value="">All Classes</option><option value="12D">12D</option><option value="12E">12E</option></select>
+              <select id="selClass"><option value="">All Classes</option></select>
             </div>
           </div>
           <div class="info-box">Required columns: <code>Examno, Marks</code> — leave Marks blank or write <code>AB</code> for absent, <code>0</code> for scored zero</div>
@@ -253,13 +297,13 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div class="warn-box">Leave Exam or Class as "All" to delete broader. Always double-check before deleting.</div>
           <div class="form-row-3" style="margin-bottom:12px">
             <div class="fg" style="margin:0"><label>Subject</label>
-              <select id="delSubject"><option value="CS">CS</option><option value="Maths">Maths</option></select>
+              <select id="delSubject"></select>
             </div>
             <div class="fg" style="margin:0"><label>Exam (optional)</label>
               <select id="delExam"><option value="">All Exams</option></select>
             </div>
             <div class="fg" style="margin:0"><label>Class (optional)</label>
-              <select id="delClass"><option value="">All Classes</option><option value="12D">12D</option><option value="12E">12E</option></select>
+              <select id="delClass"><option value="">All Classes</option></select>
             </div>
           </div>
           <div id="delStatus" class="status-bar"></div>
@@ -273,10 +317,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div class="card-title">View Uploaded Marks</div>
           <div class="card-sub">Review marks for any subject + exam. Sorted by class then rank.</div>
           <div class="form-row-3" style="margin-bottom:12px">
-            <div class="fg" style="margin:0"><label>Subject</label><select id="vmSubject"><option value="CS">CS</option><option value="Maths">Maths</option></select></div>
+            <div class="fg" style="margin:0"><label>Subject</label><select id="vmSubject"></select></div>
             <div class="fg" style="margin:0"><label>Exam</label><select id="vmExam"></select></div>
             <div class="fg" style="margin:0"><label>Class</label>
-              <select id="vmClass"><option value="">All Classes</option><option value="12D">12D</option><option value="12E">12E</option></select>
+              <select id="vmClass"><option value="">All Classes</option></select>
             </div>
           </div>
           <button class="btn btn-outline" onclick="viewMarks()">↻ Load Marks</button>
@@ -297,7 +341,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div class="card-sub">Find a student, update their mark. Ranks recalculate automatically for the whole class.</div>
           <div class="form-row-3" style="margin-bottom:12px">
             <div class="fg" style="margin:0"><label>Exam No</label><input type="text" id="emExamNo" placeholder="e.g. 1001"></div>
-            <div class="fg" style="margin:0"><label>Subject</label><select id="emSubject"><option value="CS">CS</option><option value="Maths">Maths</option></select></div>
+            <div class="fg" style="margin:0"><label>Subject</label><select id="emSubject"></select></div>
             <div class="fg" style="margin:0"><label>Exam</label><select id="emExam"></select></div>
           </div>
           <button class="btn btn-outline" onclick="findStudentMark()" style="margin-bottom:12px">🔍 Find Current Mark</button>
@@ -373,7 +417,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
               <strong style="font-size:.88rem">Marks by Subject + Exam</strong>
               <p style="font-size:.78rem;color:var(--g600);margin:4px 0 10px">Marks, %, rank for one exam. AB shown for absent.</p>
               <div class="form-row" style="margin-bottom:10px">
-                <div class="fg" style="margin:0"><label>Subject</label><select id="expSubject"><option value="CS">CS</option><option value="Maths">Maths</option></select></div>
+                <div class="fg" style="margin:0"><label>Subject</label><select id="expSubject"></select></div>
                 <div class="fg" style="margin:0"><label>Exam</label><select id="expExam"></select></div>
               </div>
               <button class="btn btn-outline" onclick="exportMarks()">⬇ Download Marks CSV</button>
@@ -388,21 +432,33 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
         </div>
       </div>
 
-      <!-- TEACHERS -->
-      <div id="secTeachers" class="hidden">
-        <div class="card">
-          <div class="card-title">Current Teachers</div>
-          <div class="card-sub">Configured in index.html → TEACHERS object. Edit that file to change credentials.</div>
-          <table class="ptable">
-            <thead><tr><th>ID</th><th>Name</th><th>Subject</th><th>Classes</th><th>Password</th></tr></thead>
-            <tbody>
-              <tr><td><strong>7567</strong></td><td>Leo</td><td><span class="badge badge-blue">CS</span></td><td>12D, 12E</td><td><code>vval@123</code></td></tr>
-              <tr><td><strong>8765</strong></td><td>Ramu</td><td><span class="badge badge-green">Maths</span></td><td>12E</td><td><code>vval@123</code></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
 
+
+    </div>
+  </div>
+</div>
+
+<!-- TEACHER MODAL -->
+<div id="teacherModal" class="modal-bg hidden">
+  <div class="modal" style="max-width:500px">
+    <h3 id="teacherModalTitle">➕ Add Teacher</h3>
+    <input type="hidden" id="teacherEditId">
+    <div class="form-row">
+      <div class="fg"><label>Teacher ID</label><input type="text" id="teacherIdInput" placeholder="e.g. 7567"></div>
+      <div class="fg"><label>Name</label><input type="text" id="teacherName" placeholder="e.g. Leo"></div>
+    </div>
+    <div class="form-row">
+      <div class="fg"><label>Password</label><input type="text" id="teacherPass" placeholder="e.g. vval@123"></div>
+      <div class="fg"><label>Subject</label><select id="teacherSubject"></select></div>
+    </div>
+    <div class="fg">
+      <label>Classes</label>
+      <div id="teacherClassChecks" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px"></div>
+    </div>
+    <div id="teacherModalStatus" class="status-bar"></div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closeTeacherModal()">Cancel</button>
+      <button class="btn btn-green" onclick="saveTeacher()">💾 Save</button>
     </div>
   </div>
 </div>
@@ -413,7 +469,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
     <h3>✏️ Edit Student</h3>
     <input type="hidden" id="editExamNo">
     <div class="fg"><label>Name</label><input type="text" id="editName"></div>
-    <div class="fg"><label>Class</label><select id="editClass"><option value="12D">12D</option><option value="12E">12E</option></select></div>
+    <div class="fg"><label>Class</label><select id="editClass"></select></div>
     <div class="fg"><label>Gender</label><select id="editGender"><option value="Male">Male</option><option value="Female">Female</option></select></div>
     <div class="fg"><label>Phone</label><input type="tel" id="editPhone"></div>
     <div id="editStatus" class="status-bar"></div>
@@ -479,10 +535,10 @@ function parseFsVal(v){
 // CONSTANTS & STATE
 // ═══════════════════════════════════════════════════════
 var ADMIN_PASS="admin@123";
-var SUBJECTS=["CS","Maths"];
-var EXAMS=[]; // loaded from Firestore /settings/config
-var EXAM_MAX={}; // examName -> maxMarks
-var EXAM_PASS={}; // examName -> passMark (null = no pass mark)
+var SUBJECTS=[]; // loaded from Firestore /settings/config
+var EXAMS=[];
+var EXAM_MAX={};
+var EXAM_PASS={};
 var _stuRows=[],_marksRows=[],_allStudents=[];
 
 function $(id){return document.getElementById(id);}
@@ -543,44 +599,107 @@ function downloadCSV(filename,rows,headers){
 // ═══════════════════════════════════════════════════════
 async function loadExamConfig(){
   var cfg=await fsGet("settings","config");
-  if(cfg&&cfg.exams&&Array.isArray(cfg.exams)){
-    EXAMS=cfg.exams.map(function(e){return e.name;});
-    EXAM_MAX={};EXAM_PASS={};
-    cfg.exams.forEach(function(e){
-      EXAM_MAX[e.name]=e.max||100;
-      EXAM_PASS[e.name]=e.passMark!=null?e.passMark:null;
-    });
+  if(cfg){
+    if(cfg.exams&&Array.isArray(cfg.exams)){
+      EXAMS=cfg.exams.map(function(e){return e.name;});
+      EXAM_MAX={};EXAM_PASS={};
+      cfg.exams.forEach(function(e){
+        EXAM_MAX[e.name]=e.max||100;
+        EXAM_PASS[e.name]=e.passMark!=null?e.passMark:null;
+      });
+    } else { EXAMS=[];EXAM_MAX={};EXAM_PASS={}; }
+    if(cfg.subjects&&Array.isArray(cfg.subjects)){
+      SUBJECTS=cfg.subjects;
+    } else { SUBJECTS=[]; }
+    if(cfg.classes&&Array.isArray(cfg.classes)){
+      CLASSES=cfg.classes;
+    } else { CLASSES=[]; }
+    if(cfg.teachers&&Array.isArray(cfg.teachers)){
+      TEACHERS_CFG=cfg.teachers;
+    } else { TEACHERS_CFG=[]; }
   } else {
-    EXAMS=[];EXAM_MAX={};EXAM_PASS={};
+    EXAMS=[];EXAM_MAX={};EXAM_PASS={};SUBJECTS=[];CLASSES=[];TEACHERS_CFG=[];
   }
   populateAllExamDropdowns();
+  populateAllSubjectDropdowns();
+  populateAllClassDropdowns();
   renderExamList();
+  renderSubjectList();
+  renderClassList();
+  renderTeacherList();
 }
 
 function populateAllExamDropdowns(){
-  var ids=["selExam","vmExam","emExam","expExam"];
-  ids.forEach(function(id){
+  // Regular exam dropdowns (no All Exams option)
+  ["selExam","vmExam","emExam","expExam"].forEach(function(id){
     var el=$(id);if(!el)return;
     var prev=el.value;
     el.innerHTML="";
-    if(id==="delExam"){
-      el.innerHTML="<option value=''>All Exams</option>";
-    }
-    EXAMS.forEach(function(ex){
-      var o=document.createElement("option");
-      o.value=ex;o.textContent=ex;
-      el.appendChild(o);
-    });
+    EXAMS.forEach(function(ex){var o=document.createElement("option");o.value=ex;o.textContent=ex;el.appendChild(o);});
     if(EXAMS.includes(prev))el.value=prev;
     else if(EXAMS.length)el.value=EXAMS[0];
   });
-  // delExam separately (has "All Exams" option)
+  // delExam has "All Exams" option
   var del=$("delExam");if(del){
+    var prev=del.value;
     del.innerHTML="<option value=''>All Exams</option>";
     EXAMS.forEach(function(ex){var o=document.createElement("option");o.value=ex;o.textContent=ex;del.appendChild(o);});
+    if(prev&&EXAMS.includes(prev))del.value=prev;
   }
-  // update maxMarks on selExam
   updateMaxMarks();
+}
+
+function populateAllSubjectDropdowns(){
+  ["selSubject","delSubject","vmSubject","emSubject","expSubject"].forEach(function(id){
+    var el=$(id);if(!el)return;
+    var prev=el.value;
+    el.innerHTML="";
+    SUBJECTS.forEach(function(s){var o=document.createElement("option");o.value=s;o.textContent=s;el.appendChild(o);});
+    if(SUBJECTS.includes(prev))el.value=prev;
+    else if(SUBJECTS.length)el.value=SUBJECTS[0];
+  });
+}
+
+function renderSubjectList(){
+  var wrap=$("subjectListWrap");if(!wrap)return;
+  if(!SUBJECTS.length){wrap.innerHTML="<span style='color:var(--g400);font-size:.82rem'>No subjects added yet.</span>";return;}
+  wrap.innerHTML=SUBJECTS.map(function(s){
+    return"<span class='exam-tag'>"+s+"<button onclick='removeSubject(this.dataset.s)' data-s='"+s+"' title='Remove'>✕</button></span>";
+  }).join("");
+}
+
+async function addSubject(){
+  var name=$("newSubjectName").value.trim().toUpperCase();
+  if(!name){showStatus("subjectStatus","Enter a subject name.","err");return;}
+  if(SUBJECTS.includes(name)){showStatus("subjectStatus",name+" already exists.","warn");return;}
+  SUBJECTS.push(name);
+  try{
+    await saveExamConfig();
+    populateAllSubjectDropdowns();
+    renderSubjectList();
+    $("newSubjectName").value="";
+    showStatus("subjectStatus","✅ "+name+" added.","ok");
+  }catch(e){SUBJECTS.pop();showStatus("subjectStatus","Error: "+e.message,"err");}
+}
+
+async function removeSubject(name){
+  var affected=0;
+  try{
+    var results=await fsGetAll("results");
+    affected=results.filter(function(r){return r.subject===name;}).length;
+  }catch(e){}
+  if(!confirm("Remove subject '"+name+"'?\n\nThis will permanently DELETE marks for "+affected+" result records in Firebase.\n\nThis cannot be undone."))return;
+  showStatus("subjectStatus","Deleting "+name+" marks from Firebase...","info");
+  try{
+    var results=await fsGetAll("results");
+    var toDelete=results.filter(function(r){return r.subject===name;});
+    for(var i=0;i<toDelete.length;i++){await fsDelete("results",toDelete[i]._id);}
+    SUBJECTS=SUBJECTS.filter(function(s){return s!==name;});
+    await saveExamConfig();
+    populateAllSubjectDropdowns();
+    renderSubjectList();
+    showStatus("subjectStatus","Deleted "+name+" and "+toDelete.length+" result records.","ok");
+  }catch(e){showStatus("subjectStatus","Error: "+e.message,"err");}
 }
 
 function renderExamList(){
@@ -602,7 +721,80 @@ function togglePassInput(){
 
 async function saveExamConfig(){
   var examArr=EXAMS.map(function(ex){return{name:ex,max:EXAM_MAX[ex]||100,passMark:EXAM_PASS[ex]!=null?EXAM_PASS[ex]:null};});
-  await fsSet("settings","config",{exams:examArr});
+  await fsSet("settings","config",{exams:examArr,subjects:SUBJECTS,classes:CLASSES,teachers:TEACHERS_CFG});
+}
+
+function populateAllClassDropdowns(){
+  // Dropdowns with "All Classes" option
+  ["selClass","delClass","vmClass"].forEach(function(id){
+    var el=$(id);if(!el)return;
+    var prev=el.value;
+    el.innerHTML="<option value=''>All Classes</option>";
+    CLASSES.forEach(function(c){var o=document.createElement("option");o.value=c;o.textContent=c;el.appendChild(o);});
+    if(CLASSES.includes(prev))el.value=prev;
+  });
+  // Bulk delete class dropdown
+  var bulk=$("bulkClass");if(bulk){
+    var prev=bulk.value;
+    bulk.innerHTML="<option value=''>Select class to bulk delete</option>";
+    CLASSES.forEach(function(c){var o=document.createElement("option");o.value=c;o.textContent=c;bulk.appendChild(o);});
+    if(CLASSES.includes(prev))bulk.value=prev;
+  }
+  // Edit student modal class select
+  var ec=$("editClass");if(ec){
+    var prev=ec.value;
+    ec.innerHTML="";
+    CLASSES.forEach(function(c){var o=document.createElement("option");o.value=c;o.textContent=c;ec.appendChild(o);});
+    if(CLASSES.includes(prev))ec.value=prev;
+    else if(CLASSES.length)ec.value=CLASSES[0];
+  }
+}
+
+function renderClassList(){
+  var wrap=$("classListWrap");if(!wrap)return;
+  if(!CLASSES.length){wrap.innerHTML="<span style='color:var(--g400);font-size:.82rem'>No classes added yet.</span>";return;}
+  wrap.innerHTML=CLASSES.map(function(c){
+    return"<span class='exam-tag'>"+c+"<button onclick='removeClass(this.dataset.c)' data-c='"+c+"' title='Remove'>✕</button></span>";
+  }).join("");
+}
+
+async function addClass(){
+  var name=$("newClassName").value.trim().toUpperCase();
+  if(!name){showStatus("classStatus","Enter a class name.","err");return;}
+  if(CLASSES.includes(name)){showStatus("classStatus",name+" already exists.","warn");return;}
+  CLASSES.push(name);
+  try{
+    await saveExamConfig();
+    populateAllClassDropdowns();
+    renderClassList();
+    $("newClassName").value="";
+    showStatus("classStatus","✅ "+name+" added.","ok");
+  }catch(e){CLASSES.pop();showStatus("classStatus","Error: "+e.message,"err");}
+}
+
+async function removeClass(name){
+  var stuCount=0,resCount=0;
+  try{
+    var allStu=await fsGetAll("students");
+    var allRes=await fsGetAll("results");
+    stuCount=allStu.filter(function(s){return s.class===name;}).length;
+    resCount=allRes.filter(function(r){return r.class===name;}).length;
+  }catch(e){}
+  if(!confirm("Remove class '"+name+"'?\n\nThis will permanently DELETE:\n- "+stuCount+" students\n- "+resCount+" result records\n\nThis cannot be undone."))return;
+  showStatus("classStatus","Deleting "+name+" data from Firebase...","info");
+  try{
+    var allStu=await fsGetAll("students");
+    var allRes=await fsGetAll("results");
+    var toDelStu=allStu.filter(function(s){return s.class===name;});
+    var toDelRes=allRes.filter(function(r){return r.class===name;});
+    for(var i=0;i<toDelStu.length;i++){await fsDelete("students",toDelStu[i]._id);}
+    for(var j=0;j<toDelRes.length;j++){await fsDelete("results",toDelRes[j]._id);}
+    CLASSES=CLASSES.filter(function(c){return c!==name;});
+    await saveExamConfig();
+    populateAllClassDropdowns();
+    renderClassList();
+    showStatus("classStatus","Deleted "+name+": "+toDelStu.length+" students, "+toDelRes.length+" result records.","ok");
+  }catch(e){showStatus("classStatus","Error: "+e.message,"err");}
 }
 
 async function addExam(){
@@ -625,14 +817,29 @@ async function addExam(){
 }
 
 async function removeExam(name){
-  if(!confirm("Remove exam '"+name+"'?\nThis only removes it from the dropdown. Already uploaded marks are NOT deleted."))return;
-  EXAMS=EXAMS.filter(function(e){return e!==name;});
-  delete EXAM_MAX[name];delete EXAM_PASS[name];
+  var affected=0;
   try{
+    var results=await fsGetAll("results");
+    affected=results.filter(function(r){return r[name]!==undefined;}).length;
+  }catch(e){}
+  if(!confirm("Remove exam '"+name+"'?\n\nThis will permanently DELETE marks for "+affected+" students in Firebase.\n\nThis cannot be undone."))return;
+  showStatus("examStatus","Deleting "+name+" marks from Firebase...","info");
+  try{
+    var results=await fsGetAll("results");
+    var done=0;
+    for(var i=0;i<results.length;i++){
+      var r=results[i];
+      if(r[name]!==undefined){
+        var doc=Object.assign({},r);delete doc._id;delete doc[name];
+        await fsSet("results",r._id,doc);done++;
+      }
+    }
+    EXAMS=EXAMS.filter(function(e){return e!==name;});
+    delete EXAM_MAX[name];delete EXAM_PASS[name];
     await saveExamConfig();
     populateAllExamDropdowns();
     renderExamList();
-    showStatus("examStatus","Removed "+name+" from exam list.","ok");
+    showStatus("examStatus","Deleted "+name+" marks for "+done+" students and removed from exam list.","ok");
   }catch(e){showStatus("examStatus","Error: "+e.message,"err");}
 }
 
@@ -644,17 +851,123 @@ function updateMaxMarks(){
 // ═══════════════════════════════════════════════════════
 // LOGIN
 // ═══════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════
+// TEACHER MANAGEMENT
+// ═══════════════════════════════════════════════════════ */
+function renderTeacherList(){
+  var wrap=$("teacherListWrap");if(!wrap)return;
+  if(!TEACHERS_CFG.length){wrap.innerHTML="<div style='color:var(--g400);font-size:.82rem;padding:8px'>No teachers added yet.</div>";return;}
+  var html='<table class="ptable"><thead><tr><th>ID</th><th>Name</th><th>Subject</th><th>Classes</th><th>Password</th><th>Actions</th></tr></thead><tbody>';
+  TEACHERS_CFG.forEach(function(t){
+    html+="<tr>"
+      +"<td><strong>"+t.id+"</strong></td>"
+      +"<td>"+t.name+"</td>"
+      +"<td><span class='badge badge-blue'>"+t.subject+"</span></td>"
+      +"<td>"+(Array.isArray(t.classes)?t.classes.join(", "):t.classes||"")+"</td>"
+      +"<td><code>"+t.password+"</code></td>"
+      +"<td style='display:flex;gap:6px'>"
+        +"<button class='btn btn-outline btn-sm' onclick='openTeacherModal(this.dataset.id)' data-id='"+t.id+"'>✏️</button>"
+        +"<button class='btn btn-red btn-sm' onclick='deleteTeacher(this.dataset.id)' data-id='"+t.id+"'>🗑</button>"
+      +"</td></tr>";
+  });
+  html+="</tbody></table>";
+  wrap.innerHTML=html;
+}
+
+function openTeacherModal(id){
+  var subSel=$("teacherSubject");
+  subSel.innerHTML="";
+  SUBJECTS.forEach(function(s){var o=document.createElement("option");o.value=s;o.textContent=s;subSel.appendChild(o);});
+  var checks=$("teacherClassChecks");
+  checks.innerHTML=CLASSES.map(function(c){
+    return"<label style='display:flex;align-items:center;gap:5px;font-size:.82rem;font-weight:600;cursor:pointer;padding:4px 8px;border:1.5px solid var(--g200);border-radius:6px'>"
+      +"<input type='checkbox' class='t-cls-cb' value='"+c+"' style='accent-color:var(--blue)'>"+c+"</label>";
+  }).join("");
+  if(id){
+    var t=TEACHERS_CFG.find(function(x){return x.id===id;});
+    if(!t)return;
+    $("teacherModalTitle").textContent="✏️ Edit Teacher";
+    $("teacherEditId").value=id;
+    $("teacherIdInput").value=t.id;
+    $("teacherIdInput").disabled=true;
+    $("teacherName").value=t.name;
+    $("teacherPass").value=t.password;
+    subSel.value=t.subject;
+    var cls=Array.isArray(t.classes)?t.classes:[t.classes||""];
+    document.querySelectorAll(".t-cls-cb").forEach(function(cb){cb.checked=cls.includes(cb.value);});
+  } else {
+    $("teacherModalTitle").textContent="➕ Add Teacher";
+    $("teacherEditId").value="";
+    $("teacherIdInput").value="";
+    $("teacherIdInput").disabled=false;
+    $("teacherName").value="";
+    $("teacherPass").value="";
+    document.querySelectorAll(".t-cls-cb").forEach(function(cb){cb.checked=false;});
+  }
+  hideStatus("teacherModalStatus");
+  $("teacherModal").classList.remove("hidden");
+}
+
+function closeTeacherModal(){$("teacherModal").classList.add("hidden");}
+
+async function saveTeacher(){
+  var isEdit=!!$("teacherEditId").value;
+  var id=$("teacherIdInput").value.trim();
+  var name=$("teacherName").value.trim();
+  var pass=$("teacherPass").value.trim();
+  var subject=$("teacherSubject").value;
+  var classes=Array.from(document.querySelectorAll(".t-cls-cb:checked")).map(function(cb){return cb.value;});
+  if(!id||!name||!pass){showStatus("teacherModalStatus","ID, Name and Password are required.","err");return;}
+  if(!classes.length){showStatus("teacherModalStatus","Select at least one class.","err");return;}
+  if(!isEdit&&TEACHERS_CFG.find(function(t){return t.id===id;})){showStatus("teacherModalStatus","Teacher ID "+id+" already exists.","err");return;}
+  var entry={id:id,name:name,password:pass,subject:subject,classes:classes};
+  var prev=TEACHERS_CFG.slice();
+  if(isEdit){
+    var idx=TEACHERS_CFG.findIndex(function(t){return t.id===id;});
+    if(idx>=0)TEACHERS_CFG[idx]=entry; else TEACHERS_CFG.push(entry);
+  } else {
+    TEACHERS_CFG.push(entry);
+  }
+  try{
+    await saveExamConfig();
+    renderTeacherList();
+    closeTeacherModal();
+    showStatus("teacherStatus",(isEdit?"Updated":"Added")+" teacher "+name+".","ok");
+  }catch(e){
+    TEACHERS_CFG=prev;
+    showStatus("teacherModalStatus","Error: "+e.message,"err");
+  }
+}
+
+async function deleteTeacher(id){
+  var t=TEACHERS_CFG.find(function(x){return x.id===id;});
+  if(!t)return;
+  if(!confirm("Delete teacher "+t.name+" ("+id+")?\nThey will no longer be able to log in."))return;
+  var prev=TEACHERS_CFG.slice();
+  TEACHERS_CFG=TEACHERS_CFG.filter(function(x){return x.id!==id;});
+  try{
+    await saveExamConfig();
+    renderTeacherList();
+    showStatus("teacherStatus","Deleted teacher "+t.name+".","ok");
+  }catch(e){
+    TEACHERS_CFG=prev;
+    showStatus("teacherStatus","Error: "+e.message,"err");
+  }
+}
+
 function adminLogin(){
   if($("adminPass").value!==ADMIN_PASS){$("loginErr").textContent="Wrong password.";$("loginErr").style.display="block";return;}
   $("loginWrap").style.display="none";$("appWrap").classList.remove("hidden");
-  loadExamConfig();loadStats();
+  loadExamConfig();loadStats(); // loadExamConfig populates all dropdowns including subjects
 }
 function adminLogout(){$("appWrap").classList.add("hidden");$("loginWrap").style.display="flex";$("adminPass").value="";}
 
 // ═══════════════════════════════════════════════════════
 // NAV
 // ═══════════════════════════════════════════════════════
-var SECS=["secStudents","secViewStudents","secExams","secMarks","secViewMarks","secEditMark","secAnalytics","secMissing","secDupes","secPreview","secExport","secTeachers"];
+var CLASSES=[]; // loaded from Firestore /settings/config
+var TEACHERS_CFG=[]; // loaded from Firestore /settings/config
+var SECS=["secStudents","secViewStudents","secExams","secClasses","secTeacherMgmt","secMarks","secViewMarks","secEditMark","secAnalytics","secMissing","secDupes","secPreview","secExport"];
 function showSec(id,btn){
   SECS.forEach(function(s){$(s).classList.add("hidden");});$(id).classList.remove("hidden");
   document.querySelectorAll(".nav-item").forEach(function(b){b.classList.remove("active");});
@@ -711,12 +1024,7 @@ async function loadStats(){
     var results=await fsGetAll("results");
     var withR={};
     results.forEach(function(r){
-      // Count only if at least one exam has a non-null mark (0 is valid, null=absent doesn't count)
-      var hasReal=EXAMS.some(function(ex){return r[ex]&&r[ex].mark!==undefined&&r[ex].mark!==null;});
-      // If EXAMS not loaded yet, check any key that looks like an exam result
-      if(!hasReal&&!EXAMS.length){
-        hasReal=Object.keys(r).some(function(k){return r[k]&&typeof r[k]==="object"&&r[k].mark!==undefined&&r[k].mark!==null;});
-      }
+      var hasReal=Object.keys(r).some(function(k){return r[k]&&typeof r[k]==="object"&&r[k].mark!==undefined&&r[k].mark!==null;});
       if(r.examNo&&hasReal)withR[r.examNo]=1;
     });
     $("statWithResults").textContent=Object.keys(withR).length;
@@ -747,7 +1055,7 @@ function renderStudentsTable(){
 }
 function openEditModal(id){
   var s=_allStudents.find(function(x){return(x._id||x.examNo)===id;});if(!s)return;
-  $("editExamNo").value=id;$("editName").value=s.name||"";$("editClass").value=s.class||"12D";
+  $("editExamNo").value=id;$("editName").value=s.name||"";$("editClass").value=s.class||(CLASSES.length?CLASSES[0]:"");
   $("editGender").value=s.gender||"Male";$("editPhone").value=s.phone||"";
   hideStatus("editStatus");$("editModal").classList.remove("hidden");
 }
