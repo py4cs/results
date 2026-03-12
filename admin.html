@@ -204,13 +204,12 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div class="form-row-3" style="margin-bottom:12px">
             <div class="fg" style="margin:0"><label>Exam Name</label><input type="text" id="newExamName" placeholder="e.g. DRT-1, PT-2, Term"></div>
             <div class="fg" style="margin:0"><label>Max Marks</label><input type="number" id="newExamMax" value="100" min="1" max="200"></div>
-            <div class="fg" style="margin:0"><label>Pass Mark</label>
-              <div style="display:flex;gap:8px;align-items:center;margin-top:2px">
-                <input type="number" id="newExamPass" placeholder="e.g. 40" min="1" max="200" style="flex:1;padding:11px 14px;border:1.5px solid var(--g200);border-radius:8px;font-size:.95rem;font-family:inherit;background:var(--g50);">
-                <label style="display:flex;align-items:center;gap:5px;font-size:.78rem;font-weight:600;color:var(--g600);white-space:nowrap;cursor:pointer;margin:0">
-                  <input type="checkbox" id="newExamNoPass" onchange="togglePassInput()" style="width:auto;accent-color:var(--blue)"> No Pass Mark
-                </label>
-              </div>
+            <div class="fg" style="margin:0">
+              <label>Pass Mark</label>
+              <input type="number" id="newExamPass" placeholder="e.g. 40" min="1" max="200">
+              <label style="margin-top:6px;display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;color:var(--g600);cursor:pointer">
+                <input type="checkbox" id="newExamNoPass" onchange="togglePassInput()"> No Pass Mark
+              </label>
             </div>
           </div>
           <div id="examStatus" class="status-bar"></div>
