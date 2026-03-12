@@ -201,9 +201,17 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div id="examListWrap" style="margin-bottom:16px;min-height:32px">
             <span style="color:var(--g400);font-size:.82rem">Loading exams...</span>
           </div>
-          <div class="form-row" style="margin-bottom:12px">
+          <div class="form-row-3" style="margin-bottom:12px">
             <div class="fg" style="margin:0"><label>Exam Name</label><input type="text" id="newExamName" placeholder="e.g. DRT-1, PT-2, Term"></div>
             <div class="fg" style="margin:0"><label>Max Marks</label><input type="number" id="newExamMax" value="100" min="1" max="200"></div>
+            <div class="fg" style="margin:0"><label>Pass Mark</label>
+              <div style="display:flex;gap:8px;align-items:center;margin-top:2px">
+                <input type="number" id="newExamPass" placeholder="e.g. 40" min="1" max="200" style="flex:1;padding:11px 14px;border:1.5px solid var(--g200);border-radius:8px;font-size:.95rem;font-family:inherit;background:var(--g50);">
+                <label style="display:flex;align-items:center;gap:5px;font-size:.78rem;font-weight:600;color:var(--g600);white-space:nowrap;cursor:pointer;margin:0">
+                  <input type="checkbox" id="newExamNoPass" onchange="togglePassInput()" style="width:auto;accent-color:var(--blue)"> No Pass Mark
+                </label>
+              </div>
+            </div>
           </div>
           <div id="examStatus" class="status-bar"></div>
           <button class="btn btn-green" onclick="addExam()">＋ Add Exam</button>
@@ -474,7 +482,8 @@ function parseFsVal(v){
 var ADMIN_PASS="admin@123";
 var SUBJECTS=["CS","Maths"];
 var EXAMS=[]; // loaded from Firestore /settings/config
-var EXAM_MAX={}; // examName -> maxMarks, loaded from Firestore
+var EXAM_MAX={}; // examName -> maxMarks
+var EXAM_PASS={}; // examName -> passMark (null = no pass mark)
 var _stuRows=[],_marksRows=[],_allStudents=[];
 
 function $(id){return document.getElementById(id);}
@@ -482,6 +491,25 @@ function showStatus(id,msg,type){var e=$(id);e.textContent=msg;e.className="stat
 function hideStatus(id){$(id).style.display="none";}
 function setProgress(bar,wrap,p){$(wrap).classList.remove("hidden");$(bar).style.width=p+"%";}
 function avg(a){return a.length?a.reduce(function(s,v){return s+v;},0)/a.length:0;}
+
+// Pass mark helpers
+function getPassMark(exam){return EXAM_PASS[exam]!=null?EXAM_PASS[exam]:null;}
+function hasPassMark(exam){return EXAM_PASS[exam]!=null;}
+// Returns: "pass", "fail", or null (no pass mark concept)
+function passStatus(mark,exam){
+  if(mark===null)return null; // absent
+  var pm=getPassMark(exam);
+  if(pm===null)return null; // no pass mark for this exam
+  return mark>=pm?"pass":"fail";
+}
+// Badge html for a mark% — respects pass mark setting
+function markBadge(mark,max,exam){
+  if(mark===null)return"<span class='badge badge-grey'>AB</span>";
+  var p=Math.round(mark/max*100);
+  var ps=passStatus(mark,exam);
+  if(ps===null)return"<span class='badge badge-blue'>"+p+"%</span>"; // neutral, no pass concept
+  return"<span class='badge "+(ps==="pass"?"badge-green":"badge-red")+"'>"+p+"%</span>";
+}
 
 // Parse mark value: blank/"AB"/"ab" = null (absent), number = actual mark
 function parseMark(v){
@@ -518,10 +546,13 @@ async function loadExamConfig(){
   var cfg=await fsGet("settings","config");
   if(cfg&&cfg.exams&&Array.isArray(cfg.exams)){
     EXAMS=cfg.exams.map(function(e){return e.name;});
-    EXAM_MAX={};
-    cfg.exams.forEach(function(e){EXAM_MAX[e.name]=e.max||100;});
+    EXAM_MAX={};EXAM_PASS={};
+    cfg.exams.forEach(function(e){
+      EXAM_MAX[e.name]=e.max||100;
+      EXAM_PASS[e.name]=e.passMark!=null?e.passMark:null;
+    });
   } else {
-    EXAMS=[];EXAM_MAX={};
+    EXAMS=[];EXAM_MAX={};EXAM_PASS={};
   }
   populateAllExamDropdowns();
   renderExamList();
@@ -557,35 +588,47 @@ function renderExamList(){
   var wrap=$("examListWrap");if(!wrap)return;
   if(!EXAMS.length){wrap.innerHTML="<span style='color:var(--g400);font-size:.82rem'>No exams added yet.</span>";return;}
   wrap.innerHTML=EXAMS.map(function(ex){
-    return"<span class='exam-tag'>"+ex+" <small style='font-weight:500;opacity:.7'>(max "+EXAM_MAX[ex]+")</small>"
-      +"<button onclick='removeExam(\""+ex+"\")' title='Remove'>✕</button></span>";
+    var pm=EXAM_PASS[ex];
+    var pmText=pm!=null?" | pass: "+pm:" | no pass mark";
+    return"<span class='exam-tag'>"+ex
+      +" <small style='font-weight:500;opacity:.7'>(max "+EXAM_MAX[ex]+pmText+")</small>"
+      +"<button onclick='removeExam(""+ex+"")' title='Remove'>✕</button></span>";
   }).join("");
+}
+function togglePassInput(){
+  var cb=$("newExamNoPass"),inp=$("newExamPass");
+  if(cb.checked){inp.value="";inp.disabled=true;inp.style.opacity=".4";}
+  else{inp.disabled=false;inp.style.opacity="1";}
 }
 
 async function saveExamConfig(){
-  var examArr=EXAMS.map(function(ex){return{name:ex,max:EXAM_MAX[ex]||100};});
+  var examArr=EXAMS.map(function(ex){return{name:ex,max:EXAM_MAX[ex]||100,passMark:EXAM_PASS[ex]!=null?EXAM_PASS[ex]:null};});
   await fsSet("settings","config",{exams:examArr});
 }
 
 async function addExam(){
   var name=$("newExamName").value.trim().toUpperCase();
   var max=Number($("newExamMax").value)||100;
+  var noPass=$("newExamNoPass").checked;
+  var passVal=noPass?null:Number($("newExamPass").value)||null;
   if(!name){showStatus("examStatus","Enter an exam name.","err");return;}
   if(EXAMS.includes(name)){showStatus("examStatus",name+" already exists.","warn");return;}
-  EXAMS.push(name);EXAM_MAX[name]=max;
+  EXAMS.push(name);EXAM_MAX[name]=max;EXAM_PASS[name]=passVal;
   try{
     await saveExamConfig();
     populateAllExamDropdowns();
     renderExamList();
-    $("newExamName").value="";$("newExamMax").value="100";
-    showStatus("examStatus","✅ "+name+" added (max: "+max+")","ok");
+    $("newExamName").value="";$("newExamMax").value="100";$("newExamPass").value="";
+    $("newExamNoPass").checked=false;togglePassInput();
+    var pmMsg=passVal!=null?" | pass: "+passVal:" | no pass mark";
+    showStatus("examStatus","✅ "+name+" added (max: "+max+pmMsg+")","ok");
   }catch(e){showStatus("examStatus","Error: "+e.message,"err");}
 }
 
 async function removeExam(name){
   if(!confirm("Remove exam '"+name+"'?\nThis only removes it from the dropdown. Already uploaded marks are NOT deleted."))return;
   EXAMS=EXAMS.filter(function(e){return e!==name;});
-  delete EXAM_MAX[name];
+  delete EXAM_MAX[name];delete EXAM_PASS[name];
   try{
     await saveExamConfig();
     populateAllExamDropdowns();
@@ -908,14 +951,12 @@ async function viewMarks(){
       ?matching.map(function(r){
         var e=r[exam],sc=r.class||stuMap[r.examNo]||"--";
         var isAb=e.mark===null;
-        var p=isAb?null:Math.round(e.mark/e.max*100);
-        var pass=!isAb&&(e.max>20?p>=40:e.mark>=6);
         return"<tr>"
           +"<td><strong>"+r.examNo+"</strong></td>"
           +"<td><span class='badge badge-blue'>"+sc+"</span></td>"
           +"<td>"+(isAb?"<span class='badge badge-purple'>AB</span>":e.mark)+"</td>"
           +"<td>"+(isAb?"--":e.max)+"</td>"
-          +"<td>"+(isAb?"<span class='badge badge-grey'>AB</span>":"<span class='badge "+(pass?"badge-green":"badge-red")+"'>"+p+"%</span>")+"</td>"
+          +"<td>"+markBadge(e.mark,e.max,exam)+"</td>"
           +"<td>"+(e.rank?"#"+e.rank:isAb?"AB":"--")+"</td>"
           +"<td>"+(e.classSize||"--")+"</td>"
           +"<td>"+(e.classAvg||"--")+"</td></tr>";
@@ -1020,11 +1061,13 @@ async function loadAnalytics(){
           st.forEach(function(s){
             var r=resMap[(s._id||s.examNo)+"_"+sub];
             if(r&&r[ex]&&r[ex].mark!==undefined&&r[ex].mark!==null){
-              wrote++;var m=r[ex].mark,mx=r[ex].max||100;
-              if(mx>20&&m/mx>=0.4)pass++;else if(mx<=20&&m>=6)pass++;
+              wrote++;
+              if(hasPassMark(ex)&&passStatus(r[ex].mark,ex)==="pass")pass++;
             }
           });
-          html+=wrote===0?"<td><span class='badge badge-grey'>--</span></td>":"<td><span class='badge "+(Math.round(pass/wrote*100)>=60?"badge-green":Math.round(pass/wrote*100)>=40?"badge-gold":"badge-red")+"'>"+pass+"/"+wrote+"</span></td>";
+          if(wrote===0){html+="<td><span class='badge badge-grey'>--</span></td>";}
+          else if(!hasPassMark(ex)){html+="<td><span class='badge badge-blue'>"+wrote+" wrote</span></td>";}
+          else{var pp=Math.round(pass/wrote*100);html+="<td><span class='badge "+(pp>=60?"badge-green":pp>=40?"badge-gold":"badge-red")+"'>"+pass+"/"+wrote+"</span></td>";}
         });
       });
       html+="</tr>";
@@ -1146,11 +1189,10 @@ async function loadPreview(){
         var e=res[ex];
         if(!e||e.mark===undefined){html+="<tr><td>"+ex+"</td><td colspan='5' style='color:var(--g400)'>Not uploaded</td></tr>";return;}
         var isAb=e.mark===null;
-        var p=isAb?null:Math.round(e.mark/e.max*100);
         html+="<tr><td><strong>"+ex+"</strong></td>"
           +"<td>"+(isAb?"<span class='badge badge-purple'>AB</span>":e.mark)+"</td>"
           +"<td>"+(isAb?"--":e.max)+"</td>"
-          +"<td>"+(isAb?"<span class='badge badge-grey'>AB</span>":"<span class='badge "+(p>=60?"badge-green":p>=40?"badge-gold":"badge-red")+"'>"+p+"%</span>")+"</td>"
+          +"<td>"+markBadge(e.mark,e.max,ex)+"</td>"
           +"<td>"+(e.rank?"#"+e.rank+"/"+e.classSize:isAb?"AB":"--")+"</td>"
           +"<td>"+(e.classAvg!==undefined?e.classAvg:"--")+"</td></tr>";
       });
@@ -1183,10 +1225,11 @@ async function exportMarks(){
       .sort(function(a,b){return(a[exam].rank||9999)-(b[exam].rank||9999);})
       .map(function(r){
         var e=r[exam],isAb=e.mark===null;
-        return{ExamNo:r.examNo,Marks:isAb?"AB":e.mark,Max:isAb?"":e.max,Percent:isAb?"":Math.round(e.mark/e.max*100),Rank:isAb?"AB":(e.rank||""),ClassSize:e.classSize||"",ClassAvg:e.classAvg||""};
+        var ps=isAb?null:passStatus(e.mark,exam);
+        return{ExamNo:r.examNo,Marks:isAb?"AB":e.mark,Max:isAb?"":e.max,Percent:isAb?"":Math.round(e.mark/e.max*100),Result:isAb?"AB":ps===null?"--":ps==="pass"?"Pass":"Fail",Rank:isAb?"AB":(e.rank||""),ClassSize:e.classSize||"",ClassAvg:e.classAvg||""};
       });
     if(!rows.length){showStatus("exportStatus","No marks for "+subj+" – "+exam,"warn");return;}
-    downloadCSV("velammal_"+subj+"_"+exam+".csv",rows,["ExamNo","Marks","Max","Percent","Rank","ClassSize","ClassAvg"]);
+    downloadCSV("velammal_"+subj+"_"+exam+".csv",rows,["ExamNo","Marks","Max","Percent","Result","Rank","ClassSize","ClassAvg"]);
     showStatus("exportStatus",rows.length+" records downloaded!","ok");
   }catch(e){showStatus("exportStatus","Error: "+e.message,"err");}
 }
@@ -1198,7 +1241,7 @@ async function exportFullReport(){
     var results=await fsGetAll("results");
     var resMap={};results.forEach(function(r){resMap[r.examNo+"_"+r.subject]=r;});
     var headers=["ExamNo","Name","Class","Gender","Phone"];
-    SUBJECTS.forEach(function(sub){EXAMS.forEach(function(ex){headers.push(sub+"_"+ex+"_Marks");headers.push(sub+"_"+ex+"_Pct");});});
+    SUBJECTS.forEach(function(sub){EXAMS.forEach(function(ex){headers.push(sub+"_"+ex+"_Marks");headers.push(sub+"_"+ex+"_Pct");headers.push(sub+"_"+ex+"_Result");});});
     var rows=students.map(function(s){
       var id=s._id||s.examNo,row={ExamNo:id,Name:s.name,Class:s.class,Gender:s.gender,Phone:s.phone};
       SUBJECTS.forEach(function(sub){
@@ -1208,6 +1251,8 @@ async function exportFullReport(){
           var isAb=e&&e.mark===null;
           row[sub+"_"+ex+"_Marks"]=!e||e.mark===undefined?"":isAb?"AB":e.mark;
           row[sub+"_"+ex+"_Pct"]=!e||e.mark===undefined?"":isAb?"AB":Math.round(e.mark/e.max*100);
+          var ps2=(!e||e.mark===undefined)?"":isAb?"AB":passStatus(e.mark,ex);
+          row[sub+"_"+ex+"_Result"]=ps2===null?"--":ps2==="pass"?"Pass":ps2==="fail"?"Fail":ps2;
         });
       });
       return row;
