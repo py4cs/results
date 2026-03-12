@@ -547,7 +547,12 @@ async function loadStats(){
     var cls={};students.forEach(function(s){if(s.class)cls[s.class]=1;});
     $("statClasses").textContent=Object.keys(cls).sort().join(", ")||"--";
     var results=await fsGetAll("results");
-    var withR={};results.forEach(function(r){if(r.examNo)withR[r.examNo]=1;});
+    var EXAM_COLS=["DRT-1","DRT-2","PT-1","Term","Preboard"];
+    var withR={};
+    results.forEach(function(r){
+      if(r.examNo&&EXAM_COLS.some(function(ex){return r[ex]&&r[ex].mark!=null;}))
+        withR[r.examNo]=1;
+    });
     $("statWithResults").textContent=Object.keys(withR).length;
   }catch(e){console.error(e);}
 }
