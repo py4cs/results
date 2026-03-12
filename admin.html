@@ -223,17 +223,28 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           </div>
         </div>
         <div class="card">
-          <div class="card-title">⚠️ Delete Exam Marks</div>
-          <div class="card-sub">Remove all marks for a specific subject + exam. Use this before re-uploading corrected data.</div>
-          <div class="warn-box">Deletes the exam column for ALL students in that subject. Cannot be undone.</div>
-          <div class="form-row" style="margin-bottom:12px">
-            <div class="fg" style="margin:0"><label>Subject</label><select id="delSubject"><option value="CS">CS</option><option value="Maths">Maths</option></select></div>
-            <div class="fg" style="margin:0"><label>Exam</label>
-              <select id="delExam"><option value="DRT-1">DRT-1</option><option value="DRT-2">DRT-2</option><option value="PT-1">PT-1</option><option value="Term">Term</option><option value="Preboard">Preboard</option></select>
+          <div class="card-title">⚠️ Delete Marks</div>
+          <div class="card-sub">Remove marks by subject, exam, and/or class. Cannot be undone.</div>
+          <div class="warn-box">Leave Exam or Class as "All" to delete broader. Always double-check before deleting.</div>
+          <div class="form-row-3" style="margin-bottom:12px">
+            <div class="fg" style="margin:0"><label>Subject</label>
+              <select id="delSubject"><option value="CS">CS</option><option value="Maths">Maths</option></select>
+            </div>
+            <div class="fg" style="margin:0"><label>Exam (optional)</label>
+              <select id="delExam">
+                <option value="">All Exams</option>
+                <option value="DRT-1">DRT-1</option><option value="DRT-2">DRT-2</option>
+                <option value="PT-1">PT-1</option><option value="Term">Term</option><option value="Preboard">Preboard</option>
+              </select>
+            </div>
+            <div class="fg" style="margin:0"><label>Class (optional)</label>
+              <select id="delClass">
+                <option value="">All Classes</option><option value="12D">12D</option><option value="12E">12E</option>
+              </select>
             </div>
           </div>
           <div id="delStatus" class="status-bar"></div>
-          <button class="btn btn-red" onclick="deleteExamMarks()">🗑 Delete This Exam's Marks</button>
+          <button class="btn btn-red" onclick="deleteMarksFiltered()">🗑 Delete Marks</button>
         </div>
       </div>
 
@@ -653,20 +664,59 @@ async function uploadMarks(){
   }
   showStatus("marksStatus","Done! "+done+" saved for "+subject+" – "+examCol+". Avg: "+classAvg+"/"+maxMarks+".",errors?"warn":"ok");
 }
-async function deleteExamMarks(){
-  var subj=$("delSubject").value,exam=$("delExam").value;
-  if(!confirm("Delete all "+subj+" – "+exam+" marks? Cannot be undone."))return;
-  showStatus("delStatus","Loading...","info");
+async function deleteMarksFiltered(){
+  var subj=$("delSubject").value;
+  var exam=$("delExam").value;     // "" = all exams
+  var cls=$("delClass").value;     // "" = all classes
+
+  // Build a human-readable description for the confirm dialog
+  var desc=subj;
+  if(exam) desc+=" – "+exam;
+  if(cls) desc+=" (Class "+cls+")";
+  else desc+=" (All Classes)";
+  if(!exam) desc+=" – All Exams";
+
+  if(!confirm("Delete marks for: "+desc+"?\nThis cannot be undone."))return;
+  showStatus("delStatus","Loading results...","info");
   try{
+    var students=[];
+    if(cls){
+      // Need student list to filter by class
+      var allStudents=await fsGetAll("students");
+      students=allStudents.filter(function(s){return s.class===cls;}).map(function(s){return s._id||s.examNo;});
+      if(!students.length){showStatus("delStatus","No students found in class "+cls,"warn");return;}
+    }
+
     var results=await fsGetAll("results");
-    var matching=results.filter(function(r){return r.subject===subj&&r[exam]!==undefined;});
-    if(!matching.length){showStatus("delStatus","No marks found for "+subj+" – "+exam,"warn");return;}
+    // Filter by subject
+    var matching=results.filter(function(r){
+      if(r.subject!==subj) return false;
+      if(cls&&!students.includes(r.examNo)) return false;
+      return true;
+    });
+
+    if(!matching.length){showStatus("delStatus","No marks found for: "+desc,"warn");return;}
+
     var done=0;
     for(var i=0;i<matching.length;i++){
-      var id=matching[i]._id,doc=Object.assign({},matching[i]);delete doc[exam];delete doc._id;
-      await fsSet("results",id,doc);done++;
+      var r=matching[i],id=r._id;
+      var doc=Object.assign({},r); delete doc._id;
+
+      if(exam){
+        // Delete just this exam column
+        if(doc[exam]!==undefined){
+          delete doc[exam];
+          await fsSet("results",id,doc);
+          done++;
+        }
+      } else {
+        // Delete ALL exam columns — keep only examNo and subject
+        var clean={examNo:doc.examNo,subject:doc.subject};
+        await fsSet("results",id,clean);
+        done++;
+      }
     }
-    showStatus("delStatus","Deleted "+exam+" marks for "+done+" students in "+subj,"ok");
+    showStatus("delStatus","Done! Deleted marks for "+done+" students. ("+desc+")","ok");
   }catch(e){showStatus("delStatus","Error: "+e.message,"err");}
 }
 
