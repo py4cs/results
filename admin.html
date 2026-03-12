@@ -6,7 +6,7 @@
 <title>Velammal Admin Panel</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--blue:#0a1f6e;--blue-lt:#2952d9;--blue-pale:#eef2ff;--blue-border:#c7d2fe;--gold:#e9a820;--cream:#f0f2fc;--g50:#f8fafc;--g100:#f1f5f9;--g200:#e2e8f0;--g400:#94a3b8;--g600:#475569;--g800:#1e293b;--green:#16a34a;--green-lt:#dcfce7;--red:#dc2626;--red-lt:#fee2e2;--sh-sm:0 1px 4px rgba(10,31,110,.07);--sh:0 4px 16px rgba(10,31,110,.10);--r:12px;--p:20px;}
+:root{--blue:#0a1f6e;--blue-lt:#2952d9;--blue-pale:#eef2ff;--blue-border:#c7d2fe;--gold:#e9a820;--cream:#f0f2fc;--g50:#f8fafc;--g100:#f1f5f9;--g200:#e2e8f0;--g400:#94a3b8;--g600:#475569;--g800:#1e293b;--green:#16a34a;--green-lt:#dcfce7;--red:#dc2626;--red-lt:#fee2e2;--sh-sm:0 1px 4px rgba(10,31,110,.07);--r:12px;--p:20px;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:var(--g800);min-height:100vh;}
 .hidden{display:none!important;}
@@ -68,6 +68,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
 .badge-red{background:var(--red-lt);color:var(--red);}
 .badge-gold{background:#fef9c3;color:#a16207;}
 .badge-grey{background:var(--g100);color:var(--g600);}
+.badge-purple{background:#f3e8ff;color:#7c3aed;}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
 .info-box{background:var(--blue-pale);padding:10px 14px;border-radius:8px;color:var(--blue);font-weight:600;font-size:.82rem;margin-bottom:12px;}
@@ -83,6 +84,9 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
 .bar-val{font-size:.74rem;font-weight:700;color:var(--g800);width:36px;text-align:right;flex-shrink:0;}
 .miss-chip{display:inline-block;padding:1px 6px;border-radius:4px;font-size:.7rem;font-weight:700;background:var(--red-lt);color:var(--red);margin:1px;}
 .ok-chip{display:inline-block;padding:1px 6px;border-radius:4px;font-size:.7rem;font-weight:700;background:var(--green-lt);color:var(--green);margin:1px;}
+.ab-chip{display:inline-block;padding:1px 6px;border-radius:4px;font-size:.7rem;font-weight:700;background:#f3e8ff;color:#7c3aed;margin:1px;}
+.exam-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;background:var(--blue-pale);color:var(--blue);font-size:.78rem;font-weight:700;margin:3px;}
+.exam-tag button{background:none;border:none;cursor:pointer;color:var(--red);font-size:.85rem;padding:0;line-height:1;}
 .ana-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0;}
 .ana-card{background:var(--g50);border-radius:10px;padding:16px;border:1px solid var(--g200);}
 .ana-card h4{font-size:.84rem;font-weight:700;color:var(--g800);margin-bottom:12px;}
@@ -119,6 +123,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <button class="nav-item active" onclick="showSec('secStudents',this)">👥 Upload Students</button>
       <button class="nav-item" onclick="showSec('secViewStudents',this)">👁 View &amp; Edit</button>
       <span class="nav-sep">Marks</span>
+      <button class="nav-item" onclick="showSec('secExams',this)">🗂 Manage Exams</button>
       <button class="nav-item" onclick="showSec('secMarks',this)">📝 Upload Marks</button>
       <button class="nav-item" onclick="showSec('secViewMarks',this)">🔍 View Marks</button>
       <button class="nav-item" onclick="showSec('secEditMark',this)">✏️ Edit a Mark</button>
@@ -187,29 +192,42 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
         </div>
       </div>
 
+      <!-- MANAGE EXAMS -->
+      <div id="secExams" class="hidden">
+        <div class="card">
+          <div class="card-title">Manage Exams</div>
+          <div class="card-sub">Add or remove exams. All dropdowns across the portal update automatically.</div>
+          <div class="info-box">Only exams added here will appear in Upload Marks, View Marks, Analytics, Missing Marks, etc.</div>
+          <div id="examListWrap" style="margin-bottom:16px;min-height:32px">
+            <span style="color:var(--g400);font-size:.82rem">Loading exams...</span>
+          </div>
+          <div class="form-row" style="margin-bottom:12px">
+            <div class="fg" style="margin:0"><label>Exam Name</label><input type="text" id="newExamName" placeholder="e.g. DRT-1, PT-2, Term"></div>
+            <div class="fg" style="margin:0"><label>Max Marks</label><input type="number" id="newExamMax" value="100" min="1" max="200"></div>
+          </div>
+          <div id="examStatus" class="status-bar"></div>
+          <button class="btn btn-green" onclick="addExam()">＋ Add Exam</button>
+        </div>
+      </div>
+
       <!-- UPLOAD MARKS -->
       <div id="secMarks" class="hidden">
         <div class="card">
           <div class="card-title">Upload Marks</div>
-          <div class="card-sub">Ranks are auto-calculated. Existing exam data for the same subject will be merged.</div>
+          <div class="card-sub">Ranks are calculated per class separately. AB or blank = Absent, 0 = Scored zero.</div>
           <div class="form-row" style="margin-bottom:12px">
             <div class="fg" style="margin:0"><label>Subject</label><select id="selSubject"><option value="CS">CS</option><option value="Maths">Maths</option></select></div>
-            <div class="fg" style="margin:0"><label>Exam</label>
-              <select id="selExam" onchange="updateMaxMarks()">
-                <option value="DRT-1">DRT-1</option><option value="DRT-2">DRT-2</option>
-                <option value="PT-1">PT-1</option><option value="Term">Term</option><option value="Preboard">Preboard</option>
-              </select>
-            </div>
+            <div class="fg" style="margin:0"><label>Exam</label><select id="selExam" onchange="updateMaxMarks()"></select></div>
           </div>
           <div class="form-row" style="margin-bottom:12px">
-            <div class="fg" style="margin:0"><label>Max Marks</label><input type="number" id="maxMarks" value="15" min="1" max="200"></div>
+            <div class="fg" style="margin:0"><label>Max Marks</label><input type="number" id="maxMarks" value="100" min="1" max="200"></div>
             <div class="fg" style="margin:0"><label>Class Filter (optional)</label>
               <select id="selClass"><option value="">All Classes</option><option value="12D">12D</option><option value="12E">12E</option></select>
             </div>
           </div>
-          <div class="info-box">Required columns: <code>Examno, Marks</code> — use 0 for absent</div>
+          <div class="info-box">Required columns: <code>Examno, Marks</code> — leave Marks blank or write <code>AB</code> for absent, <code>0</code> for scored zero</div>
           <div class="upload-box" onclick="document.getElementById('marksFileInput').click()">
-            <div class="ub-icon">📊</div><p>Click to select marks CSV file</p><small>Two columns: Examno and Marks</small>
+            <div class="ub-icon">📊</div><p>Click to select marks CSV file</p><small>Columns: Examno, Marks</small>
           </div>
           <input type="file" id="marksFileInput" accept=".csv" onchange="handleMarksFile(this)" style="display:none">
           <div id="marksStatus" class="status-bar"></div>
@@ -231,16 +249,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
               <select id="delSubject"><option value="CS">CS</option><option value="Maths">Maths</option></select>
             </div>
             <div class="fg" style="margin:0"><label>Exam (optional)</label>
-              <select id="delExam">
-                <option value="">All Exams</option>
-                <option value="DRT-1">DRT-1</option><option value="DRT-2">DRT-2</option>
-                <option value="PT-1">PT-1</option><option value="Term">Term</option><option value="Preboard">Preboard</option>
-              </select>
+              <select id="delExam"><option value="">All Exams</option></select>
             </div>
             <div class="fg" style="margin:0"><label>Class (optional)</label>
-              <select id="delClass">
-                <option value="">All Classes</option><option value="12D">12D</option><option value="12E">12E</option>
-              </select>
+              <select id="delClass"><option value="">All Classes</option><option value="12D">12D</option><option value="12E">12E</option></select>
             </div>
           </div>
           <div id="delStatus" class="status-bar"></div>
@@ -252,19 +264,20 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <div id="secViewMarks" class="hidden">
         <div class="card">
           <div class="card-title">View Uploaded Marks</div>
-          <div class="card-sub">Review what has been uploaded for any subject + exam combination.</div>
-          <div class="form-row" style="margin-bottom:12px">
+          <div class="card-sub">Review marks for any subject + exam. Sorted by class then rank.</div>
+          <div class="form-row-3" style="margin-bottom:12px">
             <div class="fg" style="margin:0"><label>Subject</label><select id="vmSubject"><option value="CS">CS</option><option value="Maths">Maths</option></select></div>
-            <div class="fg" style="margin:0"><label>Exam</label>
-              <select id="vmExam"><option value="DRT-1">DRT-1</option><option value="DRT-2">DRT-2</option><option value="PT-1">PT-1</option><option value="Term">Term</option><option value="Preboard">Preboard</option></select>
+            <div class="fg" style="margin:0"><label>Exam</label><select id="vmExam"></select></div>
+            <div class="fg" style="margin:0"><label>Class</label>
+              <select id="vmClass"><option value="">All Classes</option><option value="12D">12D</option><option value="12E">12E</option></select>
             </div>
           </div>
           <button class="btn btn-outline" onclick="viewMarks()">↻ Load Marks</button>
           <div id="vmStatus" class="status-bar" style="margin-top:12px"></div>
           <div class="tscroll">
             <table class="ptable" id="vmTable">
-              <thead><tr><th>Exam No</th><th>Marks</th><th>Max</th><th>%</th><th>Rank</th><th>Class Size</th><th>Class Avg</th></tr></thead>
-              <tbody><tr><td colspan="7" style="text-align:center;color:var(--g400);padding:20px">Select and load</td></tr></tbody>
+              <thead><tr><th>Exam No</th><th>Class</th><th>Marks</th><th>Max</th><th>%</th><th>Rank</th><th>Class Size</th><th>Class Avg</th></tr></thead>
+              <tbody><tr><td colspan="8" style="text-align:center;color:var(--g400);padding:20px">Select and load</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -278,14 +291,12 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div class="form-row-3" style="margin-bottom:12px">
             <div class="fg" style="margin:0"><label>Exam No</label><input type="text" id="emExamNo" placeholder="e.g. 1001"></div>
             <div class="fg" style="margin:0"><label>Subject</label><select id="emSubject"><option value="CS">CS</option><option value="Maths">Maths</option></select></div>
-            <div class="fg" style="margin:0"><label>Exam</label>
-              <select id="emExam"><option value="DRT-1">DRT-1</option><option value="DRT-2">DRT-2</option><option value="PT-1">PT-1</option><option value="Term">Term</option><option value="Preboard">Preboard</option></select>
-            </div>
+            <div class="fg" style="margin:0"><label>Exam</label><select id="emExam"></select></div>
           </div>
           <button class="btn btn-outline" onclick="findStudentMark()" style="margin-bottom:12px">🔍 Find Current Mark</button>
           <div id="emInfo" class="status-bar"></div>
           <div id="emEditWrap" class="hidden">
-            <div class="fg"><label>New Mark</label><input type="number" id="emNewMark" min="0" max="200" placeholder="Enter corrected mark"></div>
+            <div class="fg"><label>New Mark (enter AB to mark absent)</label><input type="text" id="emNewMark" placeholder="e.g. 78 or AB"></div>
             <div class="warn-box">Saving will recalculate ranks for ALL students in this subject + exam.</div>
             <button class="btn btn-gold" onclick="saveEditedMark()">💾 Save &amp; Recalculate Ranks</button>
           </div>
@@ -297,7 +308,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <div id="secAnalytics" class="hidden">
         <div class="card">
           <div class="card-title">Class Analytics</div>
-          <div class="card-sub">Pass/fail summary, subject comparison, and top performers across all classes.</div>
+          <div class="card-sub">Pass/fail summary, subject avg per exam, top performers. Absent students excluded from averages.</div>
           <button class="btn btn-outline" onclick="loadAnalytics()" style="margin-bottom:14px">↻ Load Analytics</button>
           <div id="anaStatus" class="status-bar"></div>
           <div id="anaContent"></div>
@@ -308,7 +319,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <div id="secMissing" class="hidden">
         <div class="card">
           <div class="card-title">Missing Marks Checker</div>
-          <div class="card-sub">See which students are missing marks for any subject or exam.</div>
+          <div class="card-sub">Students with no data uploaded yet for any subject or exam. AB = uploaded as absent.</div>
           <button class="btn btn-outline" onclick="loadMissing()" style="margin-bottom:14px">↻ Check Now</button>
           <div id="missingStatus" class="status-bar"></div>
           <div id="missingContent"></div>
@@ -353,12 +364,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
             </div>
             <div style="padding:16px;border:1px solid var(--g200);border-radius:10px">
               <strong style="font-size:.88rem">Marks by Subject + Exam</strong>
-              <p style="font-size:.78rem;color:var(--g600);margin:4px 0 10px">Marks, %, rank for one exam</p>
+              <p style="font-size:.78rem;color:var(--g600);margin:4px 0 10px">Marks, %, rank for one exam. AB shown for absent.</p>
               <div class="form-row" style="margin-bottom:10px">
                 <div class="fg" style="margin:0"><label>Subject</label><select id="expSubject"><option value="CS">CS</option><option value="Maths">Maths</option></select></div>
-                <div class="fg" style="margin:0"><label>Exam</label>
-                  <select id="expExam"><option value="DRT-1">DRT-1</option><option value="DRT-2">DRT-2</option><option value="PT-1">PT-1</option><option value="Term">Term</option><option value="Preboard">Preboard</option></select>
-                </div>
+                <div class="fg" style="margin:0"><label>Exam</label><select id="expExam"></select></div>
               </div>
               <button class="btn btn-outline" onclick="exportMarks()">⬇ Download Marks CSV</button>
             </div>
@@ -409,6 +418,9 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
 </div>
 
 <script>
+// ═══════════════════════════════════════════════════════
+// FIREBASE REST API
+// ═══════════════════════════════════════════════════════
 var PROJECT="velammal-results",API_KEY="AIzaSyC79jcB_6TgJIG4ngXmPDY6Zjmg8PC0-pU";
 var BASE="https://firestore.googleapis.com/v1/projects/"+PROJECT+"/databases/(default)/documents";
 
@@ -419,7 +431,7 @@ async function fsSet(col,id,data){
 }
 async function fsGet(col,id){
   var r=await fetch(BASE+"/"+col+"/"+id+"?key="+API_KEY);
-  if(!r.ok) return null;
+  if(!r.ok)return null;
   return parseDoc(await r.json());
 }
 async function fsGetAll(col){
@@ -456,18 +468,30 @@ function parseFsVal(v){
   return null;
 }
 
+// ═══════════════════════════════════════════════════════
+// CONSTANTS & STATE
+// ═══════════════════════════════════════════════════════
 var ADMIN_PASS="admin@123";
-var EXAMS=["DRT-1","DRT-2","PT-1","Term","Preboard"];
-var EXAM_MAX_DEF={"DRT-1":15,"DRT-2":15,"PT-1":100,"Term":100,"Preboard":100};
 var SUBJECTS=["CS","Maths"];
+var EXAMS=[]; // loaded from Firestore /settings/config
+var EXAM_MAX={}; // examName -> maxMarks, loaded from Firestore
 var _stuRows=[],_marksRows=[],_allStudents=[];
 
 function $(id){return document.getElementById(id);}
 function showStatus(id,msg,type){var e=$(id);e.textContent=msg;e.className="status-bar status-"+type;e.style.display="block";}
 function hideStatus(id){$(id).style.display="none";}
 function setProgress(bar,wrap,p){$(wrap).classList.remove("hidden");$(bar).style.width=p+"%";}
-function pct(s,m){return m>0?Math.round(s/m*100):0;}
 function avg(a){return a.length?a.reduce(function(s,v){return s+v;},0)/a.length:0;}
+
+// Parse mark value: blank/"AB"/"ab" = null (absent), number = actual mark
+function parseMark(v){
+  var s=String(v||"").trim().toUpperCase();
+  if(s===""||s==="AB"||s==="ABSENT")return null;
+  var n=Number(s);
+  return isNaN(n)?null:n;
+}
+// Display mark: null = "AB", number = number
+function displayMark(m){return m===null?"AB":m;}
 
 function parseCSV(text){
   var lines=text.trim().split("\n").map(function(l){return l.trim();}).filter(Boolean);
@@ -480,30 +504,124 @@ function parseCSV(text){
 }
 function downloadCSV(filename,rows,headers){
   var csv=[headers.join(",")].concat(rows.map(function(r){
-    return headers.map(function(h){var v=String(r[h]||"");return v.includes(",")?'"'+v+'"':v;}).join(",");
+    return headers.map(function(h){var v=String(r[h]!=null?r[h]:"");return v.includes(",")?'"'+v+'"':v;}).join(",");
   })).join("\n");
   var a=document.createElement("a");
   a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
   a.download=filename;a.click();
 }
 
-/* LOGIN */
+// ═══════════════════════════════════════════════════════
+// EXAM CONFIG — load from Firestore & populate all dropdowns
+// ═══════════════════════════════════════════════════════
+async function loadExamConfig(){
+  var cfg=await fsGet("settings","config");
+  if(cfg&&cfg.exams&&Array.isArray(cfg.exams)){
+    EXAMS=cfg.exams.map(function(e){return e.name;});
+    EXAM_MAX={};
+    cfg.exams.forEach(function(e){EXAM_MAX[e.name]=e.max||100;});
+  } else {
+    EXAMS=[];EXAM_MAX={};
+  }
+  populateAllExamDropdowns();
+  renderExamList();
+}
+
+function populateAllExamDropdowns(){
+  var ids=["selExam","vmExam","emExam","expExam"];
+  ids.forEach(function(id){
+    var el=$(id);if(!el)return;
+    var prev=el.value;
+    el.innerHTML="";
+    if(id==="delExam"){
+      el.innerHTML="<option value=''>All Exams</option>";
+    }
+    EXAMS.forEach(function(ex){
+      var o=document.createElement("option");
+      o.value=ex;o.textContent=ex;
+      el.appendChild(o);
+    });
+    if(EXAMS.includes(prev))el.value=prev;
+    else if(EXAMS.length)el.value=EXAMS[0];
+  });
+  // delExam separately (has "All Exams" option)
+  var del=$("delExam");if(del){
+    del.innerHTML="<option value=''>All Exams</option>";
+    EXAMS.forEach(function(ex){var o=document.createElement("option");o.value=ex;o.textContent=ex;del.appendChild(o);});
+  }
+  // update maxMarks on selExam
+  updateMaxMarks();
+}
+
+function renderExamList(){
+  var wrap=$("examListWrap");if(!wrap)return;
+  if(!EXAMS.length){wrap.innerHTML="<span style='color:var(--g400);font-size:.82rem'>No exams added yet.</span>";return;}
+  wrap.innerHTML=EXAMS.map(function(ex){
+    return"<span class='exam-tag'>"+ex+" <small style='font-weight:500;opacity:.7'>(max "+EXAM_MAX[ex]+")</small>"
+      +"<button onclick='removeExam(\""+ex+"\")' title='Remove'>✕</button></span>";
+  }).join("");
+}
+
+async function saveExamConfig(){
+  var examArr=EXAMS.map(function(ex){return{name:ex,max:EXAM_MAX[ex]||100};});
+  await fsSet("settings","config",{exams:examArr});
+}
+
+async function addExam(){
+  var name=$("newExamName").value.trim().toUpperCase();
+  var max=Number($("newExamMax").value)||100;
+  if(!name){showStatus("examStatus","Enter an exam name.","err");return;}
+  if(EXAMS.includes(name)){showStatus("examStatus",name+" already exists.","warn");return;}
+  EXAMS.push(name);EXAM_MAX[name]=max;
+  try{
+    await saveExamConfig();
+    populateAllExamDropdowns();
+    renderExamList();
+    $("newExamName").value="";$("newExamMax").value="100";
+    showStatus("examStatus","✅ "+name+" added (max: "+max+")","ok");
+  }catch(e){showStatus("examStatus","Error: "+e.message,"err");}
+}
+
+async function removeExam(name){
+  if(!confirm("Remove exam '"+name+"'?\nThis only removes it from the dropdown. Already uploaded marks are NOT deleted."))return;
+  EXAMS=EXAMS.filter(function(e){return e!==name;});
+  delete EXAM_MAX[name];
+  try{
+    await saveExamConfig();
+    populateAllExamDropdowns();
+    renderExamList();
+    showStatus("examStatus","Removed "+name+" from exam list.","ok");
+  }catch(e){showStatus("examStatus","Error: "+e.message,"err");}
+}
+
+function updateMaxMarks(){
+  var ex=$("selExam");if(!ex||!ex.value)return;
+  $("maxMarks").value=EXAM_MAX[ex.value]||100;
+}
+
+// ═══════════════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════════════
 function adminLogin(){
   if($("adminPass").value!==ADMIN_PASS){$("loginErr").textContent="Wrong password.";$("loginErr").style.display="block";return;}
-  $("loginWrap").style.display="none";$("appWrap").classList.remove("hidden");loadStats();
+  $("loginWrap").style.display="none";$("appWrap").classList.remove("hidden");
+  loadExamConfig();loadStats();
 }
 function adminLogout(){$("appWrap").classList.add("hidden");$("loginWrap").style.display="flex";$("adminPass").value="";}
 
-/* NAV */
-var SECS=["secStudents","secViewStudents","secMarks","secViewMarks","secEditMark","secAnalytics","secMissing","secDupes","secPreview","secExport","secTeachers"];
+// ═══════════════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════════════
+var SECS=["secStudents","secViewStudents","secExams","secMarks","secViewMarks","secEditMark","secAnalytics","secMissing","secDupes","secPreview","secExport","secTeachers"];
 function showSec(id,btn){
   SECS.forEach(function(s){$(s).classList.add("hidden");});$(id).classList.remove("hidden");
   document.querySelectorAll(".nav-item").forEach(function(b){b.classList.remove("active");});
   if(btn)btn.classList.add("active");
 }
-function updateMaxMarks(){$("maxMarks").value=EXAM_MAX_DEF[$("selExam").value]||100;}
 
-/* UPLOAD STUDENTS */
+// ═══════════════════════════════════════════════════════
+// UPLOAD STUDENTS
+// ═══════════════════════════════════════════════════════
 function handleStudentFile(input){
   var file=input.files[0];if(!file)return;
   showStatus("stuStatus","Reading file...","info");
@@ -539,7 +657,9 @@ async function uploadStudents(){
   loadStats();
 }
 
-/* STATS */
+// ═══════════════════════════════════════════════════════
+// STATS
+// ═══════════════════════════════════════════════════════
 async function loadStats(){
   try{
     var students=await fsGetAll("students");
@@ -547,17 +667,23 @@ async function loadStats(){
     var cls={};students.forEach(function(s){if(s.class)cls[s.class]=1;});
     $("statClasses").textContent=Object.keys(cls).sort().join(", ")||"--";
     var results=await fsGetAll("results");
-    var EXAM_COLS=["DRT-1","DRT-2","PT-1","Term","Preboard"];
     var withR={};
     results.forEach(function(r){
-      if(r.examNo&&EXAM_COLS.some(function(ex){return r[ex]&&r[ex].mark!=null;}))
-        withR[r.examNo]=1;
+      // Count only if at least one exam has a non-null mark (0 is valid, null=absent doesn't count)
+      var hasReal=EXAMS.some(function(ex){return r[ex]&&r[ex].mark!==undefined&&r[ex].mark!==null;});
+      // If EXAMS not loaded yet, check any key that looks like an exam result
+      if(!hasReal&&!EXAMS.length){
+        hasReal=Object.keys(r).some(function(k){return r[k]&&typeof r[k]==="object"&&r[k].mark!==undefined&&r[k].mark!==null;});
+      }
+      if(r.examNo&&hasReal)withR[r.examNo]=1;
     });
     $("statWithResults").textContent=Object.keys(withR).length;
   }catch(e){console.error(e);}
 }
 
-/* VIEW & EDIT STUDENTS */
+// ═══════════════════════════════════════════════════════
+// VIEW & EDIT STUDENTS
+// ═══════════════════════════════════════════════════════
 async function loadAllStudents(){
   showStatus("viewStatus","Loading...","info");
   try{
@@ -589,8 +715,7 @@ async function saveStudent(){
   var data={examNo:id,name:$("editName").value.trim(),class:$("editClass").value,gender:$("editGender").value,phone:$("editPhone").value.trim()};
   if(!data.name||!data.phone){showStatus("editStatus","Name and phone required.","err");return;}
   try{
-    await fsSet("students",id,data);
-    showStatus("editStatus","Saved!","ok");
+    await fsSet("students",id,data);showStatus("editStatus","Saved!","ok");
     var idx=_allStudents.findIndex(function(x){return(x._id||x.examNo)===id;});
     if(idx>=0)_allStudents[idx]=Object.assign({},_allStudents[idx],data);
     renderStudentsTable();setTimeout(closeEditModal,800);
@@ -599,8 +724,7 @@ async function saveStudent(){
 async function deleteStudent(examNo,name){
   if(!confirm("Delete student "+name+" ("+examNo+")? Cannot be undone."))return;
   try{
-    await fsDelete("students",examNo);
-    showStatus("viewStatus","Deleted "+name,"ok");
+    await fsDelete("students",examNo);showStatus("viewStatus","Deleted "+name,"ok");
     _allStudents=_allStudents.filter(function(s){return(s._id||s.examNo)!==examNo;});
     renderStudentsTable();
   }catch(e){showStatus("viewStatus","Error: "+e.message,"err");}
@@ -618,7 +742,9 @@ async function bulkDeleteClass(){
   await loadAllStudents();
 }
 
-/* UPLOAD MARKS */
+// ═══════════════════════════════════════════════════════
+// UPLOAD MARKS
+// ═══════════════════════════════════════════════════════
 function handleMarksFile(input){
   var file=input.files[0];if(!file)return;
   updateMaxMarks();showStatus("marksStatus","Reading file...","info");
@@ -629,169 +755,249 @@ function handleMarksFile(input){
       if(!parsed.headers.some(function(h){return h.toLowerCase()==="examno";})||!parsed.headers.some(function(h){return h.toLowerCase()==="marks";})){
         showStatus("marksStatus","File must have Examno and Marks columns.","err");return;
       }
-      _marksRows=parsed.rows.map(function(r){var n={};Object.keys(r).forEach(function(k){n[k.toLowerCase()]=r[k];});return{examno:String(n.examno||"").trim(),marks:Number(n.marks)||0};}).filter(function(r){return r.examno;});
-      var maxM=Number($("maxMarks").value)||15;
+      _marksRows=parsed.rows.map(function(r){
+        var n={};Object.keys(r).forEach(function(k){n[k.toLowerCase()]=r[k];});
+        return{examno:String(n.examno||"").trim(),marks:parseMark(n.marks)};
+      }).filter(function(r){return r.examno;});
+      var maxM=Number($("maxMarks").value)||100;
       var thead=$("marksPreviewTable").querySelector("thead"),tbody=$("marksPreviewTable").querySelector("tbody");
-      thead.innerHTML="<tr><th>Exam No</th><th>Marks</th><th>Max</th><th>%</th></tr>";
-      tbody.innerHTML=_marksRows.slice(0,15).map(function(r){return"<tr><td>"+r.examno+"</td><td>"+r.marks+"</td><td>"+maxM+"</td><td>"+Math.round(r.marks/maxM*100)+"%</td></tr>";}).join("");
-      $("marksPreviewTitle").textContent="Preview — "+_marksRows.length+" students";
+      thead.innerHTML="<tr><th>Exam No</th><th>Marks</th><th>Max</th><th>Status</th></tr>";
+      tbody.innerHTML=_marksRows.slice(0,15).map(function(r){
+        var isAb=r.marks===null;
+        return"<tr><td>"+r.examno+"</td><td>"+(isAb?"<span class='badge badge-purple'>AB</span>":r.marks)+"</td><td>"+(isAb?"--":maxM)+"</td>"
+          +"<td>"+(isAb?"Absent":"<span class='badge badge-blue'>"+Math.round(r.marks/maxM*100)+"%</span>")+"</td></tr>";
+      }).join("");
+      var abCount=_marksRows.filter(function(r){return r.marks===null;}).length;
+      $("marksPreviewTitle").textContent="Preview — "+_marksRows.length+" students ("+abCount+" absent)";
       $("marksPreviewWrap").classList.remove("hidden");
-      showStatus("marksStatus",_marksRows.length+" records loaded.","ok");
+      showStatus("marksStatus",_marksRows.length+" records loaded. "+abCount+" absent.","ok");
     }catch(err){showStatus("marksStatus","Error: "+err.message,"err");}
   };
   reader.readAsText(file);
 }
+
 async function uploadMarks(){
   if(!_marksRows.length){showStatus("marksStatus","No data.","err");return;}
-  var subject=$("selSubject").value,examCol=$("selExam").value,maxMarks=Number($("maxMarks").value)||15;
-  showStatus("marksStatus","Calculating ranks...","info");
-  var sorted=_marksRows.slice().sort(function(a,b){return b.marks-a.marks;});
-  var rank=1;
-  for(var i=0;i<sorted.length;i++){if(i>0&&sorted[i].marks<sorted[i-1].marks)rank=i+1;sorted[i].rank=sorted[i].marks>0?rank:null;}
-  var withM=_marksRows.filter(function(r){return r.marks>0;});
-  var classSize=withM.length;
-  var classAvg=classSize?Math.round(withM.reduce(function(s,r){return s+r.marks;},0)/classSize*10)/10:0;
-  var classAvgPct=Math.round(classAvg/maxMarks*100);
-  var rankMap={};sorted.forEach(function(r){rankMap[r.examno]=r;});
+  var subject=$("selSubject").value,examCol=$("selExam").value,maxMarks=Number($("maxMarks").value)||100;
+  var classFilter=$("selClass").value;
+  if(!examCol){showStatus("marksStatus","No exam selected. Please add exams in Manage Exams first.","err");return;}
+
+  showStatus("marksStatus","Loading student class info...","info");
+  var allStudents=await fsGetAll("students");
+  var classMap={};allStudents.forEach(function(s){classMap[s._id||s.examNo]=s.class||"";});
+
+  // Group by class — absent (null) students still belong to a class
+  var groups={};
+  _marksRows.forEach(function(r){
+    var cls=classFilter||classMap[r.examno]||"Unknown";
+    if(!groups[cls])groups[cls]=[];
+    groups[cls].push(r);
+  });
+
+  showStatus("marksStatus","Calculating ranks per class (absent excluded from ranks)...","info");
+
+  // Per-class rank calculation — only students who wrote (non-null) get ranked
+  // classSize = students who wrote, classAvg = avg of students who wrote
+  var rankData={};
+  Object.keys(groups).forEach(function(cls){
+    var rows=groups[cls];
+    var written=rows.filter(function(r){return r.marks!==null;});
+    var classSize=written.length;
+    var classAvg=classSize?Math.round(written.reduce(function(s,r){return s+r.marks;},0)/classSize*10)/10:0;
+    var classAvgPct=Math.round(classAvg/maxMarks*100);
+    // Sort written students descending for rank
+    var sorted=written.slice().sort(function(a,b){return b.marks-a.marks;});
+    var rank=1;
+    for(var i=0;i<sorted.length;i++){
+      if(i>0&&sorted[i].marks<sorted[i-1].marks)rank=i+1;
+      sorted[i]._rank=rank;
+    }
+    var rankMap={};sorted.forEach(function(r){rankMap[r.examno]=r._rank;});
+    rows.forEach(function(r){
+      rankData[r.examno]={
+        rank:r.marks!==null?rankMap[r.examno]:null,
+        classSize:classSize,classAvg:classAvg,classAvgPct:classAvgPct,cls:cls
+      };
+    });
+  });
+
   showStatus("marksStatus","Uploading...","info");
   $("marksProgWrap").classList.remove("hidden");
   var done=0,errors=0;
   for(var j=0;j<_marksRows.length;j++){
-    var r=_marksRows[j],info=rankMap[r.examno],resultId=r.examno+"_"+subject;
+    var r=_marksRows[j],info=rankData[r.examno]||{},resultId=r.examno+"_"+subject;
     try{
       var existing=await fsGet("results",resultId);
       var data=existing||{examNo:r.examno,subject:subject};
-      data[examCol]={mark:r.marks,max:maxMarks,rank:info&&info.rank!=null?info.rank:null,classSize:classSize,classAvg:classAvg,classAvgPct:classAvgPct};
+      // mark: null = absent, number (including 0) = actual score
+      data[examCol]={mark:r.marks,max:maxMarks,rank:info.rank!=null?info.rank:null,classSize:info.classSize||0,classAvg:info.classAvg||0,classAvgPct:info.classAvgPct||0};
       data.examNo=r.examno;data.subject=subject;
+      if(info.cls)data.class=info.cls;
       await fsSet("results",resultId,data);done++;
     }catch(e){errors++;console.error(e);}
     setProgress("marksProgBar","marksProgWrap",Math.round((j+1)/_marksRows.length*100));
   }
-  showStatus("marksStatus","Done! "+done+" saved for "+subject+" – "+examCol+". Avg: "+classAvg+"/"+maxMarks+".",errors?"warn":"ok");
+  var abCount=_marksRows.filter(function(r){return r.marks===null;}).length;
+  showStatus("marksStatus","Done! "+done+" saved for "+subject+" – "+examCol+". Absent: "+abCount+". Ranks per class.",errors?"warn":"ok");
 }
+
+// ═══════════════════════════════════════════════════════
+// DELETE MARKS
+// ═══════════════════════════════════════════════════════
 async function deleteMarksFiltered(){
-  var subj=$("delSubject").value;
-  var exam=$("delExam").value;     // "" = all exams
-  var cls=$("delClass").value;     // "" = all classes
-
-  // Build a human-readable description for the confirm dialog
-  var desc=subj;
-  if(exam) desc+=" – "+exam;
-  if(cls) desc+=" (Class "+cls+")";
-  else desc+=" (All Classes)";
-  if(!exam) desc+=" – All Exams";
-
-  if(!confirm("Delete marks for: "+desc+"?\nThis cannot be undone."))return;
-  showStatus("delStatus","Loading results...","info");
+  var subj=$("delSubject").value,exam=$("delExam").value,cls=$("delClass").value;
+  var desc=subj+(exam?" – "+exam:" – All Exams")+(cls?" ("+cls+")":" (All Classes)");
+  if(!confirm("Delete marks for: "+desc+"?\nCannot be undone."))return;
+  showStatus("delStatus","Loading...","info");
   try{
     var students=[];
     if(cls){
-      // Need student list to filter by class
-      var allStudents=await fsGetAll("students");
-      students=allStudents.filter(function(s){return s.class===cls;}).map(function(s){return s._id||s.examNo;});
-      if(!students.length){showStatus("delStatus","No students found in class "+cls,"warn");return;}
+      var allStu=await fsGetAll("students");
+      students=allStu.filter(function(s){return s.class===cls;}).map(function(s){return s._id||s.examNo;});
+      if(!students.length){showStatus("delStatus","No students in class "+cls,"warn");return;}
     }
-
     var results=await fsGetAll("results");
-    // Filter by subject
     var matching=results.filter(function(r){
-      if(r.subject!==subj) return false;
-      if(cls&&!students.includes(r.examNo)) return false;
+      if(r.subject!==subj)return false;
+      if(cls&&!students.includes(r.examNo))return false;
       return true;
     });
-
     if(!matching.length){showStatus("delStatus","No marks found for: "+desc,"warn");return;}
-
     var done=0;
     for(var i=0;i<matching.length;i++){
-      var r=matching[i],id=r._id;
-      var doc=Object.assign({},r); delete doc._id;
-
+      var rec=matching[i],id=rec._id,doc=Object.assign({},rec);delete doc._id;
       if(exam){
-        // Delete just this exam column
-        if(doc[exam]!==undefined){
-          delete doc[exam];
-          await fsSet("results",id,doc);
-          done++;
-        }
-      } else {
-        // Delete ALL exam columns — keep only examNo and subject
-        var clean={examNo:doc.examNo,subject:doc.subject};
-        await fsSet("results",id,clean);
-        done++;
+        if(doc[exam]!==undefined){delete doc[exam];await fsSet("results",id,doc);done++;}
+      }else{
+        var clean={examNo:doc.examNo,subject:doc.subject};if(doc.class)clean.class=doc.class;
+        await fsSet("results",id,clean);done++;
       }
     }
-    showStatus("delStatus","Done! Deleted marks for "+done+" students. ("+desc+")","ok");
+    showStatus("delStatus","Deleted marks for "+done+" students. ("+desc+")","ok");
   }catch(e){showStatus("delStatus","Error: "+e.message,"err");}
 }
 
-/* VIEW MARKS */
+// ═══════════════════════════════════════════════════════
+// VIEW MARKS
+// ═══════════════════════════════════════════════════════
 async function viewMarks(){
-  var subj=$("vmSubject").value,exam=$("vmExam").value;
+  var subj=$("vmSubject").value,exam=$("vmExam").value,cls=$("vmClass").value;
+  if(!exam){showStatus("vmStatus","No exam selected.","err");return;}
   showStatus("vmStatus","Loading...","info");
   try{
+    var allStudents=await fsGetAll("students");
+    var stuMap={};allStudents.forEach(function(s){stuMap[s._id||s.examNo]=s.class||"";});
     var results=await fsGetAll("results");
-    var matching=results.filter(function(r){return r.subject===subj&&r[exam]&&r[exam].mark!=null;});
-    matching.sort(function(a,b){return(b[exam].mark||0)-(a[exam].mark||0);});
+    // Include rows where exam key exists (could be null=absent or a number)
+    var matching=results.filter(function(r){
+      if(r.subject!==subj)return false;
+      if(!r[exam]||r[exam].mark===undefined)return false;
+      if(cls){var sc=r.class||stuMap[r.examNo]||"";if(sc!==cls)return false;}
+      return true;
+    });
+    matching.sort(function(a,b){
+      var ca=a.class||stuMap[a.examNo]||"",cb=b.class||stuMap[b.examNo]||"";
+      if(ca!==cb)return ca.localeCompare(cb);
+      // absent to bottom, then sort by rank
+      var ra=a[exam].rank||9999,rb=b[exam].rank||9999;
+      return ra-rb;
+    });
+    $("vmTable").querySelector("thead").innerHTML="<tr><th>Exam No</th><th>Class</th><th>Marks</th><th>Max</th><th>%</th><th>Rank</th><th>Class Size</th><th>Class Avg</th></tr>";
     var tbody=$("vmTable").querySelector("tbody");
     tbody.innerHTML=matching.length
       ?matching.map(function(r){
-        var e=r[exam],p=Math.round(e.mark/e.max*100),pass=e.max>20?p>=40:e.mark>=6;
-        return"<tr><td><strong>"+r.examNo+"</strong></td><td>"+e.mark+"</td><td>"+e.max+"</td>"
-          +"<td><span class='badge "+(pass?"badge-green":"badge-red")+"'>"+p+"%</span></td>"
-          +"<td>"+(e.rank||"--")+"</td><td>"+(e.classSize||"--")+"</td><td>"+(e.classAvg||"--")+"</td></tr>";
+        var e=r[exam],sc=r.class||stuMap[r.examNo]||"--";
+        var isAb=e.mark===null;
+        var p=isAb?null:Math.round(e.mark/e.max*100);
+        var pass=!isAb&&(e.max>20?p>=40:e.mark>=6);
+        return"<tr>"
+          +"<td><strong>"+r.examNo+"</strong></td>"
+          +"<td><span class='badge badge-blue'>"+sc+"</span></td>"
+          +"<td>"+(isAb?"<span class='badge badge-purple'>AB</span>":e.mark)+"</td>"
+          +"<td>"+(isAb?"--":e.max)+"</td>"
+          +"<td>"+(isAb?"<span class='badge badge-grey'>AB</span>":"<span class='badge "+(pass?"badge-green":"badge-red")+"'>"+p+"%</span>")+"</td>"
+          +"<td>"+(e.rank?"#"+e.rank:isAb?"AB":"--")+"</td>"
+          +"<td>"+(e.classSize||"--")+"</td>"
+          +"<td>"+(e.classAvg||"--")+"</td></tr>";
       }).join("")
-      :"<tr><td colspan='7' style='text-align:center;color:var(--g400);padding:20px'>No marks for "+subj+" – "+exam+"</td></tr>";
-    if(matching.length)showStatus("vmStatus",matching.length+" records for "+subj+" – "+exam,"ok");
+      :"<tr><td colspan='8' style='text-align:center;color:var(--g400);padding:20px'>No marks for "+subj+" – "+exam+(cls?" ("+cls+")":"")+"</td></tr>";
+    var abCount=matching.filter(function(r){return r[exam].mark===null;}).length;
+    if(matching.length)showStatus("vmStatus",matching.length+" records | "+abCount+" absent"+(cls?" | Class: "+cls:""),"ok");
     else hideStatus("vmStatus");
   }catch(e){showStatus("vmStatus","Error: "+e.message,"err");}
 }
 
-/* EDIT A MARK */
+// ═══════════════════════════════════════════════════════
+// EDIT A MARK
+// ═══════════════════════════════════════════════════════
 var _emCurrentData=null;
 async function findStudentMark(){
   var en=$("emExamNo").value.trim(),subj=$("emSubject").value,exam=$("emExam").value;
   if(!en){showStatus("emInfo","Enter an exam number.","err");return;}
+  if(!exam){showStatus("emInfo","No exam selected.","err");return;}
   showStatus("emInfo","Looking up...","info");$("emEditWrap").classList.add("hidden");
   try{
     var doc=await fsGet("results",en+"_"+subj);
-    if(!doc||!doc[exam]){showStatus("emInfo","No "+exam+" mark for Exam No "+en+" in "+subj,"warn");return;}
+    if(!doc||!doc[exam]||doc[exam].mark===undefined){showStatus("emInfo","No "+exam+" record for Exam No "+en+" in "+subj,"warn");return;}
     _emCurrentData={resultId:en+"_"+subj,doc:doc,exam:exam,subj:subj,en:en};
     var e=doc[exam];
-    showStatus("emInfo","Current: "+e.mark+"/"+e.max+" ("+Math.round(e.mark/e.max*100)+"%) | Rank: "+(e.rank||"N/A")+"/"+e.classSize,"ok");
-    $("emNewMark").value=e.mark;$("emEditWrap").classList.remove("hidden");
+    var isAb=e.mark===null;
+    showStatus("emInfo","Current: "+(isAb?"ABSENT":e.mark+"/"+e.max+" ("+Math.round(e.mark/e.max*100)+"%)")+" | Rank: "+(e.rank||"N/A")+"/"+e.classSize,"ok");
+    $("emNewMark").value=isAb?"AB":e.mark;
+    $("emEditWrap").classList.remove("hidden");
   }catch(e){showStatus("emInfo","Error: "+e.message,"err");}
 }
 async function saveEditedMark(){
   if(!_emCurrentData){showStatus("emStatus","Find a student first.","err");return;}
-  var newMark=Number($("emNewMark").value);
-  if(isNaN(newMark)||newMark<0){showStatus("emStatus","Invalid mark.","err");return;}
+  var raw=$("emNewMark").value;
+  var newMark=parseMark(raw);
+  // parseMark returns null for AB/blank, number for valid marks
+  if(newMark!==null&&(isNaN(newMark)||newMark<0)){showStatus("emStatus","Invalid mark. Enter a number or AB.","err");return;}
   showStatus("emStatus","Recalculating ranks for all students...","info");
   try{
     var allResults=await fsGetAll("results");
-    var subjResults=allResults.filter(function(r){return r.subject===_emCurrentData.subj&&r[_emCurrentData.exam]&&r[_emCurrentData.exam].mark!=null;});
+    // All results for this subject+exam
+    var subjResults=allResults.filter(function(r){return r.subject===_emCurrentData.subj&&r[_emCurrentData.exam]&&r[_emCurrentData.exam].mark!==undefined;});
+    // Update target student
     subjResults.forEach(function(r){if(r.examNo===_emCurrentData.en)r[_emCurrentData.exam].mark=newMark;});
-    var withM=subjResults.filter(function(r){return r[_emCurrentData.exam].mark>0;});
-    var classSize=withM.length,maxM=subjResults[0]?subjResults[0][_emCurrentData.exam].max:100;
-    var classAvg=classSize?Math.round(withM.reduce(function(s,r){return s+r[_emCurrentData.exam].mark;},0)/classSize*10)/10:0;
-    var classAvgPct=Math.round(classAvg/maxM*100);
-    var sorted=subjResults.slice().sort(function(a,b){return b[_emCurrentData.exam].mark-a[_emCurrentData.exam].mark;});
-    var rank=1;
-    for(var i=0;i<sorted.length;i++){
-      if(i>0&&sorted[i][_emCurrentData.exam].mark<sorted[i-1][_emCurrentData.exam].mark)rank=i+1;
-      sorted[i][_emCurrentData.exam].rank=sorted[i][_emCurrentData.exam].mark>0?rank:null;
-      sorted[i][_emCurrentData.exam].classSize=classSize;
-      sorted[i][_emCurrentData.exam].classAvg=classAvg;
-      sorted[i][_emCurrentData.exam].classAvgPct=classAvgPct;
-    }
+    var maxM=subjResults.length?subjResults[0][_emCurrentData.exam].max||100:100;
+
+    // Recalculate per class
+    var classBuckets={};
+    subjResults.forEach(function(r){var c=r.class||"Unknown";if(!classBuckets[c])classBuckets[c]=[];classBuckets[c].push(r);});
+    Object.keys(classBuckets).forEach(function(cls){
+      var rows=classBuckets[cls];
+      var written=rows.filter(function(r){return r[_emCurrentData.exam].mark!==null;});
+      var classSize=written.length;
+      var classAvg=classSize?Math.round(written.reduce(function(s,r){return s+r[_emCurrentData.exam].mark;},0)/classSize*10)/10:0;
+      var classAvgPct=Math.round(classAvg/maxM*100);
+      var sorted=written.slice().sort(function(a,b){return b[_emCurrentData.exam].mark-a[_emCurrentData.exam].mark;});
+      var rank=1;
+      for(var i=0;i<sorted.length;i++){
+        if(i>0&&sorted[i][_emCurrentData.exam].mark<sorted[i-1][_emCurrentData.exam].mark)rank=i+1;
+        sorted[i][_emCurrentData.exam].rank=rank;
+        sorted[i][_emCurrentData.exam].classSize=classSize;
+        sorted[i][_emCurrentData.exam].classAvg=classAvg;
+        sorted[i][_emCurrentData.exam].classAvgPct=classAvgPct;
+      }
+      rows.filter(function(r){return r[_emCurrentData.exam].mark===null;}).forEach(function(r){
+        r[_emCurrentData.exam].rank=null;
+        r[_emCurrentData.exam].classSize=classSize;
+        r[_emCurrentData.exam].classAvg=classAvg;
+        r[_emCurrentData.exam].classAvgPct=classAvgPct;
+      });
+    });
     for(var j=0;j<subjResults.length;j++){var r=subjResults[j],id=r._id;delete r._id;await fsSet("results",id,r);}
-    showStatus("emStatus","Mark updated to "+newMark+"/"+maxM+". Ranks recalculated for "+subjResults.length+" students.","ok");
+    showStatus("emStatus","Updated to "+(newMark===null?"ABSENT":newMark+"/"+maxM)+". Ranks recalculated for "+subjResults.length+" students.","ok");
     $("emEditWrap").classList.add("hidden");_emCurrentData=null;
   }catch(e){showStatus("emStatus","Error: "+e.message,"err");}
 }
 
-/* ANALYTICS */
+// ═══════════════════════════════════════════════════════
+// ANALYTICS
+// ═══════════════════════════════════════════════════════
 async function loadAnalytics(){
+  if(!EXAMS.length){showStatus("anaStatus","No exams configured. Go to Manage Exams first.","warn");return;}
   showStatus("anaStatus","Loading data...","info");
   try{
     var students=await fsGetAll("students");
@@ -800,35 +1006,39 @@ async function loadAnalytics(){
     hideStatus("anaStatus");
     var html="";
 
-    // Class x Subject pass/fail table
+    // Class × Subject pass/fail table — absent excluded from pass/fail count
     var classes={};students.forEach(function(s){if(s.class){if(!classes[s.class])classes[s.class]=[];classes[s.class].push(s);}});
-    html+='<h4 style="font-size:.9rem;font-weight:700;margin-bottom:10px;color:var(--blue)">Class × Subject Pass/Fail</h4>';
+    html+='<h4 style="font-size:.9rem;font-weight:700;margin-bottom:10px;color:var(--blue)">Class × Subject Pass/Fail (AB excluded)</h4>';
     html+='<div class="tscroll"><table class="ptable"><thead><tr><th>Class</th><th>Total</th>';
-    SUBJECTS.forEach(function(sub){EXAMS.forEach(function(ex){html+="<th>"+sub+"-"+ex+"</th>";});});
+    SUBJECTS.forEach(function(sub){EXAMS.forEach(function(ex){html+="<th>"+sub.slice(0,1)+"-"+ex+"</th>";});});
     html+="</tr></thead><tbody>";
     Object.keys(classes).sort().forEach(function(cls){
       var st=classes[cls];html+="<tr><td><strong>"+cls+"</strong></td><td>"+st.length+"</td>";
       SUBJECTS.forEach(function(sub){
         EXAMS.forEach(function(ex){
-          var count=0,pass=0;
+          var wrote=0,pass=0;
           st.forEach(function(s){
             var r=resMap[(s._id||s.examNo)+"_"+sub];
-            if(r&&r[ex]&&r[ex].mark!=null){count++;var m=r[ex].mark,mx=r[ex].max||15;if(mx>20&&m/mx>=0.4)pass++;else if(mx<=20&&m>=6)pass++;}
+            if(r&&r[ex]&&r[ex].mark!==undefined&&r[ex].mark!==null){
+              wrote++;var m=r[ex].mark,mx=r[ex].max||100;
+              if(mx>20&&m/mx>=0.4)pass++;else if(mx<=20&&m>=6)pass++;
+            }
           });
-          html+=count===0?"<td><span class='badge badge-grey'>--</span></td>":"<td><span class='badge "+(Math.round(pass/count*100)>=60?"badge-green":Math.round(pass/count*100)>=40?"badge-gold":"badge-red")+"'>"+pass+"/"+count+"</span></td>";
+          html+=wrote===0?"<td><span class='badge badge-grey'>--</span></td>":"<td><span class='badge "+(Math.round(pass/wrote*100)>=60?"badge-green":Math.round(pass/wrote*100)>=40?"badge-gold":"badge-red")+"'>"+pass+"/"+wrote+"</span></td>";
         });
       });
       html+="</tr>";
     });
     html+="</tbody></table></div>";
 
-    // Subject avg bars
-    html+='<h4 style="font-size:.9rem;font-weight:700;margin:20px 0 10px;color:var(--blue)">Subject Average % per Exam</h4>';
+    // Subject avg bars — absent excluded from average
+    html+='<h4 style="font-size:.9rem;font-weight:700;margin:20px 0 10px;color:var(--blue)">Subject Average % per Exam (written students only)</h4>';
     html+='<div class="ana-grid">';
     SUBJECTS.forEach(function(sub){
       html+='<div class="ana-card"><h4>'+sub+'</h4>';
       EXAMS.forEach(function(ex){
-        var marks=results.filter(function(r){return r.subject===sub&&r[ex]&&r[ex].mark>0;}).map(function(r){return r[ex].mark/(r[ex].max||15)*100;});
+        // Only include students who actually wrote (non-null marks)
+        var marks=results.filter(function(r){return r.subject===sub&&r[ex]&&r[ex].mark!==null&&r[ex].mark!==undefined;}).map(function(r){return r[ex].mark/(r[ex].max||100)*100;});
         if(!marks.length){html+='<div class="bar-row"><span class="bar-lbl">'+ex+'</span><div class="bar-track"><div class="bar-fill" style="width:0%;background:var(--g200)"></div></div><span class="bar-val">--</span></div>';return;}
         var a=Math.round(avg(marks)),col=a>=75?"var(--green)":a>=50?"var(--gold)":"var(--red)";
         html+='<div class="bar-row"><span class="bar-lbl">'+ex+'</span><div class="bar-track"><div class="bar-fill" style="width:'+a+'%;background:'+col+'"></div></div><span class="bar-val">'+a+'%</span></div>';
@@ -837,13 +1047,16 @@ async function loadAnalytics(){
     });
     html+="</div>";
 
-    // Top 10
-    html+='<h4 style="font-size:.9rem;font-weight:700;margin:20px 0 10px;color:var(--blue)">Top 10 Students (Overall Average)</h4>';
+    // Top 10 — only exams written count toward student average
+    html+='<h4 style="font-size:.9rem;font-weight:700;margin:20px 0 10px;color:var(--blue)">Top 10 Students (Average of written exams only)</h4>';
     var stuScores=students.map(function(s){
       var id=s._id||s.examNo,scores=[];
-      SUBJECTS.forEach(function(sub){var r=resMap[id+"_"+sub];if(r)EXAMS.forEach(function(ex){if(r[ex]&&r[ex].mark>0)scores.push(r[ex].mark/(r[ex].max||15)*100);});});
+      SUBJECTS.forEach(function(sub){
+        var r=resMap[id+"_"+sub];
+        if(r)EXAMS.forEach(function(ex){if(r[ex]&&r[ex].mark!==null&&r[ex].mark!==undefined)scores.push(r[ex].mark/(r[ex].max||100)*100);});
+      });
       return{name:s.name,cls:s.class,avg:scores.length?Math.round(avg(scores)):null};
-    }).filter(function(s){return s.avg!=null;}).sort(function(a,b){return b.avg-a.avg;});
+    }).filter(function(s){return s.avg!==null;}).sort(function(a,b){return b.avg-a.avg;});
     html+='<div class="tscroll"><table class="ptable"><thead><tr><th>#</th><th>Name</th><th>Class</th><th>Overall Avg %</th></tr></thead><tbody>';
     stuScores.slice(0,10).forEach(function(s,i){
       html+="<tr><td>"+(i+1)+"</td><td><strong>"+s.name+"</strong></td><td>"+s.cls+"</td><td><span class='badge "+(s.avg>=75?"badge-green":s.avg>=50?"badge-gold":"badge-red")+"'>"+s.avg+"%</span></td></tr>";
@@ -853,8 +1066,11 @@ async function loadAnalytics(){
   }catch(e){showStatus("anaStatus","Error: "+e.message,"err");}
 }
 
-/* MISSING MARKS */
+// ═══════════════════════════════════════════════════════
+// MISSING MARKS — only flags if no record at all (AB = uploaded, just absent)
+// ═══════════════════════════════════════════════════════
 async function loadMissing(){
+  if(!EXAMS.length){showStatus("missingStatus","No exams configured.","warn");return;}
   showStatus("missingStatus","Checking...","info");
   try{
     var students=await fsGetAll("students");
@@ -866,16 +1082,29 @@ async function loadMissing(){
     var issues=0;
     students.forEach(function(s){
       var id=s._id||s.examNo,cells="",hasIssue=false;
-      SUBJECTS.forEach(function(sub){EXAMS.forEach(function(ex){var r=resMap[id+"_"+sub],has=r&&r[ex]&&r[ex].mark!=null;cells+=has?"<td><span class='ok-chip'>✓</span></td>":"<td><span class='miss-chip'>✗</span></td>";if(!has)hasIssue=true;});});
+      SUBJECTS.forEach(function(sub){
+        EXAMS.forEach(function(ex){
+          var r=resMap[id+"_"+sub];
+          // uploaded = key exists (even if mark is null = AB)
+          // missing = key doesn't exist at all
+          var uploaded=r&&r[ex]&&r[ex].mark!==undefined;
+          var isAb=uploaded&&r[ex].mark===null;
+          if(!uploaded){cells+="<td><span class='miss-chip'>✗</span></td>";hasIssue=true;}
+          else if(isAb){cells+="<td><span class='ab-chip'>AB</span></td>";}
+          else{cells+="<td><span class='ok-chip'>✓</span></td>";}
+        });
+      });
       if(hasIssue){issues++;html+="<tr><td><strong>"+id+"</strong></td><td>"+s.name+"</td><td>"+s.class+"</td>"+cells+"</tr>";}
     });
     html+="</tbody></table></div>";
-    if(!issues){showStatus("missingStatus","All students have marks for all exams!","ok");$("missingContent").innerHTML="";}
-    else{showStatus("missingStatus",issues+" students have missing marks","warn");$("missingContent").innerHTML=html;}
+    if(!issues){showStatus("missingStatus","✅ All students have data uploaded for all exams! (AB = uploaded as absent)","ok");$("missingContent").innerHTML="";}
+    else{showStatus("missingStatus",issues+" students have missing uploads (✗ = not uploaded, AB = absent, ✓ = has marks)","warn");$("missingContent").innerHTML=html;}
   }catch(e){showStatus("missingStatus","Error: "+e.message,"err");}
 }
 
-/* DUPLICATE PHONES */
+// ═══════════════════════════════════════════════════════
+// DUPLICATE PHONES
+// ═══════════════════════════════════════════════════════
 async function loadDupes(){
   showStatus("dupesStatus","Checking...","info");
   try{
@@ -893,7 +1122,9 @@ async function loadDupes(){
   }catch(e){showStatus("dupesStatus","Error: "+e.message,"err");}
 }
 
-/* STUDENT PREVIEW */
+// ═══════════════════════════════════════════════════════
+// STUDENT PREVIEW
+// ═══════════════════════════════════════════════════════
 async function loadPreview(){
   var en=$("prevExamNo").value.trim();
   if(!en){showStatus("previewStatus","Enter an exam number.","err");return;}
@@ -913,11 +1144,15 @@ async function loadPreview(){
       html+='<div class="tscroll"><table class="ptable" style="margin-top:8px"><thead><tr><th>Exam</th><th>Marks</th><th>Max</th><th>%</th><th>Rank</th><th>Class Avg</th></tr></thead><tbody>';
       EXAMS.forEach(function(ex){
         var e=res[ex];
-        if(!e){html+="<tr><td>"+ex+"</td><td colspan='5' style='color:var(--g400)'>Not uploaded</td></tr>";return;}
-        var p=Math.round(e.mark/e.max*100);
-        html+="<tr><td><strong>"+ex+"</strong></td><td>"+e.mark+"</td><td>"+e.max+"</td>"
-          +"<td><span class='badge "+(p>=60?"badge-green":p>=40?"badge-gold":"badge-red")+"'>"+p+"%</span></td>"
-          +"<td>"+(e.rank?"#"+e.rank+"/"+e.classSize:"--")+"</td><td>"+(e.classAvg||"--")+"</td></tr>";
+        if(!e||e.mark===undefined){html+="<tr><td>"+ex+"</td><td colspan='5' style='color:var(--g400)'>Not uploaded</td></tr>";return;}
+        var isAb=e.mark===null;
+        var p=isAb?null:Math.round(e.mark/e.max*100);
+        html+="<tr><td><strong>"+ex+"</strong></td>"
+          +"<td>"+(isAb?"<span class='badge badge-purple'>AB</span>":e.mark)+"</td>"
+          +"<td>"+(isAb?"--":e.max)+"</td>"
+          +"<td>"+(isAb?"<span class='badge badge-grey'>AB</span>":"<span class='badge "+(p>=60?"badge-green":p>=40?"badge-gold":"badge-red")+"'>"+p+"%</span>")+"</td>"
+          +"<td>"+(e.rank?"#"+e.rank+"/"+e.classSize:isAb?"AB":"--")+"</td>"
+          +"<td>"+(e.classAvg!==undefined?e.classAvg:"--")+"</td></tr>";
       });
       html+="</tbody></table></div></div>";
     });
@@ -926,7 +1161,9 @@ async function loadPreview(){
   }catch(e){showStatus("previewStatus","Error: "+e.message,"err");}
 }
 
-/* EXPORT */
+// ═══════════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════════
 async function exportStudents(){
   showStatus("exportStatus","Loading...","info");
   try{
@@ -938,18 +1175,23 @@ async function exportStudents(){
 }
 async function exportMarks(){
   var subj=$("expSubject").value,exam=$("expExam").value;
+  if(!exam){showStatus("exportStatus","No exam selected.","err");return;}
   showStatus("exportStatus","Loading...","info");
   try{
     var results=await fsGetAll("results");
-    var rows=results.filter(function(r){return r.subject===subj&&r[exam]&&r[exam].mark!=null;})
-      .sort(function(a,b){return(b[exam].mark||0)-(a[exam].mark||0);})
-      .map(function(r){var e=r[exam];return{ExamNo:r.examNo,Marks:e.mark,Max:e.max,Percent:Math.round(e.mark/e.max*100),Rank:e.rank||"",ClassSize:e.classSize||"",ClassAvg:e.classAvg||""};});
+    var rows=results.filter(function(r){return r.subject===subj&&r[exam]&&r[exam].mark!==undefined;})
+      .sort(function(a,b){return(a[exam].rank||9999)-(b[exam].rank||9999);})
+      .map(function(r){
+        var e=r[exam],isAb=e.mark===null;
+        return{ExamNo:r.examNo,Marks:isAb?"AB":e.mark,Max:isAb?"":e.max,Percent:isAb?"":Math.round(e.mark/e.max*100),Rank:isAb?"AB":(e.rank||""),ClassSize:e.classSize||"",ClassAvg:e.classAvg||""};
+      });
     if(!rows.length){showStatus("exportStatus","No marks for "+subj+" – "+exam,"warn");return;}
     downloadCSV("velammal_"+subj+"_"+exam+".csv",rows,["ExamNo","Marks","Max","Percent","Rank","ClassSize","ClassAvg"]);
     showStatus("exportStatus",rows.length+" records downloaded!","ok");
   }catch(e){showStatus("exportStatus","Error: "+e.message,"err");}
 }
 async function exportFullReport(){
+  if(!EXAMS.length){showStatus("exportStatus","No exams configured.","warn");return;}
   showStatus("exportStatus","Loading full data...","info");
   try{
     var students=await fsGetAll("students");
@@ -959,7 +1201,15 @@ async function exportFullReport(){
     SUBJECTS.forEach(function(sub){EXAMS.forEach(function(ex){headers.push(sub+"_"+ex+"_Marks");headers.push(sub+"_"+ex+"_Pct");});});
     var rows=students.map(function(s){
       var id=s._id||s.examNo,row={ExamNo:id,Name:s.name,Class:s.class,Gender:s.gender,Phone:s.phone};
-      SUBJECTS.forEach(function(sub){var r=resMap[id+"_"+sub];EXAMS.forEach(function(ex){var e=r&&r[ex];row[sub+"_"+ex+"_Marks"]=e&&e.mark!=null?e.mark:"";row[sub+"_"+ex+"_Pct"]=e&&e.mark!=null?Math.round(e.mark/e.max*100):"";});});
+      SUBJECTS.forEach(function(sub){
+        var r=resMap[id+"_"+sub];
+        EXAMS.forEach(function(ex){
+          var e=r&&r[ex];
+          var isAb=e&&e.mark===null;
+          row[sub+"_"+ex+"_Marks"]=!e||e.mark===undefined?"":isAb?"AB":e.mark;
+          row[sub+"_"+ex+"_Pct"]=!e||e.mark===undefined?"":isAb?"AB":Math.round(e.mark/e.max*100);
+        });
+      });
       return row;
     });
     downloadCSV("velammal_full_report.csv",rows,headers);
