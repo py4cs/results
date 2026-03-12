@@ -591,7 +591,7 @@ function renderExamList(){
     var pmText=pm!=null?" | pass: "+pm:" | no pass mark";
     return"<span class='exam-tag'>"+ex
       +" <small style='font-weight:500;opacity:.7'>(max "+EXAM_MAX[ex]+pmText+")</small>"
-      +"<button onclick='removeExam(""+ex+"")' title='Remove'>✕</button></span>";
+      +"<button onclick='removeExam(this.dataset.ex)' data-ex='"+ex+"' title='Remove'>✕</button></span>";
   }).join("");
 }
 function togglePassInput(){
