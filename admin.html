@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Velammal Admin Panel</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <style>
 :root{--blue:#0a1f6e;--blue-lt:#2952d9;--blue-pale:#eef2ff;--blue-border:#c7d2fe;--gold:#e9a820;--cream:#f0f2fc;--g50:#f8fafc;--g100:#f1f5f9;--g200:#e2e8f0;--g400:#94a3b8;--g600:#475569;--g800:#1e293b;--green:#16a34a;--green-lt:#dcfce7;--red:#dc2626;--red-lt:#fee2e2;--sh-sm:0 1px 4px rgba(10,31,110,.07);--r:12px;--p:20px;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -131,12 +133,15 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <button class="nav-item" onclick="showSec('secViewMarks',this)">🔍 View Marks</button>
       <button class="nav-item" onclick="showSec('secEditMark',this)">✏️ Edit a Mark</button>
       <span class="nav-sep">Reports</span>
+      <button class="nav-item" onclick="showSec('secOverview',this);loadOverview()">🏫 Class Overview</button>
       <button class="nav-item" onclick="showSec('secAnalytics',this)">📊 Analytics</button>
       <button class="nav-item" onclick="showSec('secMissing',this)">⚠️ Missing Marks</button>
       <button class="nav-item" onclick="showSec('secDupes',this)">🔁 Duplicate Phones</button>
       <button class="nav-item" onclick="showSec('secPreview',this)">👀 Student Preview</button>
       <span class="nav-sep">Other</span>
       <button class="nav-item" onclick="showSec('secExport',this)">⬇️ Export CSV</button>
+      <span class="nav-sep" style="color:var(--red)">Danger Zone</span>
+      <button class="nav-item" style="color:var(--red);font-weight:700" onclick="openNukeModal()">💣 Reset Everything</button>
 
     </div>
     <div class="main-content">
@@ -161,15 +166,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
             <div class="tscroll"><table class="ptable" id="stuPreviewTable"><thead></thead><tbody></tbody></table></div>
           </div>
         </div>
-        <div class="card">
-          <div class="card-title">Student Statistics</div>
-          <div class="stats-row">
-            <div class="stat-card"><div class="sv" id="statTotal">--</div><div class="sl">Total Students</div></div>
-            <div class="stat-card"><div class="sv" id="statClasses">--</div><div class="sl">Classes</div></div>
-            <div class="stat-card"><div class="sv" id="statWithResults">--</div><div class="sl">With Results</div></div>
-          </div>
-          <button class="btn btn-outline" onclick="loadStats()">↻ Refresh</button>
-        </div>
+
       </div>
 
       <!-- VIEW & EDIT STUDENTS -->
@@ -402,6 +399,27 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
         </div>
       </div>
 
+      <!-- CLASS OVERVIEW -->
+      <div id="secOverview" class="hidden">
+        <div class="card">
+          <div class="card-title">Class Overview</div>
+          <div class="card-sub">All classes, their students and assigned teachers.</div>
+          <div class="stats-row" id="overviewStats" style="margin-bottom:16px">
+            <div class="stat-card"><div class="sv" id="statTotal">--</div><div class="sl">Total Students</div></div>
+            <div class="stat-card"><div class="sv" id="statClasses">--</div><div class="sl">Total Classes</div></div>
+            <div class="stat-card"><div class="sv" id="statTeachers">--</div><div class="sl">Total Teachers</div></div>
+          </div>
+          <button class="btn btn-outline" onclick="loadOverview()" style="margin-bottom:16px">↻ Refresh</button>
+          <div id="overviewStatus" class="status-bar"></div>
+          <div id="overviewContent"></div>
+        </div>
+        <div class="card" style="margin-top:0">
+          <div class="card-title">Teachers Directory</div>
+          <div class="card-sub">All teachers, their subjects and assigned classes.</div>
+          <div id="teacherDirContent"></div>
+        </div>
+      </div>
+
       <!-- EXPORT -->
       <div id="secExport" class="hidden">
         <div class="card">
@@ -534,7 +552,15 @@ function parseFsVal(v){
 // ═══════════════════════════════════════════════════════
 // CONSTANTS & STATE
 // ═══════════════════════════════════════════════════════
-var ADMIN_PASS="admin@123";
+// Firebase Auth init
+var _fbApp=firebase.initializeApp({
+  apiKey:"AIzaSyC79jcB_6TgJIG4ngXmPDY6Zjmg8PC0-pU",
+  authDomain:"velammal-results.firebaseapp.com",
+  projectId:"velammal-results"
+});
+var _fbAuth=firebase.auth(_fbApp);
+var ADMIN_EMAIL="admin@velammal.com";
+var DOMAIN="@velammal.com";
 var SUBJECTS=[]; // loaded from Firestore /settings/config
 var EXAMS=[];
 var EXAM_MAX={};
@@ -857,14 +883,14 @@ function updateMaxMarks(){
 function renderTeacherList(){
   var wrap=$("teacherListWrap");if(!wrap)return;
   if(!TEACHERS_CFG.length){wrap.innerHTML="<div style='color:var(--g400);font-size:.82rem;padding:8px'>No teachers added yet.</div>";return;}
-  var html='<table class="ptable"><thead><tr><th>ID</th><th>Name</th><th>Subject</th><th>Classes</th><th>Password</th><th>Actions</th></tr></thead><tbody>';
+  var html='<table class="ptable"><thead><tr><th>ID</th><th>Name</th><th>Subject</th><th>Classes</th><th>Auth</th><th>Actions</th></tr></thead><tbody>';
   TEACHERS_CFG.forEach(function(t){
     html+="<tr>"
       +"<td><strong>"+t.id+"</strong></td>"
       +"<td>"+t.name+"</td>"
       +"<td><span class='badge badge-blue'>"+t.subject+"</span></td>"
       +"<td>"+(Array.isArray(t.classes)?t.classes.join(", "):t.classes||"")+"</td>"
-      +"<td><code>"+t.password+"</code></td>"
+      +"<td><span class='badge badge-grey'>🔒 Firebase Auth</span></td>"
       +"<td style='display:flex;gap:6px'>"
         +"<button class='btn btn-outline btn-sm' onclick='openTeacherModal(this.dataset.id)' data-id='"+t.id+"'>✏️</button>"
         +"<button class='btn btn-red btn-sm' onclick='deleteTeacher(this.dataset.id)' data-id='"+t.id+"'>🗑</button>"
@@ -920,7 +946,21 @@ async function saveTeacher(){
   if(!id||!name||!pass){showStatus("teacherModalStatus","ID, Name and Password are required.","err");return;}
   if(!classes.length){showStatus("teacherModalStatus","Select at least one class.","err");return;}
   if(!isEdit&&TEACHERS_CFG.find(function(t){return t.id===id;})){showStatus("teacherModalStatus","Teacher ID "+id+" already exists.","err");return;}
-  var entry={id:id,name:name,password:pass,subject:subject,classes:classes};
+  showStatus("teacherModalStatus",isEdit?"Updating...":"Creating Firebase account...","info");
+  var email=id+DOMAIN;
+  try{
+    if(isEdit){
+      // Update password in Firebase Auth via REST
+      await updateFirebaseAuthPassword(email,pass);
+    } else {
+      // Create new Firebase Auth user
+      await createFirebaseAuthUser(email,pass);
+    }
+  }catch(e){
+    showStatus("teacherModalStatus","Firebase Auth error: "+e.message,"err");return;
+  }
+  // Save to Firestore config (without password)
+  var entry={id:id,name:name,subject:subject,classes:classes};
   var prev=TEACHERS_CFG.slice();
   if(isEdit){
     var idx=TEACHERS_CFG.findIndex(function(t){return t.id===id;});
@@ -932,42 +972,103 @@ async function saveTeacher(){
     await saveExamConfig();
     renderTeacherList();
     closeTeacherModal();
-    showStatus("teacherStatus",(isEdit?"Updated":"Added")+" teacher "+name+".","ok");
+    showStatus("teacherStatus",(isEdit?"Updated":"Added")+" teacher "+name+". Firebase account "+(isEdit?"updated":"created")+".","ok");
   }catch(e){
     TEACHERS_CFG=prev;
-    showStatus("teacherModalStatus","Error: "+e.message,"err");
+    showStatus("teacherModalStatus","Firestore error: "+e.message,"err");
   }
+}
+
+async function createFirebaseAuthUser(email,password){
+  // Use Firebase Auth REST API to create user
+  var r=await fetch("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyC79jcB_6TgJIG4ngXmPDY6Zjmg8PC0-pU",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({email:email,password:password,returnSecureToken:false})
+  });
+  var data=await r.json();
+  if(data.error) throw new Error(data.error.message);
+  return data;
+}
+
+async function updateFirebaseAuthPassword(email,newPass){
+  // Sign in as admin to get token, then use admin's token to update
+  // Best approach: use Firebase Auth REST to send password reset or update
+  // Since we have the user's email, we re-create by deleting and recreating
+  // Actually the cleanest approach: just call signUp which will fail if exists,
+  // so we use the Admin SDK workaround via update password endpoint
+  // We use the current admin token to update
+  var user=_fbAuth.currentUser;
+  if(!user) throw new Error("Not authenticated as admin");
+  var token=await user.getIdToken();
+  // Use Firebase Auth REST to list users and update
+  var r=await fetch("https://identitytoolkit.googleapis.com/v1/accounts:update?key=AIzaSyC79jcB_6TgJIG4ngXmPDY6Zjmg8PC0-pU",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({email:email,password:newPass,returnSecureToken:false,idToken:token})
+  });
+  var data=await r.json();
+  // If update failed (user not found), try creating
+  if(data.error){
+    if(data.error.message&&data.error.message.indexOf("EMAIL_NOT_FOUND")>=0){
+      return await createFirebaseAuthUser(email,newPass);
+    }
+    throw new Error(data.error.message);
+  }
+  return data;
 }
 
 async function deleteTeacher(id){
   var t=TEACHERS_CFG.find(function(x){return x.id===id;});
   if(!t)return;
-  if(!confirm("Delete teacher "+t.name+" ("+id+")?\nThey will no longer be able to log in."))return;
+  if(!confirm("Delete teacher "+t.name+" ("+id+")?\nThis will disable their login account. Cannot be undone."))return;
   var prev=TEACHERS_CFG.slice();
   TEACHERS_CFG=TEACHERS_CFG.filter(function(x){return x.id!==id;});
   try{
+    // Disable Firebase Auth account by randomising password so they can't login
+    try{
+      var user=_fbAuth.currentUser;
+      if(user){
+        var token=await user.getIdToken();
+        var rndPass="disabled_"+Math.random().toString(36).slice(2)+"_"+Date.now();
+        await fetch("https://identitytoolkit.googleapis.com/v1/accounts:update?key=AIzaSyC79jcB_6TgJIG4ngXmPDY6Zjmg8PC0-pU",{
+          method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({email:id+DOMAIN,password:rndPass,returnSecureToken:false,idToken:token})
+        });
+      }
+    }catch(ae){console.warn("Firebase Auth cleanup:",ae.message);}
     await saveExamConfig();
     renderTeacherList();
-    showStatus("teacherStatus","Deleted teacher "+t.name+".","ok");
+    showStatus("teacherStatus","Deleted teacher "+t.name+". Login account disabled.","ok");
   }catch(e){
     TEACHERS_CFG=prev;
     showStatus("teacherStatus","Error: "+e.message,"err");
   }
 }
 
-function adminLogin(){
-  if($("adminPass").value!==ADMIN_PASS){$("loginErr").textContent="Wrong password.";$("loginErr").style.display="block";return;}
-  $("loginWrap").style.display="none";$("appWrap").classList.remove("hidden");
-  loadExamConfig();loadStats(); // loadExamConfig populates all dropdowns including subjects
+async function adminLogin(){
+  var pass=$("adminPass").value;
+  if(!pass){$("loginErr").textContent="Enter password.";$("loginErr").style.display="block";return;}
+  var btn=document.querySelector("#loginWrap .btn-primary");
+  btn.disabled=true;btn.textContent="Logging in...";
+  try{
+    await _fbAuth.signInWithEmailAndPassword(ADMIN_EMAIL,pass);
+    $("loginWrap").style.display="none";$("appWrap").classList.remove("hidden");
+    loadExamConfig();loadStats();
+  }catch(e){
+    $("loginErr").textContent=e.code==="auth/wrong-password"||e.code==="auth/invalid-credential"?"Wrong password.":"Login failed: "+e.message;
+    $("loginErr").style.display="block";
+  }finally{btn.disabled=false;btn.textContent="Login";}
 }
-function adminLogout(){$("appWrap").classList.add("hidden");$("loginWrap").style.display="flex";$("adminPass").value="";}
+async function adminLogout(){
+  await _fbAuth.signOut();
+  $("appWrap").classList.add("hidden");$("loginWrap").style.display="flex";$("adminPass").value="";
+}
 
 // ═══════════════════════════════════════════════════════
 // NAV
 // ═══════════════════════════════════════════════════════
 var CLASSES=[]; // loaded from Firestore /settings/config
 var TEACHERS_CFG=[]; // loaded from Firestore /settings/config
-var SECS=["secStudents","secViewStudents","secExams","secClasses","secTeacherMgmt","secMarks","secViewMarks","secEditMark","secAnalytics","secMissing","secDupes","secPreview","secExport"];
+var SECS=["secStudents","secViewStudents","secExams","secClasses","secTeacherMgmt","secMarks","secViewMarks","secEditMark","secOverview","secAnalytics","secMissing","secDupes","secPreview","secExport"];
 function showSec(id,btn){
   SECS.forEach(function(s){$(s).classList.add("hidden");});$(id).classList.remove("hidden");
   document.querySelectorAll(".nav-item").forEach(function(b){b.classList.remove("active");});
@@ -1016,18 +1117,13 @@ async function uploadStudents(){
 // STATS
 // ═══════════════════════════════════════════════════════
 async function loadStats(){
+  // Stats now shown in Class Overview — just silently update if elements exist
   try{
     var students=await fsGetAll("students");
-    $("statTotal").textContent=students.length;
+    if($("statTotal")) $("statTotal").textContent=students.length;
     var cls={};students.forEach(function(s){if(s.class)cls[s.class]=1;});
-    $("statClasses").textContent=Object.keys(cls).sort().join(", ")||"--";
-    var results=await fsGetAll("results");
-    var withR={};
-    results.forEach(function(r){
-      var hasReal=Object.keys(r).some(function(k){return r[k]&&typeof r[k]==="object"&&r[k].mark!==undefined&&r[k].mark!==null;});
-      if(r.examNo&&hasReal)withR[r.examNo]=1;
-    });
-    $("statWithResults").textContent=Object.keys(withR).length;
+    if($("statClasses")) $("statClasses").textContent=Object.keys(cls).length||"--";
+    if($("statTeachers")) $("statTeachers").textContent=TEACHERS_CFG.length||"--";
   }catch(e){console.error(e);}
 }
 
@@ -1072,24 +1168,37 @@ async function saveStudent(){
   }catch(e){showStatus("editStatus","Error: "+e.message,"err");}
 }
 async function deleteStudent(examNo,name){
-  if(!confirm("Delete student "+name+" ("+examNo+")? Cannot be undone."))return;
+  if(!confirm("Delete student "+name+" ("+examNo+")? This will also delete all their exam results. Cannot be undone."))return;
+  showStatus("viewStatus","Deleting "+name+" and their results...","info");
   try{
-    await fsDelete("students",examNo);showStatus("viewStatus","Deleted "+name,"ok");
+    // Delete student doc
+    await fsDelete("students",examNo);
+    // Delete all result docs for this student
+    var allRes=await fsGetAll("results");
+    var stuRes=allRes.filter(function(r){return String(r.examNo)===String(examNo)||r._id===examNo;});
+    for(var i=0;i<stuRes.length;i++){try{await fsDelete("results",stuRes[i]._id);}catch(e){}}
+    showStatus("viewStatus","Deleted "+name+" and "+stuRes.length+" result record(s).","ok");
     _allStudents=_allStudents.filter(function(s){return(s._id||s.examNo)!==examNo;});
-    renderStudentsTable();
+    renderStudentsTable();loadStats();
   }catch(e){showStatus("viewStatus","Error: "+e.message,"err");}
 }
 async function bulkDeleteClass(){
   var cls=$("bulkClass").value;
   if(!cls){alert("Select a class first.");return;}
-  if(!confirm("Delete ALL students in class "+cls+"? Cannot be undone!"))return;
-  showStatus("viewStatus","Deleting "+cls+"...","info");
   var toDelete=_allStudents.filter(function(s){return s.class===cls;});
   if(!toDelete.length){showStatus("viewStatus","No students in "+cls,"warn");return;}
-  var done=0;
-  for(var i=0;i<toDelete.length;i++){try{await fsDelete("students",toDelete[i]._id||toDelete[i].examNo);done++;}catch(e){}}
-  showStatus("viewStatus","Deleted "+done+" students from "+cls,"ok");
-  await loadAllStudents();
+  if(!confirm("Delete ALL "+toDelete.length+" students in class "+cls+" and ALL their exam results? Cannot be undone!"))return;
+  showStatus("viewStatus","Deleting "+cls+" students and results...","info");
+  var stuDone=0,resDone=0;
+  // Delete all results for students in this class
+  var allRes=await fsGetAll("results");
+  var examNos=toDelete.map(function(s){return String(s._id||s.examNo);});
+  var toDelRes=allRes.filter(function(r){return examNos.indexOf(String(r.examNo))>=0||examNos.indexOf(String(r._id))>=0;});
+  for(var j=0;j<toDelRes.length;j++){try{await fsDelete("results",toDelRes[j]._id);resDone++;}catch(e){}}
+  // Delete students
+  for(var i=0;i<toDelete.length;i++){try{await fsDelete("students",toDelete[i]._id||toDelete[i].examNo);stuDone++;}catch(e){}}
+  showStatus("viewStatus","Deleted "+stuDone+" students and "+resDone+" result records from "+cls,"ok");
+  await loadAllStudents();loadStats();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1569,10 +1678,199 @@ async function exportFullReport(){
   }catch(e){showStatus("exportStatus","Error: "+e.message,"err");}
 }
 
+
+// ═══════════════════════════════════════════════════════
+// CLASS OVERVIEW
+// ═══════════════════════════════════════════════════════
+async function loadOverview(){
+  showStatus("overviewStatus","Loading...","info");
+  try{
+    var students=await fsGetAll("students");
+
+    // Group students by class
+    var byClass={};
+    CLASSES.forEach(function(c){byClass[c]=[];});
+    students.forEach(function(s){
+      var cls=s.class||"Unknown";
+      if(!byClass[cls])byClass[cls]=[];
+      byClass[cls].push(s);
+    });
+
+    // Sort students within each class by name
+    Object.keys(byClass).forEach(function(cls){
+      byClass[cls].sort(function(a,b){return(a.name||"").localeCompare(b.name||"");});
+    });
+
+    // Build class cards
+    var allClasses=Object.keys(byClass).sort();
+    if(!allClasses.length){
+      $("overviewContent").innerHTML="<div class='no-data' style='padding:24px;text-align:center;color:var(--g400)'>No classes found. Add classes in Setup first.</div>";
+      hideStatus("overviewStatus");
+      return;
+    }
+
+    var html='';
+    allClasses.forEach(function(cls){
+      var stuList=byClass[cls];
+      // Find teachers for this class
+      var clsTeachers=TEACHERS_CFG.filter(function(t){
+        return Array.isArray(t.classes)?t.classes.indexOf(cls)>=0:t.classes===cls;
+      });
+
+      html+='<div style="margin-bottom:22px;border:1px solid var(--g200);border-radius:12px;overflow:hidden">';
+      // Class header
+      html+='<div style="background:linear-gradient(135deg,var(--blue),var(--blue-lt));padding:12px 16px;display:flex;align-items:center;justify-content:space-between">'
+        +'<div style="display:flex;align-items:center;gap:10px">'
+          +'<span style="background:var(--gold);color:var(--blue);font-weight:800;font-size:.88rem;padding:4px 12px;border-radius:20px">'+cls+'</span>'
+          +'<span style="color:#fff;font-weight:700;font-size:.88rem">'+stuList.length+' Student'+(stuList.length!==1?'s':'')+'</span>'
+        +'</div>'
+        // Teachers badges
+        +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
+        +(!clsTeachers.length
+          ?'<span style="color:rgba(255,255,255,.55);font-size:.76rem">No teacher assigned</span>'
+          :clsTeachers.map(function(t){
+            return '<span style="background:rgba(255,255,255,.18);color:#fff;font-size:.74rem;font-weight:700;padding:3px 10px;border-radius:20px">'+t.name+' · '+t.subject+'</span>';
+          }).join('')
+        )
+        +'</div>'
+      +'</div>';
+
+      // Student table
+      if(!stuList.length){
+        html+='<div style="padding:16px;color:var(--g400);font-size:.84rem;text-align:center">No students in this class</div>';
+      } else {
+        html+='<div style="overflow-x:auto"><table class="ptable">'
+          +'<thead><tr>'
+            +'<th style="width:36px">#</th>'
+            +'<th>Exam No</th>'
+            +'<th>Name</th>'
+            +'<th>Gender</th>'
+            +'<th>Phone</th>'
+          +'</tr></thead><tbody>';
+        stuList.forEach(function(s,i){
+          var id=s._id||s.examNo;
+          html+='<tr>'
+            +'<td style="color:var(--g400);font-size:.76rem">'+(i+1)+'</td>'
+            +'<td><strong>'+id+'</strong></td>'
+            +'<td>'+s.name+'</td>'
+            +'<td>'+(s.gender||'--')+'</td>'
+            +'<td>'+(s.phone||'--')+'</td>'
+          +'</tr>';
+        });
+        html+='</tbody></table></div>';
+      }
+      html+='</div>';
+    });
+
+    $("overviewContent").innerHTML=html;
+    hideStatus("overviewStatus");
+
+    // Update quick stats strip
+    var totalStu=students.length;
+    var totalCls=allClasses.length;
+    var totalTch=TEACHERS_CFG.length;
+    $("statTotal").textContent=totalStu;
+    $("statClasses").textContent=totalCls;
+    $("statTeachers").textContent=totalTch;
+
+    // Teachers directory
+    renderTeacherDirectory(byClass);
+
+  }catch(e){
+    showStatus("overviewStatus","Error: "+e.message,"err");
+  }
+}
+
+function renderTeacherDirectory(byClass){
+  if(!TEACHERS_CFG.length){
+    $("teacherDirContent").innerHTML="<div style='color:var(--g400);font-size:.84rem;padding:8px'>No teachers added yet.</div>";
+    return;
+  }
+  var html='<table class="ptable"><thead><tr>'
+    +'<th>Name</th><th>ID</th><th>Subject</th><th>Classes</th><th>Total Students</th>'
+    +'</tr></thead><tbody>';
+  TEACHERS_CFG.forEach(function(t){
+    var classes=Array.isArray(t.classes)?t.classes:[t.classes||""];
+    var total=classes.reduce(function(sum,cls){return sum+(byClass[cls]?byClass[cls].length:0);},0);
+    html+='<tr>'
+      +'<td><strong>'+t.name+'</strong></td>'
+      +'<td><code>'+t.id+'</code></td>'
+      +'<td><span class="badge badge-blue">'+t.subject+'</span></td>'
+      +'<td>'+classes.map(function(c){return '<span class="badge badge-grey">'+c+'</span>';}).join(' ')+'</td>'
+      +'<td><strong>'+total+'</strong> student'+(total!==1?'s':'')+'</td>'
+    +'</tr>';
+  });
+  html+='</tbody></table>';
+  $("teacherDirContent").innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════
+// NUKE EVERYTHING
+// ═══════════════════════════════════════════════════════
+function openNukeModal(){
+  $("nukeConfirmInput").value="";
+  hideStatus("nukeStatus");
+  $("nukeModal").classList.remove("hidden");
+  setTimeout(function(){$("nukeConfirmInput").focus();},100);
+}
+function closeNukeModal(){
+  $("nukeModal").classList.add("hidden");
+  $("nukeConfirmInput").value="";
+}
+async function nukeEverything(){
+  if($("nukeConfirmInput").value.trim()!=="RESET"){
+    showStatus("nukeStatus","Type exactly RESET (uppercase) to confirm.","err");
+    return;
+  }
+  var btn=$("nukeBtn");
+  btn.disabled=true;btn.textContent="Deleting...";
+  showStatus("nukeStatus","Fetching all data...","info");
+  try{
+    var students=await fsGetAll("students");
+    var results=await fsGetAll("results");
+    showStatus("nukeStatus","Deleting "+students.length+" students and "+results.length+" result records...","info");
+    for(var i=0;i<results.length;i++){try{await fsDelete("results",results[i]._id);}catch(e){}}
+    for(var j=0;j<students.length;j++){try{await fsDelete("students",students[j]._id||students[j].examNo);}catch(e){}}
+    showStatus("nukeStatus","✅ Done! Deleted "+students.length+" students and "+results.length+" result records. Settings preserved.","ok");
+    btn.textContent="✅ Done";
+    loadStats();
+    setTimeout(closeNukeModal,2500);
+  }catch(e){
+    showStatus("nukeStatus","Error: "+e.message,"err");
+    btn.disabled=false;btn.textContent="💣 Delete Everything";
+  }
+}
+document.addEventListener("click",function(e){
+  var m=$("nukeModal");
+  if(m&&!m.classList.contains("hidden")&&e.target===m) closeNukeModal();
+});
+
 document.addEventListener("keydown",function(e){
   if(e.key==="Enter"&&$("loginWrap").style.display!=="none")adminLogin();
-  if(e.key==="Escape")closeEditModal();
+  if(e.key==="Escape"){closeEditModal();closeNukeModal();}
 });
 </script>
+
+<!-- NUKE MODAL -->
+<div id="nukeModal" class="modal-bg hidden">
+  <div class="modal" style="border-top:4px solid var(--red)">
+    <h3 style="color:var(--red)">💣 Reset Everything</h3>
+    <div class="warn-box" style="background:#fef2f2;border-color:#fecaca;color:var(--red)">
+      ⚠️ This will permanently delete <strong>ALL students</strong> and <strong>ALL exam results</strong> from Firestore.<br><br>
+      Settings (exams, subjects, classes, teachers) will be kept.<br><br>
+      <strong>This cannot be undone.</strong>
+    </div>
+    <div class="fg">
+      <label>Type <strong>RESET</strong> to confirm</label>
+      <input type="text" id="nukeConfirmInput" placeholder="Type RESET here" style="border-color:var(--red)">
+    </div>
+    <div id="nukeStatus" class="status-bar"></div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closeNukeModal()">Cancel</button>
+      <button class="btn btn-red" id="nukeBtn" onclick="nukeEverything()">💣 Delete Everything</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

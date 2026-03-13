@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Velammal Results Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <style>
 :root{--blue:#0a1f6e;--blue-mid:#1535a8;--blue-lt:#2952d9;--blue-pale:#eef2ff;--blue-border:#c7d2fe;--gold:#e9a820;--gold-lt:#fcd34d;--cream:#f0f2fc;--g50:#f8fafc;--g100:#f1f5f9;--g200:#e2e8f0;--g400:#94a3b8;--g600:#475569;--g800:#1e293b;--green:#16a34a;--green-lt:#dcfce7;--red:#dc2626;--red-lt:#fee2e2;--org:#ea580c;--sh-sm:0 1px 4px rgba(10,31,110,.07);--sh:0 4px 16px rgba(10,31,110,.10);--sh-lg:0 8px 32px rgba(10,31,110,.16);--r:14px;--rs:8px;--p:16px;}
@@ -279,18 +281,24 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <div class="card"><div class="card-title">Exam Comparison</div><div class="card-sub">Class average per exam</div><div class="ch220" id="mainCompWrap"></div></div>
       <div class="card"><div class="card-title">Score Distribution</div><div class="card-sub">Latest exam score spread</div><div class="ch220" id="mainHistWrap"></div></div>
     </div>
-    <div class="sec-lbl">Top and Weak Students</div>
+    <div class="sec-lbl">Exam Summary</div>
+    <div class="card"><div class="card-title">📋 All Exams at a Glance</div><div class="card-sub">Avg, highest, lowest and pass count per exam</div><div style="overflow-x:auto"><table class="etable" id="examSummaryTable"><thead><tr><th>Exam</th><th>Avg</th><th>Highest</th><th>Lowest</th><th>Pass</th><th>Absent</th></tr></thead><tbody></tbody></table></div></div>
+
+    <div class="sec-lbl">Absent in Latest Exam</div>
+    <div class="card" id="absentLatestSection"><div class="card-title">🚨 Absent Alert</div><div class="card-sub">Students who missed the latest exam</div><div id="absentLatestWrap"></div></div>
+
+    <div class="sec-lbl">Top &amp; Bottom Students</div>
     <div class="two-col">
-      <div class="card" id="topSection"><div class="card-title">Top 5 Students</div><div class="card-sub">By latest exam</div><div class="tscroll"><table class="etable" id="topTable"><thead><tr><th>#</th><th>Name</th><th>Score</th></tr></thead><tbody></tbody></table></div></div>
-      <div class="card" id="weakSection"><div class="card-title">Needs Attention</div><div class="card-sub">Below pass mark</div><div class="tscroll"><table class="etable" id="weakTable"><thead><tr><th>Name</th><th>E1</th><th>E2</th><th>E3</th></tr></thead><tbody></tbody></table></div></div>
+      <div class="card" id="topSection"><div class="card-title">🥇 Top 3</div><div class="card-sub">By latest exam</div><div id="topWrap"></div></div>
+      <div class="card" id="weakSection"><div class="card-title">📌 Bottom 3</div><div class="card-sub">Needs most attention</div><div id="bottomWrap"></div></div>
     </div>
-    <div class="sec-lbl">Improvement Tracker</div>
-    <div class="card" id="improvSection"><div class="card-title">Exam-wise Progress</div><div style="max-height:400px;overflow-y:auto"><table class="etable" id="improvTable"><thead><tr><th>Student</th><th>Trend</th></tr></thead><tbody></tbody></table></div></div>
+
     <div class="sec-lbl">At-Risk Students</div>
     <div class="card" id="riskSection"><div class="card-title">Below Pass Mark</div><div style="max-height:400px;overflow-y:auto"><table class="etable" id="riskTable"><thead><tr><th>Name</th><th>Avg %</th><th>Risk Level</th></tr></thead><tbody></tbody></table></div></div>
 
     <div id="classCompSection" class="hidden">
       <div class="sec-lbl">Class Comparison</div>
+      <div id="classWinnerBanner" style="margin-bottom:12px"></div>
       <div class="two-col">
         <div class="card"><div class="card-title">Average per Exam</div><div class="card-sub">Both classes side by side</div><div class="ch220" id="classCompChartWrap"></div></div>
         <div class="card"><div class="card-title">Pass Rate</div><div class="card-sub">% students passing each exam</div><div class="ch220" id="passRateChartWrap"></div></div>
@@ -426,6 +434,14 @@ function parseFsValue(v) {
 // CONSTANTS
 // ═══════════════════════════════════════════
 var TEACHERS = {}; // loaded from Firestore /settings/config
+// Firebase Auth
+var _fbApp2=firebase.initializeApp({
+  apiKey:"AIzaSyC79jcB_6TgJIG4ngXmPDY6Zjmg8PC0-pU",
+  authDomain:"velammal-results.firebaseapp.com",
+  projectId:"velammal-results"
+},"portal");
+var _fbAuth2=firebase.auth(_fbApp2);
+var T_DOMAIN="@velammal.com";
 // Loaded from Firestore /settings/config on login
 var EXAMS = [];         // ["DRT-1","DRT-2","PT-1","Term","Preboard"]
 var EXAM_CFG = {};      // { "DRT-1": {max:15, passMark:6}, ... }
@@ -462,10 +478,10 @@ async function loadConfig(){
       CLASSES = cfg.classes;
     }
     if(cfg&&cfg.teachers&&Array.isArray(cfg.teachers)){
-      // Rebuild TEACHERS map keyed by id
+      // Rebuild TEACHERS map keyed by id (no password stored — Firebase Auth handles it)
       TEACHERS = {};
       cfg.teachers.forEach(function(t){
-        TEACHERS[t.id]={name:t.name,password:t.password,subject:t.subject,classes:t.classes||[]};
+        TEACHERS[t.id]={name:t.name,subject:t.subject,classes:t.classes||[]};
       });
     }
   }catch(e){ console.warn('Config load failed',e); }
@@ -563,21 +579,46 @@ async function teacherLogin(){
   var u=$('tUser').value.trim(), p=$('tPass').value.trim();
   hideErr('tErr');
   if(!u||!p){ showErr('tErr','Please enter both fields.'); return; }
-  var teacher=TEACHERS[u];
-  if(!teacher||teacher.password!==p){ showErr('tErr','Invalid Teacher ID or password.'); return; }
   setBtn('tBtn',true);
   try {
+    // Authenticate via Firebase Auth using teacherID@velammal.com
+    var email=u+T_DOMAIN;
+    try{
+      await _fbAuth2.signInWithEmailAndPassword(email,p);
+    }catch(authErr){
+      showErr('tErr','Invalid Teacher ID or password.');
+      setBtn('tBtn',false); return;
+    }
+    // Load config to get teacher info (name, subject, classes — no password stored)
     await loadConfig();
-    var students = await fsQueryIn('students','class',teacher.classes);
-    var rRows    = await fsQuery('results','subject','EQUAL',teacher.subject);
+    var teacher=TEACHERS[u];
+    if(!teacher){ showErr('tErr','Teacher not found in system. Contact admin.'); setBtn('tBtn',false); return; }
+
+    // Fetch students for teacher's classes
+    var students = teacher.classes.length ? await fsQueryIn('students','class',teacher.classes) : [];
+
+    // Fetch ALL results for teacher's subject, then build nested map:
+    // results[examNo][examName] = {mark, max, rank, classSize, classAvg, classAvgPct}
+    var rRows = await fsQuery('results','subject','EQUAL',teacher.subject);
     var results={};
-    // Key by examNo — fsQueryIn returns id field from doc name
-    rRows.forEach(function(r){ results[r.examNo||r.id]=r; });
+    rRows.forEach(function(r){
+      // r.id is like "1001_CS" — r.examNo is the student exam number
+      var en = String(r.examNo||r.id);
+      if(!results[en]) results[en]={};
+      // Copy all exam keys (DRT-1, PT-1 etc.) into results[examNo]
+      Object.keys(r).forEach(function(k){
+        if(k!=='examNo'&&k!=='subject'&&k!=='class'&&k!=='id') results[en][k]=r[k];
+      });
+      // Also store subject so openStudentPreview can find it
+      results[en]._subject = r.subject;
+      results[en]._examNo  = en;
+    });
+
     _cur={type:'teacher',teacher:teacher,students:students,results:results};
-    T.cls=teacher.classes[0];
+    T.cls=teacher.classes[0]||'';
     go('tDash');
     setTimeout(function(){ renderTeacher(); },50);
-  } catch(e){ showErr('tErr',e.message); }
+  } catch(e){ showErr('tErr','Login error: '+e.message); }
   finally { setBtn('tBtn',false); }
 }
 
@@ -588,6 +629,7 @@ function logout(){
   clearSession(); _cur=null;
   killCharts(sCharts); killCharts(tCharts);
   $('examNo').value=''; $('phone').value='';
+  try{ _fbAuth2.signOut(); }catch(e){}
   go('loginPage');
 }
 
@@ -835,16 +877,18 @@ function renderTDash(){
   if(!sd.length){ $('tSumGrid').innerHTML='<div class="no-data">No students for '+T.cls+'</div>'; return; }
 
   var activeEx=EXAMS.filter(function(col){
-    // Use examNo for lookup (stored in results keyed by examNo)
-    return sd.some(function(s){ var r=results[s.examNo||s.id]; return r&&r[col]&&r[col].mark!=null; });
+    return sd.some(function(s){
+      var r=results[String(s.examNo||s.id)];
+      return r&&r[col]&&r[col].mark!=null;
+    });
   }).map(function(col){ return {name:col,type:examCategory(col),max:examMax(col)}; });
 
   var sdata=sd.map(function(s){
-    var r=results[s.examNo||s.id];
+    var r=results[String(s.examNo||s.id)];
     return Object.assign({},s,{marks:activeEx.map(function(ex){
-      // null = absent (excluded from avg), 0 = scored zero (counts)
       if(!r||!r[ex.name]||r[ex.name].mark===undefined) return null;
-      return r[ex.name].mark; // could be null (absent) or number
+      var m=r[ex.name].mark;
+      return (m===null||m===undefined)?null:Number(m);
     })});
   });
 
@@ -865,10 +909,14 @@ function renderTDash(){
   var passExams=activeEx.filter(function(e){return hasPass(e.name);});
   if(passExams.length) passThreshold=Math.round(avg(passExams.map(function(e){return examPass(e.name)/e.max*100;})));
   var pass=allP.filter(function(p){return p>=passThreshold;}).length;
+  var withResults=sdata.filter(function(s){return s.marks.some(function(m){return m!==null&&m!==undefined;});}).length;
   $('tSumGrid').innerHTML=[
-    ts(sd.length,'Total Students',''),ts(Math.round(hi)+'%','Highest','hi'),
-    ts(Math.round(lo)+'%','Lowest','lo'),ts(ca+'%','Class Avg',''),
-    ts(pass,'Pass','bl'),ts(sd.length-pass,'Attention','lo')
+    ts(sd.length,'Total Students',''),
+    ts(withResults,'With Results','bl'),
+    ts(Math.round(hi)+'%','Highest','hi'),
+    ts(Math.round(lo)+'%','Lowest','lo'),
+    ts(ca+'%','Class Avg',''),
+    ts(pass+' / '+sd.length,'Pass','bl')
   ].join('');
 
   // Insight strip
@@ -979,53 +1027,68 @@ function renderTDash(){
     $('mainHistWrap').innerHTML='<div class="no-data">No main exam data yet</div>';
   }
 
-  // Top & Weak
+  // ── Exam Summary table ────────────────────────────────────────────────────
+  var examSumTbody=document.querySelector('#examSummaryTable tbody');
+  examSumTbody.innerHTML=activeEx.map(function(ex,i){
+    var written=sdata.map(function(s){return s.marks[i];}).filter(function(m){return m!==null&&m!==undefined;});
+    var abCount=sdata.length-written.length;
+    if(!written.length) return '<tr><td><strong>'+ex.name+'</strong></td><td colspan="5" class="no-data">No data</td></tr>';
+    var avgV=Math.round(avg(written.map(function(m){return pct(m,ex.max);})));
+    var highest=Math.max.apply(null,written);
+    var lowest=Math.min.apply(null,written);
+    var passCount=hasPass(ex.name)?written.filter(function(m){return isPass(m,ex.name);}).length:written.length;
+    var col=avgV>=60?'var(--green)':avgV>=40?'var(--org)':'var(--red)';
+    return '<tr>'
+      +'<td><strong>'+ex.name+'</strong></td>'
+      +'<td style="color:'+col+';font-weight:700">'+avgV+'%</td>'
+      +'<td style="color:var(--green);font-weight:700">'+highest+'/'+ex.max+'</td>'
+      +'<td style="color:var(--red);font-weight:700">'+lowest+'/'+ex.max+'</td>'
+      +'<td><span class="badge badge-green">'+passCount+'</span></td>'
+      +'<td>'+(abCount?'<span class="badge badge-purple">'+abCount+'</span>':'<span class="badge badge-grey">0</span>')+'</td>'
+    +'</tr>';
+  }).join('');
+
+  // ── Absent Alert — latest exam ─────────────────────────────────────────────
   var latEx=activeEx[activeEx.length-1];
+  var latI=latEx?activeEx.indexOf(latEx):-1;
   if(latEx){
-    var latI=activeEx.indexOf(latEx);
-    // Only students who wrote the latest exam
-    var sortable=sdata.filter(function(s){return s.marks[latI]!==null&&s.marks[latI]!==undefined;});
-    var sorted=sortable.map(function(s){return Object.assign({},s,{score:s.marks[latI]});}).sort(function(a,b){return b.score-a.score;});
-    document.querySelector('#topTable tbody').innerHTML=sorted.length?sorted.slice(0,5).map(function(s,i){
-      return '<tr><td><span class="rk-chip '+(i<3?'rk-'+(i+1):'rk-n')+'">'+(i+1)+'</span></td><td><strong>'+s.name+'</strong></td><td>'+s.score+'/'+latEx.max+'</td></tr>';
-    }).join(''):'<tr><td colspan="3" class="no-data">No data for latest exam</td></tr>';
-    // Weak = student who failed any exam that has a pass mark (absent not counted as fail)
-    var weak=sdata.filter(function(s){
-      return activeEx.some(function(e,i){
-        var m=s.marks[i];
-        if(m===null||m===undefined) return false; // absent = not weak
-        return hasPass(e.name)&&!isPass(m,e.name);
-      });
-    });
-    document.querySelector('#weakTable tbody').innerHTML=weak.length
-      ?weak.map(function(s){
-        return '<tr><td><strong>'+s.name+'</strong></td>'
-          +activeEx.slice(0,3).map(function(e,i){
-            var m=s.marks[i];
-            if(m===null||m===undefined) return '<td style="color:var(--org)">AB</td>';
-            var fail=hasPass(e.name)&&!isPass(m,e.name);
-            return '<td style="color:'+(fail?'var(--red)':'inherit')+';font-weight:'+(fail?700:400)+'">'+m+'</td>';
-          }).join('')+'</tr>';
-      }).join('')
-      :'<tr><td colspan="4" class="no-data">No weak students!</td></tr>';
+    var absentLatest=sdata.filter(function(s){return s.marks[latI]===null||s.marks[latI]===undefined;});
+    $("absentLatestWrap").innerHTML=absentLatest.length
+      ?'<div class="stu-list">'+absentLatest.map(function(s){
+          return '<div class="stu-item" data-en="'+s.examNo+'"><strong>'+s.name+'</strong>'
+            +'<span style="color:var(--red);font-weight:700">Absent in '+latEx.name+'</span></div>';
+        }).join('')+'</div>'
+      :'<div class="no-data" style="min-height:50px">All students present in '+latEx.name+' 👍</div>';
+  } else {
+    $("absentLatestWrap").innerHTML='<div class="no-data" style="min-height:50px">No exam data yet</div>';
   }
 
-  // Improvement table
-  if(activeEx.length>=2){
-    var thead=document.querySelector('#improvTable thead tr');
-    thead.innerHTML='<th>Student</th>'+activeEx.map(function(e){return '<th>'+e.name+'</th>';}).join('')+'<th>Trend</th>';
-    document.querySelector('#improvTable tbody').innerHTML=sdata.slice().sort(function(a,b){return a.name.localeCompare(b.name);}).map(function(s){
-      // For trend, use only written exams (non-null)
-      var writtenPts=[];
-      activeEx.forEach(function(e,i){ if(s.marks[i]!==null&&s.marks[i]!==undefined) writtenPts.push(pct(s.marks[i],e.max)); });
-      var tr=writtenPts.length>=2?Math.round(writtenPts[writtenPts.length-1]-writtenPts[0]):0;
-      return '<tr><td><strong>'+s.name+'</strong></td>'
-        +activeEx.map(function(e,i){
-          var m=s.marks[i];
-          return '<td>'+(m===null||m===undefined?'<span style="color:var(--org)">AB</span>':m)+'</td>';
-        }).join('')
-        +'<td>'+(writtenPts.length>=2?(tr>5?'📈':tr<-5?'📉':'➡️')+' '+(tr>0?'+':'')+tr+'%':'--')+'</td></tr>';
-    }).join('');
+  // ── Top 3 & Bottom 3 ───────────────────────────────────────────────────────
+  if(latEx){
+    var sortable=sdata.filter(function(s){return s.marks[latI]!==null&&s.marks[latI]!==undefined;});
+    var sorted=sortable.slice().sort(function(a,b){return b.marks[latI]-a.marks[latI];});
+    var medals=['🥇','🥈','🥉'];
+    $("topWrap").innerHTML=sorted.length
+      ?'<div class="stu-list">'+sorted.slice(0,3).map(function(s,i){
+          return '<div class="stu-item" data-en="'+s.examNo+'">'
+            +'<strong>'+medals[i]+' '+s.name+'</strong>'
+            +'<span style="color:var(--green);font-weight:700">'+s.marks[latI]+'/'+latEx.max+' ('+pct(s.marks[latI],latEx.max)+'%)</span>'
+          +'</div>';
+        }).join('')+'</div>'
+      :'<div class="no-data">No data for latest exam</div>';
+    var bottom=sorted.slice().reverse().slice(0,3);
+    var riskLbl=function(m,max){var p=pct(m,max);return p<40?'🚨 Critical':p<55?'⚠️ Needs Help':'📌 Monitor';};
+    $("bottomWrap").innerHTML=bottom.length
+      ?'<div class="stu-list">'+bottom.map(function(s){
+          return '<div class="stu-item" data-en="'+s.examNo+'">'
+            +'<strong>'+s.name+'</strong>'
+            +'<span style="color:var(--red);font-weight:700">'+s.marks[latI]+'/'+latEx.max+' · '+riskLbl(s.marks[latI],latEx.max)+'</span>'
+          +'</div>';
+        }).join('')+'</div>'
+      :'<div class="no-data">No data for latest exam</div>';
+  } else {
+    $("topWrap").innerHTML='<div class="no-data">No exam data yet</div>';
+    $("bottomWrap").innerHTML='<div class="no-data">No exam data yet</div>';
   }
 
   // Risk table
@@ -1061,10 +1124,11 @@ function renderClassComparison(teacher, students, results, activeEx){
   classes.forEach(function(cls){
     var sd=students.filter(function(s){return s.class===cls;});
     classData[cls]=sd.map(function(s){
-      var r=results[s.examNo||s.id];
+      var r=results[String(s.examNo||s.id)];
       return Object.assign({},s,{marks:activeEx.map(function(ex){
         if(!r||!r[ex.name]||r[ex.name].mark===undefined) return null;
-        return r[ex.name].mark;
+        var m=r[ex.name].mark;
+        return (m===null||m===undefined)?null:Number(m);
       })});
     });
   });
@@ -1116,6 +1180,25 @@ function renderClassComparison(teacher, students, results, activeEx){
     grid:{borderColor:"#f1f5f9"},
     tooltip:{y:{formatter:function(v){return v+"% passed";}}}
   });
+
+  // ── Winner banner ──────────────────────────────────────────────────────────
+  var clsAvgs=classes.map(function(cls){
+    var allPcts=[];
+    activeEx.forEach(function(ex,ei){
+      var written=classData[cls].map(function(s){return s.marks[ei];}).filter(function(m){return m!==null&&m!==undefined;});
+      if(written.length) allPcts.push(Math.round(avg(written.map(function(m){return pct(m,ex.max);}))));
+    });
+    return {cls:cls, avg:allPcts.length?Math.round(avg(allPcts)):0};
+  });
+  var winner=clsAvgs.sort(function(a,b){return b.avg-a.avg;})[0];
+  var loser=clsAvgs[1];
+  var tie=winner&&loser&&winner.avg===loser.avg;
+  var bannerEl=$("classWinnerBanner");
+  if(bannerEl){
+    bannerEl.innerHTML=tie
+      ?"<div style='background:var(--blue-pale);border:1px solid var(--blue-border);border-radius:10px;padding:12px 16px;font-size:.88rem;font-weight:700;color:var(--blue);text-align:center'>🤝 Both classes tied at "+winner.avg+"% overall</div>"
+      :"<div style='background:var(--green-lt);border:1px solid #bbf7d0;border-radius:10px;padding:12px 16px;font-size:.88rem;font-weight:700;color:var(--green);text-align:center'>🏆 "+winner.cls+" is leading overall · "+winner.avg+"% avg vs "+loser.cls+"'s "+loser.avg+"%</div>";
+  }
 }
 
 function renderClassInsights(sdata, activeEx, passThreshold){
