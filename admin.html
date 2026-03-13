@@ -107,7 +107,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
   <div class="login-box">
     <h1>Admin Panel</h1>
     <p>Velammal Results Portal</p>
-    <div class="fg"><label>Admin Password</label><input type="password" id="adminPass" placeholder="Enter admin password"></div>
+    <div class="fg"><label>Email</label><input type="email" id="adminEmail" placeholder="admin@velammal.com" value="admin@velammal.com"></div>
+    <div class="fg"><label>Password</label><input type="password" id="adminPass" placeholder="Enter password"></div>
     <button class="btn btn-primary" onclick="adminLogin()">Login</button>
     <div class="l-err" id="loginErr"></div>
   </div>
@@ -557,9 +558,8 @@ var _fbApp=firebase.initializeApp({
   apiKey:"AIzaSyC79jcB_6TgJIG4ngXmPDY6Zjmg8PC0-pU",
   authDomain:"velammal-results.firebaseapp.com",
   projectId:"velammal-results"
-});
+},"admin");
 var _fbAuth=firebase.auth(_fbApp);
-var ADMIN_EMAIL="admin@velammal.com";
 var DOMAIN="@velammal.com";
 var SUBJECTS=[]; // loaded from Firestore /settings/config
 var EXAMS=[];
@@ -1045,17 +1045,19 @@ async function deleteTeacher(id){
 }
 
 async function adminLogin(){
+  var email=$("adminEmail").value.trim();
   var pass=$("adminPass").value;
-  if(!pass){$("loginErr").textContent="Enter password.";$("loginErr").style.display="block";return;}
+  if(!email||!pass){$("loginErr").textContent="Enter email and password.";$("loginErr").style.display="block";return;}
   var btn=document.querySelector("#loginWrap .btn-primary");
   btn.disabled=true;btn.textContent="Logging in...";
   try{
-    await _fbAuth.signInWithEmailAndPassword(ADMIN_EMAIL,pass);
+    await _fbAuth.signInWithEmailAndPassword(email,pass);
     $("loginWrap").style.display="none";$("appWrap").classList.remove("hidden");
     loadExamConfig();loadStats();
   }catch(e){
-    $("loginErr").textContent=e.code==="auth/wrong-password"||e.code==="auth/invalid-credential"?"Wrong password.":"Login failed: "+e.message;
+    $("loginErr").textContent="Login failed. Check email and password.";
     $("loginErr").style.display="block";
+    console.error("Auth error:",e.code,e.message);
   }finally{btn.disabled=false;btn.textContent="Login";}
 }
 async function adminLogout(){
