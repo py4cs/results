@@ -66,7 +66,9 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
 .two-col{display:grid;gap:14px;}
 @media(min-width:700px){.two-col{grid-template-columns:1fr 1fr;}}
 .sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
-@media(min-width:600px){.sum-grid{grid-template-columns:repeat(4,1fr);}}
+.sum-grid{grid-template-columns:repeat(2,1fr);}
+@media(min-width:480px){.sum-grid{grid-template-columns:repeat(3,1fr);}}
+@media(min-width:700px){.sum-grid{grid-template-columns:repeat(6,1fr);}}
 .sum-card{background:#fff;border-radius:14px;padding:14px;box-shadow:var(--sh-sm);border:1px solid var(--g100);text-align:center;}
 .sum-card .icon{font-size:1.2rem;margin-bottom:6px;}
 .sum-card .val{font-size:1.3rem;font-weight:800;color:var(--g800);}
@@ -74,8 +76,9 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
 .sum-card .sub{font-size:.68rem;color:var(--g400);margin-top:3px;}
 .tscroll{overflow-x:auto;}
 .mtable{width:100%;border-collapse:collapse;font-size:.82rem;}
-.mtable th{background:var(--g50);padding:10px 12px;text-align:left;font-size:.74rem;font-weight:700;color:var(--g600);border-bottom:2px solid var(--g200);}
-.mtable td{padding:10px 12px;border-bottom:1px solid var(--g100);}
+.mtable th{background:var(--g50);padding:10px 12px;text-align:left;font-size:.74rem;font-weight:700;color:var(--g600);border-bottom:2px solid var(--g200);white-space:nowrap;}
+.mtable td{padding:10px 12px;border-bottom:1px solid var(--g100);white-space:nowrap;}
+@media(max-width:480px){.mtable{font-size:.72rem;}.mtable th{padding:7px 7px;font-size:.65rem;}.mtable td{padding:7px 7px;}}
 .chip{display:inline-block;padding:2px 7px;border-radius:6px;font-size:.69rem;font-weight:700;}
 .ch-drt{background:#dbeafe;color:#1d4ed8;}
 .ch-pt{background:#dcfce7;color:#15803d;}
@@ -688,9 +691,18 @@ function renderSubj(res,subject,name){
   var bestR=taken.filter(function(e){return e.rank;}).reduce(function(a,b){return(!a||b.rank<a.rank)?b:a;},null);
   $('sSumGrid').innerHTML=[
     sc('📊',oa+'%','Overall Avg',taken.length+' exam'+(taken.length!==1?'s':'')),
-    sc('📝',drtA!=null?drtA+'%':'--','DRT Avg',drtTaken.length+' DRT'+(drtTaken.length!==1?'s':'')),
-    sc('📋',examA!=null?examA+'%':'--','Exam Avg',mainTaken.map(function(e){return e.name;}).join(', ')||'None yet'),
-    sc('🏅',bestR?'#'+bestR.rank:'--','Best Rank',bestR?'of '+bestR.classSize+' in '+bestR.name:'Not yet'),
+    sc('📝',drtA!=null?drtA+'%':'--','DRT Avg',drtTaken.length?drtTaken.length+' DRT'+(drtTaken.length!==1?'s':''):'No DRT yet'),
+    (function(){
+      var drtRanked=drtTaken.filter(function(e){return e.rank;});
+      var lastDrtR=drtRanked.length?drtRanked[drtRanked.length-1]:null;
+      return sc('🎯',lastDrtR?'#'+lastDrtR.rank:'--','DRT Rank',lastDrtR?'of '+lastDrtR.classSize+' in '+lastDrtR.name:'No DRT yet');
+    })(),
+    sc('📋',examA!=null?examA+'%':'--','Exam Avg',mainTaken.length?mainTaken.map(function(e){return e.name;}).join(', '):'No Exam yet'),
+    (function(){
+      var exRanked=mainTaken.filter(function(e){return e.rank;});
+      var lastExR=exRanked.length?exRanked[exRanked.length-1]:null;
+      return sc('🏅',lastExR?'#'+lastExR.rank:'--','Exam Rank',lastExR?'of '+lastExR.classSize+' in '+lastExR.name:'No Exam yet');
+    })(),
   ].join('');
 
   // Marks table
@@ -755,7 +767,8 @@ function renderSubj(res,subject,name){
       xaxis:{categories:taken.map(function(e){return e.name;}),labels:{style:{fontSize:'12px'}}},
       yaxis:{min:0,max:100,labels:{formatter:function(v){return v+'%';},style:{fontSize:'11px'}}},
       colors:[BL,GO],plotOptions:{bar:{borderRadius:4,columnWidth:'60%'}},
-      dataLabels:{enabled:false},legend:{position:'top',fontSize:'12px'},grid:{borderColor:'#f1f5f9'},
+      dataLabels:{enabled:true,formatter:function(v){return v+'%';},style:{fontSize:'11px',fontWeight:700},background:{enabled:false}},
+      legend:{position:'top',fontSize:'12px'},grid:{borderColor:'#f1f5f9'},
       tooltip:{y:{formatter:function(v){return v+'%';}}}
     });
   } else { $('sCompareWrap').innerHTML='<div class="no-data">No data yet</div>'; }

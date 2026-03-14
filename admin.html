@@ -1221,17 +1221,29 @@ function handleMarksFile(input){
         return{examno:String(n.examno||"").trim(),marks:parseMark(n.marks)};
       }).filter(function(r){return r.examno;});
       var maxM=Number($("maxMarks").value)||100;
+      // Validate — find rows where marks exceed max
+      var invalidRows=_marksRows.filter(function(r){return r.marks!==null&&r.marks>maxM;});
+      var abCount=_marksRows.filter(function(r){return r.marks===null;}).length;
       var thead=$("marksPreviewTable").querySelector("thead"),tbody=$("marksPreviewTable").querySelector("tbody");
       thead.innerHTML="<tr><th>Exam No</th><th>Marks</th><th>Max</th><th>Status</th></tr>";
       tbody.innerHTML=_marksRows.slice(0,15).map(function(r){
         var isAb=r.marks===null;
-        return"<tr><td>"+r.examno+"</td><td>"+(isAb?"<span class='badge badge-purple'>AB</span>":r.marks)+"</td><td>"+(isAb?"--":maxM)+"</td>"
-          +"<td>"+(isAb?"Absent":"<span class='badge badge-blue'>"+Math.round(r.marks/maxM*100)+"%</span>")+"</td></tr>";
+        var isInvalid=r.marks!==null&&r.marks>maxM;
+        var rowStyle=isInvalid?"background:#fef2f2":"";
+        return"<tr style='"+rowStyle+"'>"
+          +"<td>"+r.examno+"</td>"
+          +"<td>"+(isAb?"<span class='badge badge-purple'>AB</span>":"<span style='"+(isInvalid?"color:var(--red);font-weight:700":"")+"'>"+r.marks+"</span>")+"</td>"
+          +"<td>"+maxM+"</td>"
+          +"<td>"+(isAb?"<span style='color:var(--org)'>Absent</span>":isInvalid?"<span class='badge badge-red'>❌ Exceeds max!</span>":"<span class='badge badge-blue'>"+Math.round(r.marks/maxM*100)+"%</span>")+"</td>"
+        +"</tr>";
       }).join("");
-      var abCount=_marksRows.filter(function(r){return r.marks===null;}).length;
-      $("marksPreviewTitle").textContent="Preview — "+_marksRows.length+" students ("+abCount+" absent)";
+      $("marksPreviewTitle").textContent="Preview — "+_marksRows.length+" students ("+abCount+" absent)"+(invalidRows.length?" · ⚠️ "+invalidRows.length+" invalid":"");
       $("marksPreviewWrap").classList.remove("hidden");
-      showStatus("marksStatus",_marksRows.length+" records loaded. "+abCount+" absent.","ok");
+      if(invalidRows.length){
+        showStatus("marksStatus","❌ "+invalidRows.length+" student(s) have marks exceeding max ("+maxM+"). Fix CSV before uploading.","err");
+      } else {
+        showStatus("marksStatus",_marksRows.length+" records loaded. "+abCount+" absent. All marks valid ✅","ok");
+      }
     }catch(err){showStatus("marksStatus","Error: "+err.message,"err");}
   };
   reader.readAsText(file);
@@ -1242,6 +1254,12 @@ async function uploadMarks(){
   var subject=$("selSubject").value,examCol=$("selExam").value,maxMarks=Number($("maxMarks").value)||100;
   var classFilter=$("selClass").value;
   if(!examCol){showStatus("marksStatus","No exam selected. Please add exams in Manage Exams first.","err");return;}
+  // Block if any marks exceed max
+  var invalidRows=_marksRows.filter(function(r){return r.marks!==null&&r.marks>maxMarks;});
+  if(invalidRows.length){
+    showStatus("marksStatus","❌ Cannot upload — "+invalidRows.length+" student(s) have marks exceeding max ("+maxMarks+"). Fix your CSV first.","err");
+    return;
+  }
 
   showStatus("marksStatus","Loading student class info...","info");
   var allStudents=await fsGetAll("students");
@@ -1257,14 +1275,16 @@ async function uploadMarks(){
 
   showStatus("marksStatus","Calculating ranks per class (absent excluded from ranks)...","info");
 
-  // Per-class rank calculation — only students who wrote (non-null) get ranked
-  // classSize = students who wrote, classAvg = avg of students who wrote
+  // Per-class rank calculation
+  // classSize = ALL students in class including absentees
+  // classAvg = avg of students who wrote only
+  // Absentees get rank=null but classSize includes them
   var rankData={};
   Object.keys(groups).forEach(function(cls){
     var rows=groups[cls];
+    var classSize=rows.length; // ALL students including absent
     var written=rows.filter(function(r){return r.marks!==null;});
-    var classSize=written.length;
-    var classAvg=classSize?Math.round(written.reduce(function(s,r){return s+r.marks;},0)/classSize*10)/10:0;
+    var classAvg=written.length?Math.round(written.reduce(function(s,r){return s+r.marks;},0)/written.length*10)/10:0;
     var classAvgPct=Math.round(classAvg/maxMarks*100);
     // Sort written students descending for rank
     var sorted=written.slice().sort(function(a,b){return b.marks-a.marks;});
@@ -1277,7 +1297,8 @@ async function uploadMarks(){
     rows.forEach(function(r){
       rankData[r.examno]={
         rank:r.marks!==null?rankMap[r.examno]:null,
-        classSize:classSize,classAvg:classAvg,classAvgPct:classAvgPct,cls:cls
+        classSize:classSize, // includes absentees
+        classAvg:classAvg,classAvgPct:classAvgPct,cls:cls
       };
     });
   });
