@@ -619,6 +619,7 @@ async function teacherLogin(){
 
     _cur={type:'teacher',teacher:teacher,students:students,results:results};
     T.cls=teacher.classes[0]||'';
+    saveSession(_cur); // save for session restore on refresh
     go('tDash');
     setTimeout(function(){ renderTeacher(); },50);
   } catch(e){ showErr('tErr','Login error: '+e.message); }
@@ -1456,6 +1457,11 @@ document.addEventListener('click',function(e){
   if(saved&&saved.type==='student'){
     _cur=saved; go('sDash');
     loadConfig().then(function(){ renderStudent(saved); });
+  } else if(saved&&saved.type==='teacher'){
+    _cur=saved;
+    T.cls=saved.teacher.classes[0]||'';
+    go('tDash');
+    loadConfig().then(function(){ renderTeacher(); });
   } else { go('loginPage'); }
 })();
 
