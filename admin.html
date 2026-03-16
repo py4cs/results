@@ -131,6 +131,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <button class="nav-item" onclick="showSec('secTeacherMgmt',this)">👩‍🏫 Teachers</button>
       <span class="nav-sep">Marks</span>
       <button class="nav-item" onclick="showSec('secMarks',this)">📝 Upload Marks</button>
+      <button class="nav-item" onclick="showSec('secEnterMarks',this);initEnterMarks()">✍️ Enter Marks</button>
       <button class="nav-item" onclick="showSec('secViewMarks',this)">🔍 View Marks</button>
       <button class="nav-item" onclick="showSec('secEditMark',this)">✏️ Edit a Mark</button>
       <span class="nav-sep">Reports</span>
@@ -309,6 +310,40 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
         </div>
       </div>
 
+      <!-- ENTER MARKS -->
+      <div id="secEnterMarks" class="hidden">
+        <div class="card">
+          <div class="card-title">✍️ Enter Marks Manually</div>
+          <div class="card-sub">Select class, subject and exam to enter or update marks directly.</div>
+          <div class="form-row-3" style="margin-bottom:12px">
+            <div class="fg" style="margin:0"><label>Class</label><select id="emClass"></select></div>
+            <div class="fg" style="margin:0"><label>Subject</label><select id="emSubject"></select></div>
+            <div class="fg" style="margin:0"><label>Exam</label><select id="emExam"></select></div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-outline" onclick="loadEnterMarks()">↻ Load Students</button>
+            <span id="emMaxLabel" style="font-size:.82rem;color:var(--g600);font-weight:600"></span>
+          </div>
+          <div id="emStatus" class="status-bar" style="margin-top:12px"></div>
+          <div id="emTableWrap" class="hidden" style="margin-top:16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+              <strong id="emTableTitle" style="font-size:.9rem"></strong>
+              <button class="btn btn-green" onclick="saveEnterMarks()">💾 Save &amp; Calculate Ranks</button>
+            </div>
+            <div class="prog-wrap hidden" id="emProgWrap"><div class="prog-bar" id="emProgBar" style="width:0%"></div></div>
+            <div class="tscroll">
+              <table class="ptable" id="emTable">
+                <thead><tr><th>#</th><th>Exam No</th><th>Name</th><th>Marks <small style="font-weight:400;color:var(--g400)">(AB for absent)</small></th><th>Status</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div style="margin-top:12px;font-size:.78rem;color:var(--g600)">
+              💡 Press <kbd style="background:var(--g100);padding:2px 6px;border-radius:4px">Enter</kbd> or <kbd style="background:var(--g100);padding:2px 6px;border-radius:4px">Tab</kbd> to move to next student
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- VIEW MARKS -->
       <div id="secViewMarks" class="hidden">
         <div class="card">
@@ -356,9 +391,9 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <!-- ANALYTICS -->
       <div id="secAnalytics" class="hidden">
         <div class="card">
-          <div class="card-title">Class Analytics</div>
-          <div class="card-sub">Pass/fail summary, subject avg per exam, top performers. Absent students excluded from averages.</div>
-          <button class="btn btn-outline" onclick="loadAnalytics()" style="margin-bottom:14px">↻ Load Analytics</button>
+          <div class="card-title">📊 School Overview</div>
+          <div class="card-sub">Class strength by gender, DRT and main exam marks coverage per subject.</div>
+          <button class="btn btn-outline" onclick="loadAnalytics()" style="margin-bottom:14px">↻ Load</button>
           <div id="anaStatus" class="status-bar"></div>
           <div id="anaContent"></div>
         </div>
@@ -1070,7 +1105,7 @@ async function adminLogout(){
 // ═══════════════════════════════════════════════════════
 var CLASSES=[]; // loaded from Firestore /settings/config
 var TEACHERS_CFG=[]; // loaded from Firestore /settings/config
-var SECS=["secStudents","secViewStudents","secExams","secClasses","secTeacherMgmt","secMarks","secViewMarks","secEditMark","secOverview","secAnalytics","secMissing","secDupes","secPreview","secExport"];
+var SECS=["secStudents","secViewStudents","secExams","secClasses","secTeacherMgmt","secMarks","secEnterMarks","secViewMarks","secEditMark","secOverview","secAnalytics","secMissing","secDupes","secPreview","secExport"];
 function showSec(id,btn){
   SECS.forEach(function(s){$(s).classList.add("hidden");});$(id).classList.remove("hidden");
   document.querySelectorAll(".nav-item").forEach(function(b){b.classList.remove("active");});
@@ -1324,6 +1359,217 @@ async function uploadMarks(){
 }
 
 // ═══════════════════════════════════════════════════════
+// ENTER MARKS MANUALLY
+// ═══════════════════════════════════════════════════════
+var _emStudents=[], _emExistingData=null;
+
+function initEnterMarks(){
+  // Populate dropdowns from config
+  var ec=$("emClass"),es=$("emSubject"),ee=$("emExam");
+  if(!ec||!es||!ee) return;
+  ec.innerHTML="<option value=''>Select Class</option>";
+  CLASSES.forEach(function(c){var o=document.createElement("option");o.value=c;o.textContent=c;ec.appendChild(o);});
+  es.innerHTML="<option value=''>Select Subject</option>";
+  SUBJECTS.forEach(function(s){var o=document.createElement("option");o.value=s;o.textContent=s;es.appendChild(o);});
+  ee.innerHTML="<option value=''>Select Exam</option>";
+  EXAMS.forEach(function(e){var o=document.createElement("option");o.value=e;o.textContent=e+" (max: "+(EXAM_MAX[e]||100)+")";ee.appendChild(o);});
+  $("emTableWrap").classList.add("hidden");
+  hideStatus("emStatus");
+  $("emMaxLabel").textContent="";
+}
+
+async function loadEnterMarks(){
+  var cls=$("emClass").value, subj=$("emSubject").value, exam=$("emExam").value;
+  if(!cls||!subj||!exam){showStatus("emStatus","Please select Class, Subject and Exam.","err");return;}
+  var maxM=EXAM_MAX[exam]||100;
+  $("emMaxLabel").textContent="Max marks: "+maxM+(EXAM_PASS[exam]!=null?" | Pass: "+EXAM_PASS[exam]:"");
+  showStatus("emStatus","Checking existing marks...","info");
+
+  // Check if marks already exist for this combination
+  try{
+    var allStudents=await fsGetAll("students");
+    _emStudents=allStudents.filter(function(s){return s.class===cls;}).sort(function(a,b){return(a.name||"").localeCompare(b.name||"");});
+    if(!_emStudents.length){showStatus("emStatus","No students found in class "+cls,"warn");return;}
+
+    // Check existing marks
+    var existingResults=[];
+    for(var i=0;i<_emStudents.length;i++){
+      var resultId=(_emStudents[i]._id||_emStudents[i].examNo)+"_"+subj;
+      var r=await fsGet("results",resultId);
+      if(r&&r[exam]&&r[exam].mark!==undefined){existingResults.push(r);}
+    }
+    _emExistingData=existingResults.length?existingResults:null;
+
+    if(_emExistingData&&_emExistingData.length>0){
+      // Show popup
+      openEmConflictModal(cls,subj,exam,maxM,existingResults);
+    } else {
+      renderEnterMarksTable(cls,subj,exam,maxM,null);
+    }
+  }catch(e){showStatus("emStatus","Error: "+e.message,"err");}
+}
+
+function openEmConflictModal(cls,subj,exam,maxM,existingResults){
+  $("emConflictInfo").textContent=subj+" – "+exam+" ("+cls+") already has marks for "+existingResults.length+" student(s).";
+  $("emConflictModal").classList.remove("hidden");
+  $("emConflictModal").dataset.cls=cls;
+  $("emConflictModal").dataset.subj=subj;
+  $("emConflictModal").dataset.exam=exam;
+  $("emConflictModal").dataset.maxM=maxM;
+}
+function closeEmConflictModal(){$("emConflictModal").classList.add("hidden");}
+function emEnterNew(){
+  var d=$("emConflictModal").dataset;
+  closeEmConflictModal();
+  renderEnterMarksTable(d.cls,d.subj,d.exam,Number(d.maxM),null);
+}
+function emLoadExisting(){
+  var d=$("emConflictModal").dataset;
+  closeEmConflictModal();
+  renderEnterMarksTable(d.cls,d.subj,d.exam,Number(d.maxM),_emExistingData);
+}
+
+function renderEnterMarksTable(cls,subj,exam,maxM,existingData){
+  // Build existing mark lookup
+  var existMap={};
+  if(existingData){
+    existingData.forEach(function(r){
+      var en=String(r.examNo||r._id);
+      if(r[exam]&&r[exam].mark!==undefined) existMap[en]=r[exam].mark;
+    });
+  }
+
+  var tbody=$("emTable").querySelector("tbody");
+  tbody.innerHTML=_emStudents.map(function(s,i){
+    var en=String(s._id||s.examNo);
+    var existing=existMap[en];
+    var val=existing===null?"AB":existing!==undefined?existing:"";
+    return "<tr id='em-row-"+i+"'>"
+      +"<td style='color:var(--g400);font-size:.76rem'>"+(i+1)+"</td>"
+      +"<td><strong>"+en+"</strong></td>"
+      +"<td>"+s.name+"</td>"
+      +"<td><input type='text' id='em-inp-"+i+"' value='"+val+"' "
+        +"placeholder='0–"+maxM+" or AB' "
+        +"style='width:100%;padding:7px 10px;border:1.5px solid var(--g200);border-radius:6px;font-family:inherit;font-size:.88rem;' "
+        +"oninput='validateEmInput(this,"+maxM+","+i+")' "
+        +"onkeydown='emKeyNav(event,"+i+","+(_emStudents.length-1)+")'"
+      +"></td>"
+      +"<td id='em-status-"+i+"'>"+(existing!==undefined?"<span class='badge badge-blue'>Loaded</span>":"<span class='badge badge-grey'>Empty</span>")+"</td>"
+    +"</tr>";
+  }).join("");
+
+  $("emTableTitle").textContent=subj+" – "+exam+" | Class "+cls+" | "+_emStudents.length+" students | Max: "+maxM;
+  $("emTableWrap").classList.remove("hidden");
+  hideStatus("emStatus");
+
+  // Store current selection on table for save
+  $("emTable").dataset.cls=cls;
+  $("emTable").dataset.subj=subj;
+  $("emTable").dataset.exam=exam;
+  $("emTable").dataset.maxM=maxM;
+
+  // Focus first input
+  setTimeout(function(){var f=$("em-inp-0");if(f)f.focus();},100);
+}
+
+function validateEmInput(inp,maxM,idx){
+  var v=inp.value.trim().toUpperCase();
+  var statusEl=$("em-status-"+idx);
+  if(v===""||v==="AB"){
+    inp.style.borderColor="var(--g200)";inp.style.background="";
+    statusEl.innerHTML=v==="AB"?"<span class='badge badge-purple'>Absent</span>":"<span class='badge badge-grey'>Empty</span>";
+    return;
+  }
+  var n=Number(v);
+  if(isNaN(n)||n<0){
+    inp.style.borderColor="var(--red)";inp.style.background="#fef2f2";
+    statusEl.innerHTML="<span class='badge badge-red'>Invalid</span>";
+    return;
+  }
+  if(n>maxM){
+    inp.style.borderColor="var(--red)";inp.style.background="#fef2f2";
+    statusEl.innerHTML="<span class='badge badge-red'>Exceeds "+maxM+"</span>";
+    return;
+  }
+  inp.style.borderColor="var(--green)";inp.style.background="#f0fdf4";
+  var pct=Math.round(n/maxM*100);
+  statusEl.innerHTML="<span class='badge badge-green'>"+pct+"%</span>";
+}
+
+function emKeyNav(e,idx,last){
+  // Tab is handled natively by browser — no override needed
+  // Enter moves to next student for fast entry
+  if(e.key==="Enter"){
+    e.preventDefault();
+    var next=$("em-inp-"+(idx<last?idx+1:0));
+    if(next){next.focus();next.select();}
+  }
+}
+
+async function saveEnterMarks(){
+  var tbl=$("emTable");
+  var cls=tbl.dataset.cls,subj=tbl.dataset.subj,exam=tbl.dataset.exam,maxM=Number(tbl.dataset.maxM);
+  if(!cls||!subj||!exam){showStatus("emStatus","No data to save.","err");return;}
+
+  // Validate all inputs first
+  var invalid=[];
+  _emStudents.forEach(function(s,i){
+    var v=($("em-inp-"+i).value||"").trim().toUpperCase();
+    if(v===""||v==="AB") return;
+    var n=Number(v);
+    if(isNaN(n)||n<0||n>maxM) invalid.push(s.name+" (row "+(i+1)+")");
+  });
+  if(invalid.length){showStatus("emStatus","❌ Fix invalid marks before saving: "+invalid.join(", "),"err");return;}
+
+  // Build marks rows
+  var marksRows=_emStudents.map(function(s,i){
+    var v=($("em-inp-"+i).value||"").trim().toUpperCase();
+    var mark=(v===""||v==="AB")?null:Number(v);
+    return{examno:String(s._id||s.examNo),marks:mark};
+  });
+
+  // Rank calculation — same as CSV upload
+  var classSize=marksRows.length; // all students including absent
+  var written=marksRows.filter(function(r){return r.marks!==null;});
+  var classAvg=written.length?Math.round(written.reduce(function(s,r){return s+r.marks;},0)/written.length*10)/10:0;
+  var classAvgPct=Math.round(classAvg/maxM*100);
+  var sorted=written.slice().sort(function(a,b){return b.marks-a.marks;});
+  var rank=1;
+  for(var i=0;i<sorted.length;i++){
+    if(i>0&&sorted[i].marks<sorted[i-1].marks) rank=i+1;
+    sorted[i]._rank=rank;
+  }
+  var rankMap={};sorted.forEach(function(r){rankMap[r.examno]=r._rank;});
+
+  showStatus("emStatus","Saving...","info");
+  $("emProgWrap").classList.remove("hidden");
+  var done=0,errors=0;
+  for(var j=0;j<marksRows.length;j++){
+    var r=marksRows[j];
+    var resultId=r.examno+"_"+subj;
+    try{
+      var existing=await fsGet("results",resultId);
+      var data=existing||{examNo:r.examno,subject:subj,class:cls};
+      data[exam]={
+        mark:r.marks,max:maxM,
+        rank:r.marks!==null?rankMap[r.examno]:null,
+        classSize:classSize,classAvg:classAvg,classAvgPct:classAvgPct
+      };
+      data.examNo=r.examno;data.subject=subj;data.class=cls;
+      await fsSet("results",resultId,data);
+      $("em-status-"+j).innerHTML="<span class='badge badge-green'>✓ Saved</span>";
+      done++;
+    }catch(e){
+      $("em-status-"+j).innerHTML="<span class='badge badge-red'>Error</span>";
+      errors++;
+    }
+    setProgress("emProgBar","emProgWrap",Math.round((j+1)/marksRows.length*100));
+  }
+  var abCount=marksRows.filter(function(r){return r.marks===null;}).length;
+  showStatus("emStatus","✅ Done! "+done+" saved for "+subj+" – "+exam+" ("+cls+"). Absent: "+abCount+"."+(errors?" Errors: "+errors:""),"ok");
+}
+
+// ═══════════════════════════════════════════════════════
 // DELETE MARKS
 // ═══════════════════════════════════════════════════════
 async function deleteMarksFiltered(){
@@ -1477,7 +1723,6 @@ async function saveEditedMark(){
 // ANALYTICS
 // ═══════════════════════════════════════════════════════
 async function loadAnalytics(){
-  if(!EXAMS.length){showStatus("anaStatus","No exams configured. Go to Manage Exams first.","warn");return;}
   showStatus("anaStatus","Loading data...","info");
   try{
     var students=await fsGetAll("students");
@@ -1486,64 +1731,92 @@ async function loadAnalytics(){
     hideStatus("anaStatus");
     var html="";
 
-    // Class × Subject pass/fail table — absent excluded from pass/fail count
-    var classes={};students.forEach(function(s){if(s.class){if(!classes[s.class])classes[s.class]=[];classes[s.class].push(s);}});
-    html+='<h4 style="font-size:.9rem;font-weight:700;margin-bottom:10px;color:var(--blue)">Class × Subject Pass/Fail (AB excluded)</h4>';
-    html+='<div class="tscroll"><table class="ptable"><thead><tr><th>Class</th><th>Total</th>';
-    SUBJECTS.forEach(function(sub){EXAMS.forEach(function(ex){html+="<th>"+sub.slice(0,1)+"-"+ex+"</th>";});});
-    html+="</tr></thead><tbody>";
-    Object.keys(classes).sort().forEach(function(cls){
-      var st=classes[cls];html+="<tr><td><strong>"+cls+"</strong></td><td>"+st.length+"</td>";
-      SUBJECTS.forEach(function(sub){
-        EXAMS.forEach(function(ex){
-          var wrote=0,pass=0;
-          st.forEach(function(s){
+    // ── Card 1: Class Strength — Total | Boys | Girls ──────────────────────
+    var byClass={};
+    CLASSES.forEach(function(c){byClass[c]={total:0,boys:0,girls:0};});
+    students.forEach(function(s){
+      var cls=s.class||"";
+      if(!byClass[cls])byClass[cls]={total:0,boys:0,girls:0};
+      byClass[cls].total++;
+      if((s.gender||"").toLowerCase()==="male"||s.gender==="M") byClass[cls].boys++;
+      else byClass[cls].girls++;
+    });
+    html+='<h4 style="font-size:.9rem;font-weight:700;margin-bottom:10px;color:var(--blue)">🏫 Class Strength</h4>';
+    html+='<div class="tscroll" style="margin-bottom:24px"><table class="ptable"><thead><tr><th>Class</th><th>Total</th><th>Boys</th><th>Girls</th></tr></thead><tbody>';
+    CLASSES.sort().forEach(function(cls){
+      var d=byClass[cls]||{total:0,boys:0,girls:0};
+      html+='<tr>'
+        +'<td><strong>'+cls+'</strong></td>'
+        +'<td><span class="badge badge-blue">'+d.total+'</span></td>'
+        +'<td><span class="badge badge-grey">'+d.boys+'</span></td>'
+        +'<td><span class="badge badge-purple">'+d.girls+'</span></td>'
+      +'</tr>';
+    });
+    // Total row
+    var totAll=students.length;
+    var boysAll=students.filter(function(s){return (s.gender||"").toLowerCase()==="male"||s.gender==="M";}).length;
+    var girlsAll=totAll-boysAll;
+    html+='<tr style="background:var(--blue-pale);font-weight:700">'
+      +'<td><strong>Total</strong></td>'
+      +'<td><span class="badge badge-blue">'+totAll+'</span></td>'
+      +'<td><span class="badge badge-grey">'+boysAll+'</span></td>'
+      +'<td><span class="badge badge-purple">'+girlsAll+'</span></td>'
+    +'</tr>';
+    html+='</tbody></table></div>';
+
+    // ── Card 2: DRT Coverage ───────────────────────────────────────────────
+    var drtExams=EXAMS.filter(function(e){
+      var n=e.toUpperCase();return n.indexOf('DRT')>=0;
+    });
+    if(drtExams.length){
+      html+='<h4 style="font-size:.9rem;font-weight:700;margin-bottom:10px;color:var(--blue)">📝 DRT Marks Coverage</h4>';
+      html+='<div class="tscroll" style="margin-bottom:24px"><table class="ptable"><thead><tr><th>DRT</th>';
+      SUBJECTS.forEach(function(sub){html+='<th>'+sub+'</th>';});
+      html+='</tr></thead><tbody>';
+      drtExams.forEach(function(ex){
+        html+='<tr><td><strong>'+ex+'</strong></td>';
+        SUBJECTS.forEach(function(sub){
+          var uploaded=students.filter(function(s){
             var r=resMap[(s._id||s.examNo)+"_"+sub];
-            if(r&&r[ex]&&r[ex].mark!==undefined&&r[ex].mark!==null){
-              wrote++;
-              if(hasPassMark(ex)&&passStatus(r[ex].mark,ex)==="pass")pass++;
-            }
-          });
-          if(wrote===0){html+="<td><span class='badge badge-grey'>--</span></td>";}
-          else if(!hasPassMark(ex)){html+="<td><span class='badge badge-blue'>"+wrote+" wrote</span></td>";}
-          else{var pp=Math.round(pass/wrote*100);html+="<td><span class='badge "+(pp>=60?"badge-green":pp>=40?"badge-gold":"badge-red")+"'>"+pass+"/"+wrote+"</span></td>";}
+            return r&&r[ex]&&r[ex].mark!==undefined;
+          }).length;
+          var total=students.length;
+          var pct=total?Math.round(uploaded/total*100):0;
+          var badge=uploaded===0?'badge-red':uploaded<total?'badge-gold':'badge-green';
+          var icon=uploaded===0?'❌':uploaded<total?'⚠️':'✅';
+          html+='<td><span class="badge '+badge+'">'+icon+' '+uploaded+'/'+total+'</span></td>';
         });
+        html+='</tr>';
       });
-      html+="</tr>";
-    });
-    html+="</tbody></table></div>";
+      html+='</tbody></table></div>';
+    }
 
-    // Subject avg bars — absent excluded from average
-    html+='<h4 style="font-size:.9rem;font-weight:700;margin:20px 0 10px;color:var(--blue)">Subject Average % per Exam (written students only)</h4>';
-    html+='<div class="ana-grid">';
-    SUBJECTS.forEach(function(sub){
-      html+='<div class="ana-card"><h4>'+sub+'</h4>';
-      EXAMS.forEach(function(ex){
-        // Only include students who actually wrote (non-null marks)
-        var marks=results.filter(function(r){return r.subject===sub&&r[ex]&&r[ex].mark!==null&&r[ex].mark!==undefined;}).map(function(r){return r[ex].mark/(r[ex].max||100)*100;});
-        if(!marks.length){html+='<div class="bar-row"><span class="bar-lbl">'+ex+'</span><div class="bar-track"><div class="bar-fill" style="width:0%;background:var(--g200)"></div></div><span class="bar-val">--</span></div>';return;}
-        var a=Math.round(avg(marks)),col=a>=75?"var(--green)":a>=50?"var(--gold)":"var(--red)";
-        html+='<div class="bar-row"><span class="bar-lbl">'+ex+'</span><div class="bar-track"><div class="bar-fill" style="width:'+a+'%;background:'+col+'"></div></div><span class="bar-val">'+a+'%</span></div>';
-      });
-      html+="</div>";
+    // ── Card 3: Main Exam Coverage ─────────────────────────────────────────
+    var mainExams=EXAMS.filter(function(e){
+      var n=e.toUpperCase();return n.indexOf('DRT')<0;
     });
-    html+="</div>";
+    if(mainExams.length){
+      html+='<h4 style="font-size:.9rem;font-weight:700;margin-bottom:10px;color:var(--blue)">📋 Main Exam Marks Coverage</h4>';
+      html+='<div class="tscroll"><table class="ptable"><thead><tr><th>Exam</th>';
+      SUBJECTS.forEach(function(sub){html+='<th>'+sub+'</th>';});
+      html+='</tr></thead><tbody>';
+      mainExams.forEach(function(ex){
+        html+='<tr><td><strong>'+ex+'</strong></td>';
+        SUBJECTS.forEach(function(sub){
+          var uploaded=students.filter(function(s){
+            var r=resMap[(s._id||s.examNo)+"_"+sub];
+            return r&&r[ex]&&r[ex].mark!==undefined;
+          }).length;
+          var total=students.length;
+          var badge=uploaded===0?'badge-red':uploaded<total?'badge-gold':'badge-green';
+          var icon=uploaded===0?'❌':uploaded<total?'⚠️':'✅';
+          html+='<td><span class="badge '+badge+'">'+icon+' '+uploaded+'/'+total+'</span></td>';
+        });
+        html+='</tr>';
+      });
+      html+='</tbody></table></div>';
+    }
 
-    // Top 10 — only exams written count toward student average
-    html+='<h4 style="font-size:.9rem;font-weight:700;margin:20px 0 10px;color:var(--blue)">Top 10 Students (Average of written exams only)</h4>';
-    var stuScores=students.map(function(s){
-      var id=s._id||s.examNo,scores=[];
-      SUBJECTS.forEach(function(sub){
-        var r=resMap[id+"_"+sub];
-        if(r)EXAMS.forEach(function(ex){if(r[ex]&&r[ex].mark!==null&&r[ex].mark!==undefined)scores.push(r[ex].mark/(r[ex].max||100)*100);});
-      });
-      return{name:s.name,cls:s.class,avg:scores.length?Math.round(avg(scores)):null};
-    }).filter(function(s){return s.avg!==null;}).sort(function(a,b){return b.avg-a.avg;});
-    html+='<div class="tscroll"><table class="ptable"><thead><tr><th>#</th><th>Name</th><th>Class</th><th>Overall Avg %</th></tr></thead><tbody>';
-    stuScores.slice(0,10).forEach(function(s,i){
-      html+="<tr><td>"+(i+1)+"</td><td><strong>"+s.name+"</strong></td><td>"+s.cls+"</td><td><span class='badge "+(s.avg>=75?"badge-green":s.avg>=50?"badge-gold":"badge-red")+"'>"+s.avg+"%</span></td></tr>";
-    });
-    html+="</tbody></table></div>";
     $("anaContent").innerHTML=html;
   }catch(e){showStatus("anaStatus","Error: "+e.message,"err");}
 }
@@ -1873,6 +2146,20 @@ document.addEventListener("keydown",function(e){
   if(e.key==="Escape"){closeEditModal();closeNukeModal();}
 });
 </script>
+
+<!-- ENTER MARKS CONFLICT MODAL -->
+<div id="emConflictModal" class="modal-bg hidden">
+  <div class="modal" style="border-top:4px solid var(--gold)">
+    <h3>⚠️ Marks Already Exist</h3>
+    <div class="warn-box" id="emConflictInfo"></div>
+    <p style="font-size:.84rem;color:var(--g600);margin-bottom:16px">What would you like to do?</p>
+    <div class="modal-btns" style="justify-content:stretch;gap:10px">
+      <button class="btn btn-red" style="flex:1" onclick="emEnterNew()">🗑 Enter New<br><small style="font-weight:400;font-size:.72rem">Clears existing, enter fresh</small></button>
+      <button class="btn btn-outline" style="flex:1;border-color:var(--green);color:var(--green)" onclick="emLoadExisting()">✏️ Load &amp; Edit<br><small style="font-weight:400;font-size:.72rem">Review and update existing</small></button>
+    </div>
+    <button class="btn btn-outline" style="width:100%;margin-top:8px" onclick="closeEmConflictModal()">Cancel</button>
+  </div>
+</div>
 
 <!-- NUKE MODAL -->
 <div id="nukeModal" class="modal-bg hidden">

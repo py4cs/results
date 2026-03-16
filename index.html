@@ -199,8 +199,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <div id="sForm">
         <div class="l-title">Student Login</div>
         <p class="l-sub">Enter your exam number and registered phone number</p>
-        <div class="fg"><label>Exam Number</label><input id="examNo" type="text" inputmode="numeric" placeholder="e.g. 1001"></div>
-        <div class="fg"><label>Phone Number</label><input id="phone" type="tel" inputmode="numeric" placeholder="Registered phone number"></div>
+        <div class="fg"><label>Exam Number</label><input id="examNo" type="text" inputmode="numeric" placeholder="e.g. 12D01"></div>
+        <div class="fg"><label>Phone Number</label><input id="phone" type="tel" inputmode="numeric" placeholder="Parent's Phone Number"></div>
         <button class="l-btn" id="sBtn" onclick="studentLogin()">Login</button>
         <div class="l-err" id="sErr"></div>
       </div>
@@ -237,9 +237,13 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
     <div class="sec-lbl">Your Overview</div>
     <div class="sum-grid" id="sSumGrid"></div>
     <div class="sec-lbl">Your Marks</div>
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title">DRT Marks</div><div class="card-sub">Class test scores</div>
+      <div class="tscroll" style="max-height:320px;overflow-y:auto"><table class="mtable" id="sDrtMarksTable"><thead><tr><th>Exam</th><th>Max</th><th>Your Score</th><th>Class Avg</th><th>Rank</th></tr></thead><tbody></tbody></table></div>
+    </div>
     <div class="card">
-      <div class="card-title">Exam-wise Marks</div><div class="card-sub">Score, percentage, class average and rank</div>
-      <div class="tscroll"><table class="mtable" id="sMarksTable"><thead><tr><th>Exam</th><th>Max</th><th>Marks</th><th>Your %</th><th>Class Avg</th><th>Rank</th></tr></thead><tbody></tbody></table></div>
+      <div class="card-title">Main Exam Marks</div><div class="card-sub">PT, Term, Preboard scores</div>
+      <div class="tscroll" style="max-height:320px;overflow-y:auto"><table class="mtable" id="sMainMarksTable"><thead><tr><th>Exam</th><th>Max</th><th>Your Score</th><th>Class Avg</th><th>Rank</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="sec-lbl">Exam Category View</div>
     <div class="two-col">
@@ -272,23 +276,51 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
   </div>
   <div class="tf-row"><span class="tf-lbl">Class:</span><div id="classFilters" style="display:flex;gap:6px;flex-wrap:wrap"></div></div>
   <div class="t-wrap">
-    <div class="ins-strip" id="insightStrip"></div>
     <div class="t-sum-grid" id="tSumGrid"></div>
+
+    <div class="sec-lbl">Exam Summary</div>
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title">📝 DRT Summary</div><div class="card-sub">Class test performance</div>
+      <div style="overflow-x:auto;max-height:320px;overflow-y:auto">
+        <table class="etable" id="drtSummaryTable">
+          <thead><tr><th style="white-space:nowrap">Exam</th><th style="white-space:nowrap">Class Avg</th><th style="white-space:nowrap">Avg %</th><th style="white-space:nowrap">Pass</th><th style="white-space:nowrap">Fail</th><th style="white-space:nowrap">Absent</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📋 Main Exam Summary</div><div class="card-sub">PT, Term, Preboard performance</div>
+      <div style="overflow-x:auto;max-height:280px;overflow-y:auto">
+        <table class="etable" id="mainSummaryTable">
+          <thead><tr><th style="white-space:nowrap">Exam</th><th style="white-space:nowrap">Class Avg</th><th style="white-space:nowrap">Avg %</th><th style="white-space:nowrap">Pass</th><th style="white-space:nowrap">Fail</th><th style="white-space:nowrap">Absent</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="sec-lbl">DRT Analytics</div>
     <div class="two-col">
       <div class="card"><div class="card-title">DRT Comparison</div><div class="card-sub">Class average per DRT</div><div class="ch220" id="drtCompWrap"></div></div>
-      <div class="card"><div class="card-title">Score Distribution</div><div class="card-sub">Latest DRT score spread</div><div class="ch220" id="drtHistWrap"></div></div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+          <div><div class="card-title" style="margin:0">Score Distribution</div><div class="card-sub" style="margin:0">Student spread by zone</div></div>
+          <select id="drtHistFilter" onchange="renderDrtHist()" style="padding:5px 10px;border:1.5px solid var(--g200);border-radius:7px;font-family:inherit;font-size:.8rem;font-weight:600"></select>
+        </div>
+        <div class="ch220" id="drtHistWrap"></div>
+      </div>
     </div>
+
     <div class="sec-lbl">Main Exam Analytics</div>
     <div class="two-col">
       <div class="card"><div class="card-title">Exam Comparison</div><div class="card-sub">Class average per exam</div><div class="ch220" id="mainCompWrap"></div></div>
-      <div class="card"><div class="card-title">Score Distribution</div><div class="card-sub">Latest exam score spread</div><div class="ch220" id="mainHistWrap"></div></div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+          <div><div class="card-title" style="margin:0">Score Distribution</div><div class="card-sub" style="margin:0">Student spread by zone</div></div>
+          <select id="mainHistFilter" onchange="renderMainHist()" style="padding:5px 10px;border:1.5px solid var(--g200);border-radius:7px;font-family:inherit;font-size:.8rem;font-weight:600"></select>
+        </div>
+        <div class="ch220" id="mainHistWrap"></div>
+      </div>
     </div>
-    <div class="sec-lbl">Exam Summary</div>
-    <div class="card"><div class="card-title">📋 All Exams at a Glance</div><div class="card-sub">Avg, highest, lowest and pass count per exam</div><div style="overflow-x:auto"><table class="etable" id="examSummaryTable"><thead><tr><th>Exam</th><th>Avg</th><th>Highest</th><th>Lowest</th><th>Pass</th><th>Absent</th></tr></thead><tbody></tbody></table></div></div>
-
-    <div class="sec-lbl">Absent in Latest Exam</div>
-    <div class="card" id="absentLatestSection"><div class="card-title">🚨 Absent Alert</div><div class="card-sub">Students who missed the latest exam</div><div id="absentLatestWrap"></div></div>
 
     <div class="sec-lbl">Top &amp; Bottom Students</div>
     <div class="two-col">
@@ -315,8 +347,9 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
     </div>
     <div class="two-col">
       <div class="card"><div class="card-title">⚠️ Weak Spots</div><div class="card-sub">Exams needing attention</div><div id="weakSpotsWrap" style="padding-top:4px"></div></div>
-      <div class="card"><div class="card-title">🚫 Absent Pattern</div><div class="card-sub">Students with multiple absences</div><div id="absentWrap" style="padding-top:4px"></div></div>
+      <div class="card"><div class="card-title">🚨 Absent in Latest Exam</div><div class="card-sub">Students who missed the latest exam</div><div id="absentLatestWrap" style="padding-top:4px"></div></div>
     </div>
+    <div class="card" style="margin-top:0"><div class="card-title">🚫 Absent Pattern</div><div class="card-sub">Students with multiple absences</div><div id="absentWrap" style="padding-top:4px"></div></div>
 
     <div class="sec-lbl">Student Lookup</div>
     <div class="card">
@@ -706,27 +739,42 @@ function renderSubj(res,subject,name){
     })(),
   ].join('');
 
-  // Marks table
-  document.querySelector('#sMarksTable tbody').innerHTML=exams.map(function(e){
-    var has=!e.absent; // has = wrote exam (score can be 0)
+  // Helper: build a marks table row
+  function mkMarkRow(e){
+    var has=!e.absent;
     var rk=e.rank
-      ?'<span class="rk-pill '+(e.rank<=3?'rk-top':e.rank<=Math.ceil(e.classSize/2)?'rk-mid':'rk-low')+'">#'+e.rank+' of '+e.classSize+'</span>'
+      ?'<span class="rk-pill '+(e.rank<=3?'rk-top':e.rank<=Math.ceil(e.classSize/2)?'rk-mid':'rk-low')+'">#'+e.rank+' / '+e.classSize+'</span>'
       :(e.absent?'<span style="color:var(--org)">AB</span>':'--');
-    var cc=e.type==='DRT'?'ch-drt':e.type==='PT'?'ch-pt':e.type==='Term'?'ch-term':'ch-pre';
-    // Pass/fail badge — only if exam has a pass mark
     var pBadge='';
-    if(has&&e.pct!=null){
-      if(hasPass(e.name)){
-        pBadge=isPass(e.score,e.name)?' <span class="gb gb-a">Pass</span>':' <span class="gb gb-d">Fail</span>';
-      }
+    if(has&&e.pct!=null&&hasPass(e.name)){
+      pBadge=isPass(e.score,e.name)?' <span class="gb gb-a">Pass</span>':' <span class="gb gb-d">Fail</span>';
     }
-    return '<tr><td><strong>'+e.name+'</strong> <span class="chip '+cc+'">'+e.type+'</span></td>'
-      +'<td>'+e.max+'</td>'
-      +'<td>'+(e.absent?'<span style="color:var(--org);font-weight:700">AB</span>':e.score)+'</td>'
-      +'<td>'+(has&&e.pct!=null?e.pct+'% <span class="gb '+gradeCls(e.pct)+'">'+grade(e.pct)+'</span>'+pBadge:'--')+'</td>'
-      +'<td>'+(has?e.classAvg+' ('+e.classAvgPct+'%)':'--')+'</td>'
-      +'<td>'+rk+'</td></tr>';
-  }).join('');
+    var scoreCell=e.absent
+      ?'<span style="color:var(--org);font-weight:700">AB</span>'
+      :'<strong>'+e.score+'</strong> <span style="color:var(--g600);font-size:.78rem">('+e.pct+'%)</span>'+pBadge;
+    var avgCell=has
+      ?'<strong>'+e.classAvg+'</strong> <span style="color:var(--g600);font-size:.78rem">('+e.classAvgPct+'%)</span>'
+      :'--';
+    return '<tr>'
+      +'<td style="white-space:nowrap"><strong>'+e.name+'</strong></td>'
+      +'<td style="white-space:nowrap">'+e.max+'</td>'
+      +'<td style="white-space:nowrap">'+scoreCell+'</td>'
+      +'<td style="white-space:nowrap">'+avgCell+'</td>'
+      +'<td style="white-space:nowrap">'+rk+'</td>'
+    +'</tr>';
+  }
+
+  // Split marks into DRT and Main tables
+  var drtRows=exams.filter(function(e){return e.type==='DRT';});
+  var mainRows=exams.filter(function(e){return e.type!=='DRT';});
+  var drtTbl=document.querySelector('#sDrtMarksTable tbody');
+  var mainTbl=document.querySelector('#sMainMarksTable tbody');
+  if(drtTbl) drtTbl.innerHTML=drtRows.length
+    ?drtRows.map(mkMarkRow).join('')
+    :'<tr><td colspan="5" class="no-data">No DRT results yet</td></tr>';
+  if(mainTbl) mainTbl.innerHTML=mainRows.length
+    ?mainRows.map(mkMarkRow).join('')
+    :'<tr><td colspan="5" class="no-data">No main exam results yet</td></tr>';
 
   killCharts(sCharts);
   var BL='#0a1f6e',GO='#e9a820',GR='#16a34a',RE='#dc2626';
@@ -924,143 +972,132 @@ function renderTDash(){
   if(passExams.length) passThreshold=Math.round(avg(passExams.map(function(e){return examPass(e.name)/e.max*100;})));
   var pass=allP.filter(function(p){return p>=passThreshold;}).length;
   var withResults=sdata.filter(function(s){return s.marks.some(function(m){return m!==null&&m!==undefined;});}).length;
+  // DRT avg across all DRTs
+  var drtEx2=activeEx.filter(function(e){return e.type==='DRT';});
+  var drtAvgAll=null;
+  if(drtEx2.length){
+    var allDrtPcts=[];
+    drtEx2.forEach(function(ex){
+      var idx=activeEx.indexOf(ex);
+      var written=sdata.map(function(s){return s.marks[idx];}).filter(function(m){return m!==null&&m!==undefined;});
+      if(written.length) allDrtPcts.push(Math.round(avg(written.map(function(m){return pct(m,ex.max);}))))
+    });
+    drtAvgAll=allDrtPcts.length?Math.round(avg(allDrtPcts)):null;
+  }
+  // Main exam avg across all main exams
+  var mainEx2=activeEx.filter(function(e){return e.type!=='DRT';});
+  var mainAvgAll=null;
+  if(mainEx2.length){
+    var allMainPcts=[];
+    mainEx2.forEach(function(ex){
+      var idx=activeEx.indexOf(ex);
+      var written=sdata.map(function(s){return s.marks[idx];}).filter(function(m){return m!==null&&m!==undefined;});
+      if(written.length) allMainPcts.push(Math.round(avg(written.map(function(m){return pct(m,ex.max);}))))
+    });
+    mainAvgAll=allMainPcts.length?Math.round(avg(allMainPcts)):null;
+  }
+  // Appeared in latest exam
+  var latExT=activeEx[activeEx.length-1];
+  var appearedCount=latExT?sdata.filter(function(s){var i=activeEx.indexOf(latExT);return s.marks[i]!==null&&s.marks[i]!==undefined;}).length:0;
   $('tSumGrid').innerHTML=[
     ts(sd.length,'Total Students',''),
-    ts(withResults,'With Results','bl'),
-    ts(Math.round(hi)+'%','Highest','hi'),
-    ts(Math.round(lo)+'%','Lowest','lo'),
-    ts(ca+'%','Class Avg',''),
-    ts(pass+' / '+sd.length,'Pass','bl')
+    ts(latExT?appearedCount+' / '+sd.length:'--','Appeared',latExT?'In '+latExT.name:'No exam yet'),
+    ts(drtAvgAll!=null?drtAvgAll+'%':'--','DRT Average','Across all DRTs'),
+    ts(mainAvgAll!=null?mainAvgAll+'%':'--','Exam Average','Across all main exams')
   ].join('');
 
-  // Insight strip
-  var atR=allP.filter(function(p){return p<passThreshold;}).length;
-  var hi80=allP.filter(function(p){return p>=80;}).length;
-  var ics=[];
-  if(atR>0) ics.push({c:'ic-r',i:'⚠️',h:atR+' student'+(atR>1?'s':'')+' need attention',s:'Average below pass mark',target:'weakSection'});
-  if(hi80>0) ics.push({c:'ic-g',i:'🌟',h:hi80+' student'+(hi80>1?'s':'')+' above 80%',s:'Excellent performers',target:'topSection'});
-  ics.push({c:'ic-b',i:'📊',h:'Class avg: '+ca+'%',s:sd.length+' students - '+teacher.subject});
-  $('insightStrip').innerHTML=ics.map(function(ic){
-    var extra=ic.target?' data-scroll="'+ic.target+'" style="cursor:pointer;user-select:none"':'';
-    return '<div class="ins-card '+ic.c+'"'+extra+'><div class="ici">'+ic.i+'</div><div><strong>'+ic.h+'</strong><span>'+ic.s+(ic.target?' 👆 tap to view':'')+'</span></div></div>';
-  }).join('');
-  // Attach scroll listeners after render
-  document.querySelectorAll('#insightStrip [data-scroll]').forEach(function(el){
-    el.addEventListener('click',function(){
-      var t=document.getElementById(el.getAttribute('data-scroll'));
-      if(t) t.scrollIntoView({behavior:'smooth',block:'start'});
-    });
-  });
+
 
   // DRT charts
   var drtEx=activeEx.filter(function(e){return e.type==='DRT';});
+  // Store sdata and activeEx on window for dropdown-triggered re-renders
+  window._tSdata=sdata; window._tActiveEx=activeEx; window._tDrtEx=drtEx;
+  var mainEx=activeEx.filter(function(e){return ['PT','Term','Preboard','Exam'].includes(e.type);});
+  window._tMainEx=mainEx;
+
   if(drtEx.length){
     var drtAvgs=drtEx.map(function(e){ var idx=activeEx.indexOf(e); var written=sdata.map(function(s){return s.marks[idx];}).filter(function(m){return m!==null&&m!==undefined;}); return written.length?Math.round(avg(written)*10)/10:0; });
     var drtYMax=Math.max.apply(null,drtEx.map(function(e){return e.max;}));
     tCharts.drtComp=mkChart('drtCompWrap',{
       chart:{type:'bar',height:220,toolbar:{show:false},fontFamily:'Plus Jakarta Sans,sans-serif'},
       series:[{name:'Class Avg',data:drtAvgs}],
-      xaxis:{categories:drtEx.map(function(e){return e.name;}),labels:{style:{fontSize:'12px'}}},
-      yaxis:{min:0,max:drtYMax,labels:{style:{fontSize:'11px'}}},
+      xaxis:{categories:drtEx.map(function(e){return e.name;}),labels:{style:{fontSize:'11px'}}},
+      yaxis:{min:0,max:drtYMax,tickAmount:drtYMax,forceNiceScale:false,labels:{formatter:function(v){return Number.isInteger(v)?v:'';},style:{fontSize:'11px'}}},
       colors:drtAvgs.map(function(v){return v>=drtYMax*0.75?'#16a34a':v>=drtYMax*0.5?'#e9a820':'#f87171';}),
       plotOptions:{bar:{borderRadius:6,distributed:true,columnWidth:'50%'}},
-      dataLabels:{enabled:true,formatter:function(v,ctx){return v+'/'+drtEx[ctx.dataPointIndex].max;},style:{fontSize:'12px',fontWeight:700}},
+      dataLabels:{enabled:true,formatter:function(v,ctx){return v+'/'+drtEx[ctx.dataPointIndex].max+' ('+Math.round(v/drtEx[ctx.dataPointIndex].max*100)+'%)';},style:{fontSize:'11px',fontWeight:700},background:{enabled:false}},
       legend:{show:false},grid:{borderColor:'#f1f5f9'},
-      tooltip:{y:{formatter:function(v){return v+'/'+drtYMax+' avg';}}}
+      tooltip:{y:{formatter:function(v,o){return v+'/'+drtEx[o.dataPointIndex].max+' avg';}}}
     });
-    var li=activeEx.indexOf(drtEx[drtEx.length-1]);
-    var drtPassMark=examPass(drtEx[drtEx.length-1].name)||6;
-    var drtMaxMark=drtEx[drtEx.length-1].max||15;
-    // Dynamic ranges: fail zone, borderline, good, very good, excellent
-    var drtRanges=[[0,drtPassMark-1],[drtPassMark,Math.round(drtMaxMark*0.5)],[Math.round(drtMaxMark*0.5)+1,Math.round(drtMaxMark*0.7)],[Math.round(drtMaxMark*0.7)+1,Math.round(drtMaxMark*0.85)],[Math.round(drtMaxMark*0.85)+1,drtMaxMark]];
-    var drtZoneCols=['#f87171','#fca5a5','#fde68a','#86efac','#16a34a'];
-    var drtZoneLabels=['Fail','Below Avg','Average','Good','Excellent'];
-    tCharts.drtHist=mkChart('drtHistWrap',{
-      chart:{type:'bar',height:220,toolbar:{show:false}},
-      series:[{name:'Students',data:drtRanges.map(function(r){return sdata.filter(function(s){var m=s.marks[li];return m!==null&&m!==undefined&&m>=r[0]&&m<=r[1];}).length;})}],
-      xaxis:{categories:drtRanges.map(function(r,i){return drtZoneLabels[i]+' ('+r[0]+'-'+r[1]+')'}),
-        labels:{style:{fontSize:'11px'},rotate:-30,rotateAlways:false,trim:true}},
-      yaxis:{title:{text:'Students'},tickAmount:4,labels:{style:{fontSize:'11px'}}},
-      colors:drtZoneCols,
-      plotOptions:{bar:{borderRadius:4,distributed:true,columnWidth:'65%'}},
-      dataLabels:{enabled:true,style:{fontSize:'12px',fontWeight:700}},
-      legend:{show:false},grid:{borderColor:'#f1f5f9'},
-      tooltip:{y:{formatter:function(v){return v+' student'+(v!==1?'s':'');}}}
-    });
+    // Populate DRT histogram dropdown
+    var drtSel=$('drtHistFilter');
+    if(drtSel){
+      drtSel.innerHTML=drtEx.map(function(e){return '<option value="'+e.name+'">'+e.name+'</option>';}).join('');
+      drtSel.value=drtEx[drtEx.length-1].name; // default latest
+    }
+    renderDrtHist();
   } else {
     $('drtCompWrap').innerHTML='<div class="no-data">No DRT data yet</div>';
     $('drtHistWrap').innerHTML='<div class="no-data">No DRT data yet</div>';
+    var drtSel=$('drtHistFilter'); if(drtSel) drtSel.innerHTML='';
   }
 
-  // Main charts
-  var mCols={PT:'#2952d9',Term:'#16a34a',Preboard:'#e9a820'};
-  var mainEx=activeEx.filter(function(e){return ['PT','Term','Preboard'].includes(e.type);});
   if(mainEx.length){
     var mAvgs=mainEx.map(function(e){ var idx=activeEx.indexOf(e); var written=sdata.map(function(s){return s.marks[idx];}).filter(function(m){return m!==null&&m!==undefined;}); return written.length?Math.round(avg(written)):0; });
     var mainYMax=Math.max.apply(null,mainEx.map(function(e){return e.max;}));
     tCharts.mainComp=mkChart('mainCompWrap',{
       chart:{type:'bar',height:220,toolbar:{show:false},fontFamily:'Plus Jakarta Sans,sans-serif'},
       series:[{name:'Class Avg',data:mAvgs}],
-      xaxis:{categories:mainEx.map(function(e){return e.name;}),labels:{style:{fontSize:'12px'}}},
-      yaxis:{min:0,max:mainYMax,labels:{style:{fontSize:'11px'}}},
+      xaxis:{categories:mainEx.map(function(e){return e.name;}),labels:{style:{fontSize:'11px'}}},
+      yaxis:{min:0,max:mainYMax,tickAmount:10,labels:{formatter:function(v){return Number.isInteger(v)?v:'';},style:{fontSize:'11px'}}},
       colors:mAvgs.map(function(v,i){var mx=mainEx[i].max; return v>=mx*0.75?'#16a34a':v>=mx*0.5?'#e9a820':'#f87171';}),
       plotOptions:{bar:{borderRadius:6,distributed:true,columnWidth:'50%'}},
-      dataLabels:{enabled:true,formatter:function(v,ctx){return v+'/'+mainEx[ctx.dataPointIndex].max;},style:{fontSize:'12px',fontWeight:700}},
+      dataLabels:{enabled:true,formatter:function(v,ctx){return v+'/'+mainEx[ctx.dataPointIndex].max+' ('+Math.round(v/mainEx[ctx.dataPointIndex].max*100)+'%)';},style:{fontSize:'11px',fontWeight:700},background:{enabled:false}},
       legend:{show:false},grid:{borderColor:'#f1f5f9'},
       tooltip:{y:{formatter:function(v,o){return v+'/'+mainEx[o.dataPointIndex].max+' avg';}}}
     });
-    var lmi=activeEx.indexOf(mainEx[mainEx.length-1]);
-    var lmMax=mainEx[mainEx.length-1].max;
-    var lmPass=examPass(mainEx[mainEx.length-1].name)||40;
-    // Zones: Fail, Below Avg, Average, Good, Excellent — based on pass mark and max
-    var mainRanges=[
-      [0, lmPass-1],
-      [lmPass, Math.round(lmMax*0.5)],
-      [Math.round(lmMax*0.5)+1, Math.round(lmMax*0.6)],
-      [Math.round(lmMax*0.6)+1, Math.round(lmMax*0.75)],
-      [Math.round(lmMax*0.75)+1, lmMax]
-    ];
-    var mainZoneCols=['#f87171','#fca5a5','#fde68a','#86efac','#16a34a'];
-    var mainZoneLabels=['Fail','Below Avg','Average','Good','Excellent'];
-    tCharts.mainHist=mkChart('mainHistWrap',{
-      chart:{type:'bar',height:220,toolbar:{show:false}},
-      series:[{name:'Students',data:mainRanges.map(function(r){
-        return sdata.filter(function(s){var m=s.marks[lmi];return m!==null&&m!==undefined&&m>=r[0]&&m<=r[1];}).length;
-      })}],
-      xaxis:{categories:mainRanges.map(function(r,i){return mainZoneLabels[i]+' ('+r[0]+'-'+r[1]+')';}),
-        labels:{style:{fontSize:'11px'},rotate:-30,rotateAlways:false,trim:true}},
-      yaxis:{title:{text:'Students'},tickAmount:4,labels:{style:{fontSize:'11px'}}},
-      colors:mainZoneCols,
-      plotOptions:{bar:{borderRadius:4,distributed:true,columnWidth:'65%'}},
-      dataLabels:{enabled:true,style:{fontSize:'12px',fontWeight:700}},
-      legend:{show:false},grid:{borderColor:'#f1f5f9'},
-      tooltip:{y:{formatter:function(v){return v+' student'+(v!==1?'s':'');}}}
-    });
+    // Populate main histogram dropdown
+    var mainSel=$('mainHistFilter');
+    if(mainSel){
+      mainSel.innerHTML=mainEx.map(function(e){return '<option value="'+e.name+'">'+e.name+'</option>';}).join('');
+      mainSel.value=mainEx[mainEx.length-1].name; // default latest
+    }
+    renderMainHist();
   } else {
     $('mainCompWrap').innerHTML='<div class="no-data">No main exam data yet</div>';
     $('mainHistWrap').innerHTML='<div class="no-data">No main exam data yet</div>';
+    var mainSel=$('mainHistFilter'); if(mainSel) mainSel.innerHTML='';
   }
 
-  // ── Exam Summary table ────────────────────────────────────────────────────
-  var examSumTbody=document.querySelector('#examSummaryTable tbody');
-  examSumTbody.innerHTML=activeEx.map(function(ex,i){
+  // ── Exam Summary tables (DRT + Main split) ────────────────────────────────
+  function buildExamSumRow(ex,i){
     var written=sdata.map(function(s){return s.marks[i];}).filter(function(m){return m!==null&&m!==undefined;});
     var abCount=sdata.length-written.length;
-    if(!written.length) return '<tr><td><strong>'+ex.name+'</strong></td><td colspan="5" class="no-data">No data</td></tr>';
-    var avgV=Math.round(avg(written.map(function(m){return pct(m,ex.max);})));
-    var highest=Math.max.apply(null,written);
-    var lowest=Math.min.apply(null,written);
+    if(!written.length) return '<tr><td style="white-space:nowrap"><strong>'+ex.name+'</strong></td><td colspan="5" style="color:var(--g400);font-size:.78rem">No data yet</td></tr>';
+    var classAvgRaw=Math.round(written.reduce(function(s,m){return s+m;},0)/written.length*10)/10;
+    var avgPct=Math.round(avg(written.map(function(m){return pct(m,ex.max);})));
     var passCount=hasPass(ex.name)?written.filter(function(m){return isPass(m,ex.name);}).length:written.length;
-    var col=avgV>=60?'var(--green)':avgV>=40?'var(--org)':'var(--red)';
+    var failCount=hasPass(ex.name)?written.filter(function(m){return !isPass(m,ex.name);}).length:0;
+    var col=avgPct>=60?'var(--green)':avgPct>=40?'var(--org)':'var(--red)';
     return '<tr>'
-      +'<td><strong>'+ex.name+'</strong></td>'
-      +'<td style="color:'+col+';font-weight:700">'+avgV+'%</td>'
-      +'<td style="color:var(--green);font-weight:700">'+highest+'/'+ex.max+'</td>'
-      +'<td style="color:var(--red);font-weight:700">'+lowest+'/'+ex.max+'</td>'
-      +'<td><span class="badge badge-green">'+passCount+'</span></td>'
-      +'<td>'+(abCount?'<span class="badge badge-purple">'+abCount+'</span>':'<span class="badge badge-grey">0</span>')+'</td>'
+      +'<td style="white-space:nowrap"><strong>'+ex.name+'</strong></td>'
+      +'<td style="white-space:nowrap"><strong>'+classAvgRaw+'</strong><span style="color:var(--g600);font-size:.76rem">/'+ex.max+'</span></td>'
+      +'<td style="white-space:nowrap;color:'+col+';font-weight:700">'+avgPct+'%</td>'
+      +'<td style="white-space:nowrap"><span class="badge badge-green">'+passCount+'</span></td>'
+      +'<td style="white-space:nowrap">'+(failCount?'<span class="badge badge-red">'+failCount+'</span>':'<span class="badge badge-grey">0</span>')+'</td>'
+      +'<td style="white-space:nowrap">'+(abCount?'<span class="badge badge-purple">'+abCount+'</span>':'<span class="badge badge-grey">0</span>')+'</td>'
     +'</tr>';
-  }).join('');
+  }
+  var drtSumRows=activeEx.filter(function(e){return e.type==='DRT';});
+  var mainSumRows=activeEx.filter(function(e){return e.type!=='DRT';});
+  var drtSumTbody=document.querySelector('#drtSummaryTable tbody');
+  var mainSumTbody=document.querySelector('#mainSummaryTable tbody');
+  if(drtSumTbody) drtSumTbody.innerHTML=drtSumRows.length
+    ?drtSumRows.map(function(ex){return buildExamSumRow(ex,activeEx.indexOf(ex));}).join('')
+    :'<tr><td colspan="6" style="text-align:center;color:var(--g400);padding:16px">No DRT data yet</td></tr>';
+  if(mainSumTbody) mainSumTbody.innerHTML=mainSumRows.length
+    ?mainSumRows.map(function(ex){return buildExamSumRow(ex,activeEx.indexOf(ex));}).join('')
+    :'<tr><td colspan="6" style="text-align:center;color:var(--g400);padding:16px">No main exam data yet</td></tr>';
 
   // ── Absent Alert — latest exam ─────────────────────────────────────────────
   var latEx=activeEx[activeEx.length-1];
@@ -1128,6 +1165,76 @@ function ts(v,l,cls){ return '<div class="t-sum '+cls+'"><div class="sv">'+v+'</
 // TEACHER EXTRA ANALYSIS
 // ═══════════════════════════════════════════
 
+function buildHistChart(wrapperId, examName, sdata, activeEx, chartKey){
+  var ex=activeEx.find(function(e){return e.name===examName;});
+  if(!ex){$(wrapperId).innerHTML='<div class="no-data">No data</div>';return;}
+  var idx=activeEx.indexOf(ex);
+  var maxM=ex.max;
+  var passMark=examPass(ex.name);
+  var p1=passMark!=null?passMark:Math.round(maxM*0.4);
+  // 5 zones based on max and pass mark
+  var ranges=[
+    [0, p1-1],
+    [p1, Math.round(maxM*0.5)],
+    [Math.round(maxM*0.5)+1, Math.round(maxM*0.65)],
+    [Math.round(maxM*0.65)+1, Math.round(maxM*0.80)],
+    [Math.round(maxM*0.80)+1, maxM]
+  ];
+  var zoneCols=['#f87171','#fca5a5','#fde68a','#86efac','#16a34a'];
+  var zoneLabels=['Fail','Below Avg','Average','Good','Excellent'];
+  var total=sdata.filter(function(s){return s.marks[idx]!==null&&s.marks[idx]!==undefined;}).length;
+  var counts=ranges.map(function(r){
+    return sdata.filter(function(s){var m=s.marks[idx];return m!==null&&m!==undefined&&m>=r[0]&&m<=r[1];}).length;
+  });
+  if(tCharts[chartKey]){try{tCharts[chartKey].destroy();}catch(e){}tCharts[chartKey]=null;}
+  tCharts[chartKey]=mkChart(wrapperId,{
+    chart:{type:'bar',height:220,toolbar:{show:false},fontFamily:'Plus Jakarta Sans,sans-serif'},
+    series:[{name:'Students',data:counts}],
+    xaxis:{
+      categories:zoneLabels,
+      labels:{style:{fontSize:'11px',fontWeight:600}}
+    },
+    yaxis:{
+      min:0,
+      tickAmount:Math.max.apply(null,counts)||4,
+      forceNiceScale:true,
+      labels:{formatter:function(v){return Number.isInteger(v)?v:'';},style:{fontSize:'11px'}}
+    },
+    colors:zoneCols,
+    plotOptions:{bar:{borderRadius:4,distributed:true,columnWidth:'60%'}},
+    dataLabels:{
+      enabled:true,
+      formatter:function(v,ctx){
+        if(!v) return '';
+        var pct2=total?Math.round(v/total*100):0;
+        return v+' ('+pct2+'%)';
+      },
+      style:{fontSize:'11px',fontWeight:700},
+      background:{enabled:false}
+    },
+    legend:{show:false},
+    grid:{borderColor:'#f1f5f9'},
+    tooltip:{
+      y:{formatter:function(v){
+        var pct2=total?Math.round(v/total*100):0;
+        return v+' student'+(v!==1?'s':'')+' ('+pct2+'%)';
+      }}
+    }
+  });
+}
+
+function renderDrtHist(){
+  var sel=$('drtHistFilter');
+  if(!sel||!sel.value||!window._tSdata||!window._tActiveEx) return;
+  buildHistChart('drtHistWrap',sel.value,window._tSdata,window._tActiveEx,'drtHist');
+}
+
+function renderMainHist(){
+  var sel=$('mainHistFilter');
+  if(!sel||!sel.value||!window._tSdata||!window._tActiveEx) return;
+  buildHistChart('mainHistWrap',sel.value,window._tSdata,window._tActiveEx,'mainHist');
+}
+
 function renderClassComparison(teacher, students, results, activeEx){
   var classes=teacher.classes;
   if(!classes||classes.length<2){ $("classCompSection").classList.add("hidden"); return; }
@@ -1163,7 +1270,8 @@ function renderClassComparison(teacher, students, results, activeEx){
     yaxis:{min:0,max:100,labels:{formatter:function(v){return v+"%";},style:{fontSize:"11px"}}},
     colors:["#0a1f6e","#e9a820"],
     plotOptions:{bar:{borderRadius:4,columnWidth:"60%",grouped:true}},
-    dataLabels:{enabled:false},legend:{position:"top",fontSize:"12px"},
+    dataLabels:{enabled:true,formatter:function(v){return v+'%';},style:{fontSize:'10px',fontWeight:700},background:{enabled:false}},
+    legend:{position:"top",fontSize:"12px"},
     grid:{borderColor:"#f1f5f9"},
     tooltip:{y:{formatter:function(v){return v+"%";}}}
   });
@@ -1190,7 +1298,8 @@ function renderClassComparison(teacher, students, results, activeEx){
     yaxis:{min:0,max:100,labels:{formatter:function(v){return v+"%";},style:{fontSize:"11px"}}},
     colors:["#2952d9","#16a34a"],
     plotOptions:{bar:{borderRadius:4,columnWidth:"60%",grouped:true}},
-    dataLabels:{enabled:false},legend:{position:"top",fontSize:"12px"},
+    dataLabels:{enabled:true,formatter:function(v){return v+'%';},style:{fontSize:'10px',fontWeight:700},background:{enabled:false}},
+    legend:{position:"top",fontSize:"12px"},
     grid:{borderColor:"#f1f5f9"},
     tooltip:{y:{formatter:function(v){return v+"% passed";}}}
   });
