@@ -759,22 +759,20 @@ async function addSubject(){
 }
 
 async function removeSubject(name){
-  var affected=0;
+  showStatus("subjectStatus","Checking "+name+"...","info");
   try{
     var results=await fsGetAll("results");
-    affected=results.filter(function(r){return r.subject===name;}).length;
-  }catch(e){}
-  if(!confirm("Remove subject '"+name+"'?\n\nThis will permanently DELETE marks for "+affected+" result records in Firebase.\n\nThis cannot be undone."))return;
-  showStatus("subjectStatus","Deleting "+name+" marks from Firebase...","info");
-  try{
-    var results=await fsGetAll("results");
-    var toDelete=results.filter(function(r){return r.subject===name;});
-    for(var i=0;i<toDelete.length;i++){await fsDelete("results",toDelete[i]._id);}
+    var affected=results.filter(function(r){return r.subject===name;}).length;
+    if(affected>0){
+      showStatus("subjectStatus","❌ Cannot delete "+name+" — marks exist for "+affected+" student"+(affected>1?"s":"")+" across all exams. Use Delete Marks section to remove all "+name+" marks first.","err");
+      return;
+    }
+    if(!confirm("Remove subject '"+name+"'? This cannot be undone."))return;
     SUBJECTS=SUBJECTS.filter(function(s){return s!==name;});
     await saveExamConfig();
     populateAllSubjectDropdowns();
     renderSubjectList();
-    showStatus("subjectStatus","Deleted "+name+" and "+toDelete.length+" result records.","ok");
+    showStatus("subjectStatus","✅ Subject "+name+" removed.","ok");
   }catch(e){showStatus("subjectStatus","Error: "+e.message,"err");}
 }
 
@@ -856,27 +854,20 @@ async function addClass(){
 }
 
 async function removeClass(name){
-  var stuCount=0,resCount=0;
+  showStatus("classStatus","Checking "+name+"...","info");
   try{
     var allStu=await fsGetAll("students");
-    var allRes=await fsGetAll("results");
-    stuCount=allStu.filter(function(s){return s.class===name;}).length;
-    resCount=allRes.filter(function(r){return r.class===name;}).length;
-  }catch(e){}
-  if(!confirm("Remove class '"+name+"'?\n\nThis will permanently DELETE:\n- "+stuCount+" students\n- "+resCount+" result records\n\nThis cannot be undone."))return;
-  showStatus("classStatus","Deleting "+name+" data from Firebase...","info");
-  try{
-    var allStu=await fsGetAll("students");
-    var allRes=await fsGetAll("results");
-    var toDelStu=allStu.filter(function(s){return s.class===name;});
-    var toDelRes=allRes.filter(function(r){return r.class===name;});
-    for(var i=0;i<toDelStu.length;i++){await fsDelete("students",toDelStu[i]._id);}
-    for(var j=0;j<toDelRes.length;j++){await fsDelete("results",toDelRes[j]._id);}
+    var stuCount=allStu.filter(function(s){return s.class===name;}).length;
+    if(stuCount>0){
+      showStatus("classStatus","❌ Cannot delete "+name+" — "+stuCount+" student"+(stuCount>1?"s":"")+" exist in this class. Remove or reassign all students first via View & Edit Students.","err");
+      return;
+    }
+    if(!confirm("Remove class '"+name+"'? This cannot be undone."))return;
     CLASSES=CLASSES.filter(function(c){return c!==name;});
     await saveExamConfig();
     populateAllClassDropdowns();
     renderClassList();
-    showStatus("classStatus","Deleted "+name+": "+toDelStu.length+" students, "+toDelRes.length+" result records.","ok");
+    showStatus("classStatus","✅ Class "+name+" removed.","ok");
   }catch(e){showStatus("classStatus","Error: "+e.message,"err");}
 }
 
@@ -900,29 +891,21 @@ async function addExam(){
 }
 
 async function removeExam(name){
-  var affected=0;
+  showStatus("examStatus","Checking "+name+"...","info");
   try{
     var results=await fsGetAll("results");
-    affected=results.filter(function(r){return r[name]!==undefined;}).length;
-  }catch(e){}
-  if(!confirm("Remove exam '"+name+"'?\n\nThis will permanently DELETE marks for "+affected+" students in Firebase.\n\nThis cannot be undone."))return;
-  showStatus("examStatus","Deleting "+name+" marks from Firebase...","info");
-  try{
-    var results=await fsGetAll("results");
-    var done=0;
-    for(var i=0;i<results.length;i++){
-      var r=results[i];
-      if(r[name]!==undefined){
-        var doc=Object.assign({},r);delete doc._id;delete doc[name];
-        await fsSet("results",r._id,doc);done++;
-      }
+    var affected=results.filter(function(r){return r[name]!==undefined&&r[name]!==null&&typeof r[name]==="object"&&r[name].mark!==undefined;}).length;
+    if(affected>0){
+      showStatus("examStatus","❌ Cannot delete "+name+" — marks exist for "+affected+" student"+(affected>1?"s":"")+" across classes. Use Delete Marks section to remove all "+name+" marks first.","err");
+      return;
     }
+    if(!confirm("Remove exam '"+name+"'? This cannot be undone."))return;
     EXAMS=EXAMS.filter(function(e){return e!==name;});
     delete EXAM_MAX[name];delete EXAM_PASS[name];
     await saveExamConfig();
     populateAllExamDropdowns();
     renderExamList();
-    showStatus("examStatus","Deleted "+name+" marks for "+done+" students and removed from exam list.","ok");
+    showStatus("examStatus","✅ Exam "+name+" removed.","ok");
   }catch(e){showStatus("examStatus","Error: "+e.message,"err");}
 }
 

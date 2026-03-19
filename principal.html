@@ -204,6 +204,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
         <button class="nav-tab" onclick="showTab('tabTrend',this)">📈 Exam Trend</button>
         <button class="nav-tab" onclick="showTab('tabInsights',this)">💡 Insights</button>
         <button class="nav-tab" onclick="showTab('tabReport',this)">📄 Reports</button>
+        <button class="nav-tab" onclick="showTab('tabStudentSearch',this)">🔍 Student Search</button>
       </div>
 
       <!-- TAB: OVERVIEW -->
@@ -302,6 +303,28 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div style="margin-top:16px;display:flex;gap:8px">
             <button class="report-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
             <button class="report-btn" style="background:var(--g600)" onclick="$('reportPreview').classList.add('hidden')">✕ Close</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: STUDENT SEARCH -->
+      <div id="tabStudentSearch" class="hidden">
+        <div class="sec-lbl">Student Search</div>
+        <div class="card">
+          <div class="card-title">🔍 Search Student Performance</div>
+          <div class="card-sub">Search any student by admission number or name to view their full performance dashboard.</div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+            <input type="text" id="pStuSearch" placeholder="e.g. H1822 or student name" oninput="searchPrincipalStudent()"
+              style="flex:1;padding:10px 14px;border:1.5px solid var(--g200);border-radius:8px;font-family:inherit;font-size:.88rem;min-width:200px">
+            <button onclick="searchPrincipalStudent()" style="padding:10px 18px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit">Search</button>
+          </div>
+          <div id="pStuSearchResults"></div>
+        </div>
+        <!-- Student detail panel -->
+        <div id="pStuDetail" class="hidden">
+          <div class="card">
+            <div id="pStuDetailHeader" style="background:linear-gradient(135deg,#0a1f6e,#2952d9);border-radius:10px;padding:16px;margin-bottom:16px;color:#fff"></div>
+            <div id="pStuDetailContent"></div>
           </div>
         </div>
       </div>
@@ -484,7 +507,7 @@ function applyFilters(){
 // ═══════════════════════════════════════
 // TABS
 // ═══════════════════════════════════════
-var TABS=['tabOverview','tabExam','tabSubject','tabClass','tabRisk','tabTrend','tabInsights','tabReport'];
+var TABS=['tabOverview','tabExam','tabSubject','tabClass','tabRisk','tabTrend','tabInsights','tabReport','tabStudentSearch'];
 function showTab(id,btn){
   TABS.forEach(function(t){$(t).classList.add('hidden');});
   $(id).classList.remove('hidden');
@@ -1102,6 +1125,103 @@ function printReport(type){
   $('reportContent').innerHTML=content;
   $('reportPreview').classList.remove('hidden');
   $('reportPreview').scrollIntoView({behavior:'smooth'});
+}
+
+// ═══════════════════════════════════════
+// STUDENT SEARCH (PRINCIPAL)
+// ═══════════════════════════════════════
+function searchPrincipalStudent(){
+  if(!_cache) return;
+  var q=$('pStuSearch').value.trim().toLowerCase();
+  if(!q){ $('pStuSearchResults').innerHTML=''; $('pStuDetail').classList.add('hidden'); return; }
+  var res=_cache.students.filter(function(s){
+    var admNo=String(s.admNo||s.examNo||s._id||"").toLowerCase();
+    return admNo.indexOf(q)>=0||(s.name&&s.name.toLowerCase().indexOf(q)>=0);
+  }).slice(0,15);
+  if(!res.length){
+    $('pStuSearchResults').innerHTML='<div class="no-data">No students found for "'+q+'"</div>';
+    $('pStuDetail').classList.add('hidden');
+    return;
+  }
+  $('pStuSearchResults').innerHTML='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">'
+    +res.map(function(s){
+      var admNo=s.admNo||s.examNo||s._id||"";
+      return '<div data-admno="'+admNo+'" onclick="showPrincipalStudentDetail(this.dataset.admno)" '
+        +'style="padding:8px 14px;background:var(--blue-pale);border:1.5px solid var(--blue-border);border-radius:8px;cursor:pointer;font-size:.84rem;font-weight:600;color:var(--blue)">'
+        +'<strong>'+s.name+'</strong> <span style="color:var(--g600);font-weight:400">'+admNo+' · '+s.class+'</span>'
+      +'</div>';
+    }).join('')
+  +'</div>';
+}
+
+function showPrincipalStudentDetail(admNo){
+  if(!_cache) return;
+  var student=_cache.students.find(function(s){
+    return String(s.admNo||s.examNo||s._id||"")=== String(admNo);
+  });
+  if(!student){alert("Student not found.");return;}
+
+  var resMap={};
+  _cache.results.forEach(function(r){resMap[(r.examNo||r._id)+"_"+(r.subject||"")]=r;});
+
+  // Get subjects this student has marks for
+  var subjects=getSubjects().filter(function(sub){
+    var r=resMap[admNo+"_"+sub];
+    return r&&Object.keys(r).some(function(k){return k!=='examNo'&&k!=='subject'&&k!=='class'&&k!=='_id'&&r[k]&&typeof r[k]==='object'&&r[k].mark!==undefined;});
+  });
+
+  // Header
+  $('pStuDetailHeader').innerHTML='<div style="display:flex;align-items:center;gap:12px">'
+    +'<div style="width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.2rem;color:var(--blue)">'+( student.name||"?")[0]+'</div>'
+    +'<div>'
+      +'<div style="font-size:1rem;font-weight:700">'+student.name+'</div>'
+      +'<div style="font-size:.78rem;opacity:.7">Admission No: '+admNo+' · Class '+student.class+'</div>'
+    +'</div>'
+  +'</div>';
+
+  if(!subjects.length){
+    $('pStuDetailContent').innerHTML='<div class="no-data">No marks uploaded for this student yet.</div>';
+    $('pStuDetail').classList.remove('hidden');
+    $('pStuDetail').scrollIntoView({behavior:'smooth'});
+    return;
+  }
+
+  // Build performance summary per subject
+  var html='';
+  subjects.forEach(function(sub){
+    var r=resMap[admNo+"_"+sub];
+    var exams=getExamNames().map(function(col){
+      var e=r[col];if(!e||e.mark===undefined)return null;
+      var m=e.mark;var mx=e.max||getExamMax(col);
+      return{name:col,mark:m,max:mx,pct:m!==null?Math.round(m/mx*100):null,rank:e.rank,classSize:e.classSize,absent:m===null};
+    }).filter(Boolean);
+    var taken=exams.filter(function(e){return!e.absent;});
+    var subAvg=taken.length?Math.round(taken.reduce(function(s,e){return s+e.pct;},0)/taken.length):null;
+    var col=subAvg>=75?'var(--green)':subAvg>=50?'var(--org)':'var(--red)';
+
+    html+='<div style="margin-bottom:16px;border:1px solid var(--g200);border-radius:10px;overflow:hidden">';
+    html+='<div style="background:var(--blue-pale);padding:10px 14px;display:flex;align-items:center;justify-content:space-between">'
+      +'<strong style="color:var(--blue)">'+sub+'</strong>'
+      +(subAvg!==null?'<span style="font-weight:800;color:'+col+'">'+subAvg+'% avg</span>':'')
+    +'</div>';
+    html+='<div style="overflow-x:auto"><table class="ptable" style="font-size:.8rem">'
+      +'<thead><tr><th>Exam</th><th>Max</th><th>Score</th><th>%</th><th>Rank</th></tr></thead><tbody>';
+    exams.forEach(function(e){
+      var rkTxt=e.rank?'#'+e.rank+'/'+e.classSize:(e.absent?'AB':'--');
+      html+='<tr>'
+        +'<td><strong>'+e.name+'</strong></td>'
+        +'<td>'+e.max+'</td>'
+        +'<td>'+(e.absent?'<span style="color:var(--org);font-weight:700">AB</span>':e.mark)+'</td>'
+        +'<td>'+(e.pct!==null?'<span style="font-weight:700;color:'+(e.pct>=60?'var(--green)':e.pct>=40?'var(--org)':'var(--red)')+'">'+e.pct+'%</span>':'--')+'</td>'
+        +'<td>'+rkTxt+'</td>'
+      +'</tr>';
+    });
+    html+='</tbody></table></div></div>';
+  });
+
+  $('pStuDetailContent').innerHTML=html;
+  $('pStuDetail').classList.remove('hidden');
+  $('pStuDetail').scrollIntoView({behavior:'smooth'});
 }
 
 // ═══════════════════════════════════════
