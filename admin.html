@@ -154,7 +154,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
         <div class="card">
           <div class="card-title">Upload Students</div>
           <div class="card-sub">Bulk upload or update student records. Existing records will be updated.</div>
-          <div class="info-box">Required columns: <code>Admno, Name, Class, Gender, Phoneno</code></div>
+          <div class="info-box">Required columns: <code>Admno, Name, Class, Phoneno</code></div>
           <div class="upload-box" onclick="document.getElementById('fileInput').click()">
             <div class="ub-icon">📂</div><p>Click to select students CSV file</p><small>Supports .csv files</small>
           </div>
@@ -185,7 +185,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div id="viewStatus" class="status-bar"></div>
           <div class="tscroll">
             <table class="ptable" id="allStudentsTable">
-              <thead><tr><th>Admission No</th><th>Name</th><th>Class</th><th>Gender</th><th>Phone</th><th>Actions</th></tr></thead>
+              <thead><tr><th>Admission No</th><th>Name</th><th>Class</th><th>Phone</th><th>Actions</th></tr></thead>
               <tbody><tr><td colspan="6" style="text-align:center;color:var(--g400);padding:20px">Click Load / Refresh</td></tr></tbody>
             </table>
           </div>
@@ -249,7 +249,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       </div>
 
       <!-- MANAGE TEACHERS -->
-      <div id="secTeacherMgmt","secPrincipalMgmt" class="hidden">
+      <div id="secTeacherMgmt" class="hidden">
         <div class="card">
           <div class="card-title">Manage Teachers</div>
           <div class="card-sub">Add, edit or remove teachers. Changes take effect immediately on next login.</div>
@@ -476,7 +476,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div style="display:flex;flex-direction:column;gap:14px">
             <div style="padding:16px;border:1px solid var(--g200);border-radius:10px">
               <strong style="font-size:.88rem">All Students</strong>
-              <p style="font-size:.78rem;color:var(--g600);margin:4px 0 10px">Admission No, Name, Class, Gender, Phone</p>
+              <p style="font-size:.78rem;color:var(--g600);margin:4px 0 10px">Admission No, Name, Class, Phone</p>
               <button class="btn btn-outline" onclick="exportStudents()">⬇ Download Students CSV</button>
             </div>
             <div style="padding:16px;border:1px solid var(--g200);border-radius:10px">
@@ -536,7 +536,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
     <input type="hidden" id="editExamNo">
     <div class="fg"><label>Name</label><input type="text" id="editName"></div>
     <div class="fg"><label>Class</label><select id="editClass"></select></div>
-    <div class="fg"><label>Gender</label><select id="editGender"><option value="Male">Male</option><option value="Female">Female</option></select></div>
     <div class="fg"><label>Phone</label><input type="tel" id="editPhone"></div>
     <div id="editStatus" class="status-bar"></div>
     <div class="modal-btns">
@@ -1139,13 +1138,13 @@ function handleStudentFile(input){
   reader.onload=function(e){
     try{
       var parsed=parseCSV(e.target.result);
-      var req=["Examno","Name","Class","Gender","Phoneno"];
+      var req=["Admno","Name","Class","Phoneno"];
       var miss=req.filter(function(r){return!parsed.headers.some(function(h){return h.toLowerCase()===r.toLowerCase();});});
       if(miss.length){showStatus("stuStatus","Missing columns: "+miss.join(", "),"err");return;}
-      _stuRows=parsed.rows.map(function(r){var n={};Object.keys(r).forEach(function(k){n[k.toLowerCase()]=String(r[k]).trim();});return n;}).filter(function(r){return r.examno;});
+      _stuRows=parsed.rows.map(function(r){var n={};Object.keys(r).forEach(function(k){n[k.toLowerCase()]=String(r[k]).trim();});return n;}).filter(function(r){return r.admno;});
       var thead=$("stuPreviewTable").querySelector("thead"),tbody=$("stuPreviewTable").querySelector("tbody");
-      thead.innerHTML="<tr><th>Admission No</th><th>Name</th><th>Class</th><th>Gender</th><th>Phone</th></tr>";
-      tbody.innerHTML=_stuRows.slice(0,10).map(function(r){return"<tr><td>"+r.examno+"</td><td>"+r.name+"</td><td>"+r.class+"</td><td>"+r.gender+"</td><td>"+r.phoneno+"</td></tr>";}).join("");
+      thead.innerHTML="<tr><th>Admission No</th><th>Name</th><th>Class</th><th>Phone</th></tr>";
+      tbody.innerHTML=_stuRows.slice(0,10).map(function(r){return"<tr><td>"+r.admno+"</td><td>"+r.name+"</td><td>"+r.class+"</td><td>"+r.phoneno+"</td></tr>";}).join("");
       $("stuPreviewTitle").textContent="Preview — "+_stuRows.length+" students (first 10 shown)";
       $("stuPreviewWrap").classList.remove("hidden");
       showStatus("stuStatus",_stuRows.length+" students loaded. Review and click Upload.","ok");
@@ -1159,7 +1158,7 @@ async function uploadStudents(){
   var done=0,errors=0;
   for(var i=0;i<_stuRows.length;i++){
     var r=_stuRows[i];
-    try{await fsSet("students",r.examno,{name:r.name,class:r.class,gender:r.gender,phone:r.phoneno,examNo:r.examno});done++;}
+    try{await fsSet("students",r.admno,{name:r.name,class:r.class,phone:r.phoneno,admNo:r.admno});done++;}
     catch(e){errors++;console.error(e);}
     setProgress("stuProgBar","stuProgWrap",Math.round((i+1)/_stuRows.length*100));
   }
@@ -1197,7 +1196,7 @@ function renderStudentsTable(){
   tbody.innerHTML=_allStudents.length
     ?_allStudents.map(function(r){
       var id=r._id||r.examNo;
-      return"<tr><td><strong>"+id+"</strong></td><td>"+r.name+"</td><td><span class='badge badge-blue'>"+r.class+"</span></td><td>"+(r.gender||"")+"</td><td>"+(r.phone||"")+"</td>"
+      return"<tr><td><strong>"+id+"</strong></td><td>"+r.name+"</td><td><span class='badge badge-blue'>"+r.class+"</span></td><td>"+(r.phone||"")+"</td>"
         +"<td style='display:flex;gap:6px'><button class='btn btn-outline btn-sm' onclick='openEditModal(\""+id+"\")'>✏️</button>"
         +"<button class='btn btn-red btn-sm' onclick='deleteStudent(\""+id+"\",\""+r.name.replace(/"/g,"")+"\")'>🗑</button></td></tr>";
     }).join("")
@@ -1206,13 +1205,13 @@ function renderStudentsTable(){
 function openEditModal(id){
   var s=_allStudents.find(function(x){return(x._id||x.examNo)===id;});if(!s)return;
   $("editExamNo").value=id;$("editName").value=s.name||"";$("editClass").value=s.class||(CLASSES.length?CLASSES[0]:"");
-  $("editGender").value=s.gender||"Male";$("editPhone").value=s.phone||"";
+  $("editPhone").value=s.phone||"";
   hideStatus("editStatus");$("editModal").classList.remove("hidden");
 }
 function closeEditModal(){$("editModal").classList.add("hidden");}
 async function saveStudent(){
   var id=$("editExamNo").value;
-  var data={examNo:id,name:$("editName").value.trim(),class:$("editClass").value,gender:$("editGender").value,phone:$("editPhone").value.trim()};
+  var data={admNo:id,name:$("editName").value.trim(),class:$("editClass").value,phone:$("editPhone").value.trim()};
   if(!data.name||!data.phone){showStatus("editStatus","Name and phone required.","err");return;}
   try{
     await fsSet("students",id,data);showStatus("editStatus","Saved!","ok");
@@ -1750,34 +1749,23 @@ async function loadAnalytics(){
 
     // ── Card 1: Class Strength — Total | Boys | Girls ──────────────────────
     var byClass={};
-    CLASSES.forEach(function(c){byClass[c]={total:0,boys:0,girls:0};});
+    CLASSES.forEach(function(c){byClass[c]=0;});
     students.forEach(function(s){
       var cls=s.class||"";
-      if(!byClass[cls])byClass[cls]={total:0,boys:0,girls:0};
-      byClass[cls].total++;
-      if((s.gender||"").toLowerCase()==="male"||s.gender==="M") byClass[cls].boys++;
-      else byClass[cls].girls++;
+      if(!byClass[cls])byClass[cls]=0;
+      byClass[cls]++;
     });
     html+='<h4 style="font-size:.9rem;font-weight:700;margin-bottom:10px;color:var(--blue)">🏫 Class Strength</h4>';
-    html+='<div class="tscroll" style="margin-bottom:24px"><table class="ptable"><thead><tr><th>Class</th><th>Total</th><th>Boys</th><th>Girls</th></tr></thead><tbody>';
+    html+='<div class="tscroll" style="margin-bottom:24px"><table class="ptable"><thead><tr><th>Class</th><th>Total Students</th></tr></thead><tbody>';
     CLASSES.sort().forEach(function(cls){
-      var d=byClass[cls]||{total:0,boys:0,girls:0};
       html+='<tr>'
         +'<td><strong>'+cls+'</strong></td>'
-        +'<td><span class="badge badge-blue">'+d.total+'</span></td>'
-        +'<td><span class="badge badge-grey">'+d.boys+'</span></td>'
-        +'<td><span class="badge badge-purple">'+d.girls+'</span></td>'
+        +'<td><span class="badge badge-blue">'+(byClass[cls]||0)+'</span></td>'
       +'</tr>';
     });
-    // Total row
-    var totAll=students.length;
-    var boysAll=students.filter(function(s){return (s.gender||"").toLowerCase()==="male"||s.gender==="M";}).length;
-    var girlsAll=totAll-boysAll;
     html+='<tr style="background:var(--blue-pale);font-weight:700">'
       +'<td><strong>Total</strong></td>'
-      +'<td><span class="badge badge-blue">'+totAll+'</span></td>'
-      +'<td><span class="badge badge-grey">'+boysAll+'</span></td>'
-      +'<td><span class="badge badge-purple">'+girlsAll+'</span></td>'
+      +'<td><span class="badge badge-blue">'+students.length+'</span></td>'
     +'</tr>';
     html+='</tbody></table></div>';
 
@@ -1940,7 +1928,7 @@ async function exportStudents(){
   try{
     var students=await fsGetAll("students");
     students.sort(function(a,b){return(a.class||"").localeCompare(b.class||"")||(a.name||"").localeCompare(b.name||"");});
-    downloadCSV("velammal_students.csv",students.map(function(s){return{ExamNo:s._id||s.examNo,Name:s.name,Class:s.class,Gender:s.gender,Phone:s.phone};}),["ExamNo","Name","Class","Gender","Phone"]);
+    downloadCSV("velammal_students.csv",students.map(function(s){return{AdmNo:s._id||s.admNo||s.examNo,Name:s.name,Class:s.class,Phone:s.phone};}),["AdmNo","Name","Class","Phone"]);
     showStatus("exportStatus","Students CSV downloaded!","ok");
   }catch(e){showStatus("exportStatus","Error: "+e.message,"err");}
 }
@@ -1969,10 +1957,10 @@ async function exportFullReport(){
     var students=await fsGetAll("students");
     var results=await fsGetAll("results");
     var resMap={};results.forEach(function(r){resMap[r.examNo+"_"+r.subject]=r;});
-    var headers=["ExamNo","Name","Class","Gender","Phone"];
+    var headers=["AdmNo","Name","Class","Phone"];
     SUBJECTS.forEach(function(sub){EXAMS.forEach(function(ex){headers.push(sub+"_"+ex+"_Marks");headers.push(sub+"_"+ex+"_Pct");headers.push(sub+"_"+ex+"_Result");});});
     var rows=students.map(function(s){
-      var id=s._id||s.examNo,row={ExamNo:id,Name:s.name,Class:s.class,Gender:s.gender,Phone:s.phone};
+      var id=s._id||s.admNo||s.examNo,row={AdmNo:id,Name:s.name,Class:s.class,Phone:s.phone};
       SUBJECTS.forEach(function(sub){
         var r=resMap[id+"_"+sub];
         EXAMS.forEach(function(ex){
@@ -2057,7 +2045,7 @@ async function loadOverview(){
             +'<th style="width:36px">#</th>'
             +'<th>Admission No</th>'
             +'<th>Name</th>'
-            +'<th>Gender</th>'
+            
             +'<th>Phone</th>'
           +'</tr></thead><tbody>';
         stuList.forEach(function(s,i){
@@ -2066,7 +2054,7 @@ async function loadOverview(){
             +'<td style="color:var(--g400);font-size:.76rem">'+(i+1)+'</td>'
             +'<td><strong>'+id+'</strong></td>'
             +'<td>'+s.name+'</td>'
-            +'<td>'+(s.gender||'--')+'</td>'
+            
             +'<td>'+(s.phone||'--')+'</td>'
           +'</tr>';
         });
