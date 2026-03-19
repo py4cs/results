@@ -107,7 +107,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
   <div class="login-box">
     <h1>Admin Panel</h1>
     <p>Velammal Results Portal</p>
-    <div class="fg"><label>Email</label><input type="email" id="adminEmail" placeholder="admin@velammal.com" value="admin@velammal.com"></div>
+    <div class="fg"><label>Email</label><input type="email" id="adminEmail" placeholder="e.g. admin@velammal.com"></div>
     <div class="fg"><label>Password</label><input type="password" id="adminPass" placeholder="Enter password"></div>
     <button class="btn btn-primary" onclick="adminLogin()">Login</button>
     <div class="l-err" id="loginErr"></div>
@@ -129,7 +129,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <button class="nav-item" onclick="showSec('secExams',this)">🗂 Exams &amp; Subjects</button>
       <button class="nav-item" onclick="showSec('secClasses',this)">🏫 Classes</button>
       <button class="nav-item" onclick="showSec('secTeacherMgmt',this)">👩‍🏫 Teachers</button>
-      <button class="nav-item" onclick="showSec('secPrincipalMgmt',this)">🎓 Principals</button>
+      <button class="nav-item" onclick="showSec('secPrincipalMgmt',this);renderPrincipalList()">🎓 Principals</button>
       <span class="nav-sep">Marks</span>
       <button class="nav-item" onclick="showSec('secMarks',this)">📝 Upload Marks</button>
       <button class="nav-item" onclick="showSec('secEnterMarks',this);initEnterMarks()">✍️ Enter Marks</button>
@@ -178,7 +178,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div class="card-title">All Students</div>
           <div class="card-sub">Edit individual records or bulk delete an entire class.</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
-            <button class="btn btn-outline" onclick="loadAllStudents()">↻ Load / Refresh</button>
+            <select id="viewClassFilter" style="padding:9px 12px;border:1.5px solid var(--g200);border-radius:8px;font-family:inherit;font-size:.84rem;"><option value="">Select Class</option></select>
+            <button class="btn btn-outline" onclick="loadAllStudents()">↻ Load</button>
             <select id="bulkClass" style="padding:9px 12px;border:1.5px solid var(--g200);border-radius:8px;font-family:inherit;font-size:.84rem;"><option value="">Select class to bulk delete</option></select>
             <button class="btn btn-red" onclick="bulkDeleteClass()">🗑 Delete Class</button>
           </div>
@@ -385,7 +386,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div class="card-title">Edit a Single Student's Mark</div>
           <div class="card-sub">Find a student, update their mark. Ranks recalculate automatically for the whole class.</div>
           <div class="form-row-3" style="margin-bottom:12px">
-            <div class="fg" style="margin:0"><label>Admission No</label><input type="text" id="emExamNo" placeholder="e.g. 12D01"></div>
+            <div class="fg" style="margin:0"><label>Admission No</label><input type="text" id="emExamNo" placeholder="e.g. H1822"></div>
             <div class="fg" style="margin:0"><label>Subject</label><select id="emSubject"></select></div>
             <div class="fg" style="margin:0"><label>Exam</label><select id="emExam"></select></div>
           </div>
@@ -404,7 +405,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <div id="secAnalytics" class="hidden">
         <div class="card">
           <div class="card-title">📊 School Overview</div>
-          <div class="card-sub">Class strength by gender, DRT and main exam marks coverage per subject.</div>
+          <div class="card-sub">Class strength, DRT and main exam marks coverage per subject.</div>
           <button class="btn btn-outline" onclick="loadAnalytics()" style="margin-bottom:14px">↻ Load</button>
           <div id="anaStatus" class="status-bar"></div>
           <div id="anaContent"></div>
@@ -439,7 +440,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div class="card-title">Student Preview</div>
           <div class="card-sub">See exactly what a student will see when they log in.</div>
           <div class="form-row" style="margin-bottom:12px">
-            <div class="fg" style="margin:0"><label>Admission No</label><input type="text" id="prevExamNo" placeholder="e.g. 12D01"></div>
+            <div class="fg" style="margin:0"><label>Admission No</label><input type="text" id="prevExamNo" placeholder="e.g. H1822"></div>
             <div class="fg" style="margin:0;display:flex;align-items:flex-end"><button class="btn btn-outline" onclick="loadPreview()" style="width:100%">👀 Preview</button></div>
           </div>
           <div id="previewStatus" class="status-bar"></div>
@@ -702,7 +703,6 @@ async function loadExamConfig(){
   renderSubjectList();
   renderClassList();
   renderTeacherList();
-  renderPrincipalList();
 }
 
 function populateAllExamDropdowns(){
@@ -809,6 +809,13 @@ function populateAllClassDropdowns(){
     CLASSES.forEach(function(c){var o=document.createElement("option");o.value=c;o.textContent=c;el.appendChild(o);});
     if(CLASSES.includes(prev))el.value=prev;
   });
+  // View students class filter dropdown
+  var vcf=$("viewClassFilter");if(vcf){
+    var prev=vcf.value;
+    vcf.innerHTML="<option value=''>Select Class</option>";
+    CLASSES.forEach(function(c){var o=document.createElement("option");o.value=c;o.textContent=c;vcf.appendChild(o);});
+    if(CLASSES.includes(prev))vcf.value=prev;
+  }
   // Bulk delete class dropdown
   var bulk=$("bulkClass");if(bulk){
     var prev=bulk.value;
@@ -1121,7 +1128,7 @@ async function adminLogout(){
 var CLASSES=[]; // loaded from Firestore /settings/config
 var TEACHERS_CFG=[]; // loaded from Firestore /settings/config
 var PRINCIPALS_CFG=[]; // loaded from Firestore /settings/config
-var SECS=["secStudents","secViewStudents","secExams","secClasses","secTeacherMgmt","secMarks","secEnterMarks","secViewMarks","secEditMark","secOverview","secAnalytics","secMissing","secDupes","secPreview","secExport"];
+var SECS=["secStudents","secViewStudents","secExams","secClasses","secTeacherMgmt","secPrincipalMgmt","secMarks","secEnterMarks","secViewMarks","secEditMark","secOverview","secAnalytics","secMissing","secDupes","secPreview","secExport"];
 function showSec(id,btn){
   SECS.forEach(function(s){$(s).classList.add("hidden");});$(id).classList.remove("hidden");
   document.querySelectorAll(".nav-item").forEach(function(b){b.classList.remove("active");});
@@ -1184,11 +1191,16 @@ async function loadStats(){
 // VIEW & EDIT STUDENTS
 // ═══════════════════════════════════════════════════════
 async function loadAllStudents(){
-  showStatus("viewStatus","Loading...","info");
+  var cls=$("viewClassFilter")?$("viewClassFilter").value:"";
+  if(!cls){showStatus("viewStatus","Please select a class first.","warn");return;}
+  showStatus("viewStatus","Loading "+cls+"...","info");
   try{
-    _allStudents=await fsGetAll("students");
-    _allStudents.sort(function(a,b){return(a.class||"").localeCompare(b.class||"")||(a.name||"").localeCompare(b.name||"");});
-    renderStudentsTable();hideStatus("viewStatus");
+    var all=await fsGetAll("students");
+    _allStudents=all.filter(function(s){return s.class===cls;});
+    _allStudents.sort(function(a,b){return(a.name||"").localeCompare(b.name||"");});
+    renderStudentsTable();
+    showStatus("viewStatus",_allStudents.length+" students in "+cls,"ok");
+    setTimeout(function(){hideStatus("viewStatus");},2000);
   }catch(e){showStatus("viewStatus","Error: "+e.message,"err");}
 }
 function renderStudentsTable(){

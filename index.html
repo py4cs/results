@@ -116,7 +116,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
 .ti-delta{font-size:.9rem;font-weight:800;flex-shrink:0;}
 .ti-delta.up{color:var(--green);}
 .ti-delta.down{color:var(--red);}
-.ins-list{display:flex;flex-direction:column;gap:10px;}
+.ins-list{display:flex;flex-direction:column;gap:10px;max-width:680px;margin:0 auto;}
 .ins-item{display:flex;align-items:flex-start;gap:12px;padding:14px;border-radius:12px;}
 .ins-green{background:#f0fdf4;border:1px solid #bbf7d0;}
 .ins-blue{background:#eff6ff;border:1px solid #bfdbfe;}
@@ -199,7 +199,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <div id="sForm">
         <div class="l-title">Student Login</div>
         <p class="l-sub">Enter your admission number and registered phone number</p>
-        <div class="fg"><label>Admission No</label><input id="examNo" type="text" inputmode="numeric" placeholder="e.g. 12D01"></div>
+        <div class="fg"><label>Admission No</label><input id="examNo" type="text" inputmode="numeric" placeholder="e.g. H1822"></div>
         <div class="fg"><label>Phone Number</label><input id="phone" type="tel" inputmode="numeric" placeholder="Parent's Phone Number"></div>
         <button class="l-btn" id="sBtn" onclick="studentLogin()">Login</button>
         <div class="l-err" id="sErr"></div>
@@ -207,7 +207,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <div id="tForm" class="hidden">
         <div class="l-title">Teacher Login</div>
         <p class="l-sub">Sign in with your Teacher ID and password</p>
-        <div class="fg"><label>Teacher ID</label><input id="tUser" type="text" inputmode="numeric" placeholder="e.g. 7567"></div>
+        <div class="fg"><label>Teacher ID</label><input id="tUser" type="text" inputmode="numeric" placeholder=""></div>
         <div class="fg"><label>Password</label><input id="tPass" type="password" placeholder="Password"></div>
         <button class="l-btn" id="tBtn" onclick="teacherLogin()">Login</button>
         <div class="l-err" id="tErr"></div>
@@ -717,7 +717,34 @@ function renderSubj(res,subject,name){
   else if(oa>=75){pb.textContent='Very Good 👍';pb.className='perf-badge pb-vg';}
   else if(oa>=60){pb.textContent='Good ✅';pb.className='perf-badge pb-gd';}
   else{pb.textContent='Keep Climbing 🚀';pb.className='perf-badge pb-ok';}
-  $('sHeroStats').innerHTML='<strong>Welcome, '+name.split(' ')[0]+'! Viewing '+subject+'</strong><span>Overall average: '+oa+'%</span>';
+  // Build per-subject insight line for welcome banner
+  var allSubjs=Object.keys(d.results||_cur.results||{});
+  var subjInsights=allSubjs.map(function(sub){
+    var r=(_cur.results||{})[sub];
+    if(!r) return null;
+    var subExams=EXAMS.map(function(col){
+      var e=r[col];if(!e||e.mark===undefined||e.mark===null)return null;
+      return{pct:pct(e.mark,e.max||examMax(col))};
+    }).filter(Boolean);
+    if(!subExams.length) return null;
+    var subAvg=Math.round(avg(subExams.map(function(e){return e.pct;})));
+    var msg,emoji;
+    if(subAvg>=90){emoji="🌟";msg="Outstanding performance!";}
+    else if(subAvg>=75){emoji="🎯";msg="Great work, keep it up!";}
+    else if(subAvg>=60){emoji="📈";msg="Good progress, stay consistent!";}
+    else if(subAvg>=45){emoji="💪";msg="You're improving, push harder!";}
+    else{emoji="🚀";msg="Focus here, you can do this!";}
+    return '<div style="display:flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(255,255,255,.1);border-radius:20px;white-space:nowrap">'
+      +'<span>'+emoji+'</span>'
+      +'<span style="font-size:.78rem;font-weight:700;color:#fff">'+sub+'</span>'
+      +'<span style="font-size:.72rem;color:rgba(255,255,255,.7)">'+subAvg+'% · '+msg+'</span>'
+    +'</div>';
+  }).filter(Boolean);
+
+  $('sHeroStats').innerHTML='<div style="margin-bottom:8px"><strong style="color:#fff;font-size:.95rem">Welcome, '+name.split(' ')[0]+'! 👋</strong><span style="color:rgba(255,255,255,.65);font-size:.75rem;margin-left:8px">Class '+student.class+'</span></div>'
+    +(subjInsights.length
+      ?'<div style="display:flex;flex-wrap:wrap;gap:6px">'+subjInsights.join('')+'</div>'
+      :'<span style="color:rgba(255,255,255,.6);font-size:.78rem">Results will appear once marks are uploaded.</span>');
 
   // Summary
   var drtA=drtTaken.length?Math.round(avg(drtTaken.map(function(e){return e.pct;}))):null;
@@ -1402,11 +1429,13 @@ function searchStudents(){
   var q=$('stuSearchInput').value.trim().toLowerCase();
   if(!q){ $('stuSearchResults').innerHTML=''; return; }
   var res=_cur.students.filter(function(s){
-    return (s.name&&s.name.toLowerCase().indexOf(q)>=0)||(s.examNo&&String(s.examNo).indexOf(q)>=0);
+    var admNo=String(s.admNo||s.examNo||s._id||"");
+    return (s.name&&s.name.toLowerCase().indexOf(q)>=0)||(admNo.toLowerCase().indexOf(q)>=0);
   }).slice(0,10);
   $('stuSearchResults').innerHTML=res.length
     ?'<div class="stu-list">'+res.map(function(s){
-      return '<div class="stu-item" data-en="'+s.examNo+'"><strong>'+s.name+'</strong><span>Admission No: '+s.examNo+' · Class '+s.class+'</span></div>';
+      var admNo=s.admNo||s.examNo||s._id||"";
+      return '<div class="stu-item" data-en="'+admNo+'"><strong>'+s.name+'</strong><span>Admission No: '+admNo+' · Class '+s.class+'</span></div>';
     }).join('')+'</div>'
     :"<div class='no-data' style='min-height:50px'>No students found</div>";
   setTimeout(function(){
