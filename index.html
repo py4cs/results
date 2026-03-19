@@ -79,6 +79,21 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
 .mtable th{background:var(--g50);padding:10px 12px;text-align:left;font-size:.74rem;font-weight:700;color:var(--g600);border-bottom:2px solid var(--g200);white-space:nowrap;}
 .mtable td{padding:10px 12px;border-bottom:1px solid var(--g100);white-space:nowrap;}
 @media(max-width:480px){.mtable{font-size:.72rem;}.mtable th{padding:7px 7px;font-size:.65rem;}.mtable td{padding:7px 7px;}}
+.print-btn{background:var(--blue);color:#fff;border:none;border-radius:20px;padding:6px 14px;font-size:.73rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;}
+.print-btn:hover{background:var(--blue-lt);}
+@media print{
+  .topbar,.subj-bar,.lo-btn,.print-btn,.tf-row,.sec-lbl+div>.card-sub{display:none!important;}
+  .s-wrap,.t-wrap{padding:0;max-width:100%;}
+  .card{box-shadow:none;border:1px solid #ddd;break-inside:avoid;margin-bottom:10px;}
+  body{background:#fff;}
+  .print-header{display:block!important;}
+  .page{display:flex!important;}
+  #sDash .hero{background:#0a1f6e!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .ch200,.ch220,.ch240{display:none;}
+}
+.print-header{display:none;padding:12px 0 16px;border-bottom:2px solid #0a1f6e;margin-bottom:16px;}
+.print-header h2{color:#0a1f6e;font-size:1.1rem;font-weight:800;}
+.print-header p{color:#475569;font-size:.78rem;margin-top:4px;}
 .chip{display:inline-block;padding:2px 7px;border-radius:6px;font-size:.69rem;font-weight:700;}
 .ch-drt{background:#dbeafe;color:#1d4ed8;}
 .ch-pt{background:#dcfce7;color:#15803d;}
@@ -222,10 +237,12 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
     <div class="tb-brand"><span>Velammal Results</span><small>2025-26</small></div>
     <div class="tb-r">
       <div class="u-badge"><div class="u-av" id="sAv">S</div><div class="u-info"><span id="sName"></span><small id="sMeta"></small></div></div>
+      <button class="print-btn" onclick="printStudentReport()">🖨️ Export PDF</button>
       <button class="lo-btn" onclick="logout()">Logout</button>
     </div>
   </div>
   <div class="s-wrap">
+    <div class="print-header" id="sPrintHeader"></div>
     <div class="hero">
       <div class="hero-top">
         <div class="hero-left"><div class="hero-av" id="sHeroAv">S</div><div><div class="hero-name" id="sHeroName"></div><div class="hero-meta" id="sHeroMeta"></div></div></div>
@@ -271,6 +288,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
     <div class="tb-brand"><span>Velammal Results</span><small>Teacher View</small></div>
     <div class="tb-r">
       <div class="u-badge"><div class="u-av" id="tAv">T</div><div class="u-info"><span id="tName"></span><small id="tSubLabel" style="color:var(--gold-lt)"></small></div></div>
+      <button class="print-btn" onclick="printTeacherReport()">🖨️ Export PDF</button>
       <button class="lo-btn" onclick="logout()">Logout</button>
     </div>
   </div>
@@ -668,6 +686,103 @@ function logout(){
   $('examNo').value=''; $('phone').value='';
   try{ _fbAuth2.signOut(); }catch(e){}
   go('loginPage');
+}
+
+// ═══════════════════════════════════════════
+// PRINT / PDF EXPORT
+// ═══════════════════════════════════════════
+function printStudentReport(){
+  if(!_cur||_cur.type!=='student') return;
+  var student=_cur.student;
+  var now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
+  // Build print header
+  var ph=$('sPrintHeader');
+  if(ph){
+    ph.innerHTML='<h2>Velammal School — Student Performance Report</h2>'
+      +'<p>Name: <strong>'+student.name+'</strong> &nbsp;|&nbsp; '
+      +'Admission No: <strong>'+(_cur.examNo||student.admNo||"")+'</strong> &nbsp;|&nbsp; '
+      +'Class: <strong>'+student.class+'</strong> &nbsp;|&nbsp; '
+      +'Generated: '+now+'</p>';
+  }
+  // Show all subjects for print — temporarily render all
+  var allSubjs=Object.keys(_cur.results||{});
+  // Build a hidden print content area with all subjects
+  var printArea=document.getElementById('sPrintAllSubjects');
+  if(!printArea){
+    printArea=document.createElement('div');
+    printArea.id='sPrintAllSubjects';
+    printArea.style.display='none';
+    document.querySelector('.s-wrap').appendChild(printArea);
+  }
+  var html='';
+  allSubjs.forEach(function(sub){
+    var res=_cur.results[sub];
+    if(!res) return;
+    var exams=EXAMS.map(function(col){
+      var e=res[col];if(!e||e.mark===undefined)return null;
+      var m=e.mark;var mx=e.max||examMax(col);
+      return{name:col,type:examCategory(col),max:mx,score:m,
+        pct:m!=null?pct(m,mx):null,rank:e.rank,classSize:e.classSize||0,
+        classAvg:e.classAvg||0,classAvgPct:e.classAvgPct||0,absent:m===null};
+    }).filter(Boolean);
+    if(!exams.length) return;
+    var taken=exams.filter(function(e){return!e.absent;});
+    var subAvg=taken.length?Math.round(avg(taken.map(function(e){return e.pct;}))):null;
+    html+='<div style="margin-bottom:20px;break-inside:avoid">'
+      +'<div style="background:#0a1f6e;color:#fff;padding:8px 12px;border-radius:6px 6px 0 0;font-weight:700;font-size:.88rem;display:flex;justify-content:space-between">'
+        +'<span>'+sub+'</span>'
+        +(subAvg!==null?'<span>Overall: '+subAvg+'%</span>':'')
+      +'</div>'
+      +'<table style="width:100%;border-collapse:collapse;font-size:.8rem">'
+      +'<thead><tr style="background:#f1f5f9">'
+        +'<th style="padding:7px 10px;text-align:left;border:1px solid #e2e8f0">Exam</th>'
+        +'<th style="padding:7px 10px;text-align:left;border:1px solid #e2e8f0">Max</th>'
+        +'<th style="padding:7px 10px;text-align:left;border:1px solid #e2e8f0">Score</th>'
+        +'<th style="padding:7px 10px;text-align:left;border:1px solid #e2e8f0">%</th>'
+        +'<th style="padding:7px 10px;text-align:left;border:1px solid #e2e8f0">Class Avg</th>'
+        +'<th style="padding:7px 10px;text-align:left;border:1px solid #e2e8f0">Rank</th>'
+      +'</tr></thead><tbody>';
+    exams.forEach(function(e){
+      var scoreCell=e.absent?'AB':(e.score+' ('+e.pct+'%)');
+      var avgCell=e.absent?'--':(e.classAvg+' ('+e.classAvgPct+'%)');
+      var rankCell=e.rank?('#'+e.rank+' / '+e.classSize):(e.absent?'AB':'--');
+      html+='<tr>'
+        +'<td style="padding:7px 10px;border:1px solid #e2e8f0"><strong>'+e.name+'</strong></td>'
+        +'<td style="padding:7px 10px;border:1px solid #e2e8f0">'+e.max+'</td>'
+        +'<td style="padding:7px 10px;border:1px solid #e2e8f0">'+scoreCell+'</td>'
+        +'<td style="padding:7px 10px;border:1px solid #e2e8f0">'+(e.pct!==null?e.pct+'%':'--')+'</td>'
+        +'<td style="padding:7px 10px;border:1px solid #e2e8f0">'+avgCell+'</td>'
+        +'<td style="padding:7px 10px;border:1px solid #e2e8f0">'+rankCell+'</td>'
+      +'</tr>';
+    });
+    html+='</tbody></table></div>';
+  });
+  printArea.innerHTML=html;
+  printArea.style.display='block';
+  window.print();
+  setTimeout(function(){printArea.style.display='none';},500);
+}
+
+function printTeacherReport(){
+  if(!_cur||_cur.type!=='teacher') return;
+  var teacher=_cur.teacher;
+  var now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
+  // Add print header temporarily to teacher wrap
+  var tw=document.querySelector('.t-wrap');
+  var existing=document.getElementById('tPrintHeader');
+  if(existing) existing.remove();
+  var ph=document.createElement('div');
+  ph.id='tPrintHeader';
+  ph.className='print-header';
+  ph.style.display='block';
+  ph.innerHTML='<h2>Velammal School — Class Performance Report</h2>'
+    +'<p>Teacher: <strong>'+teacher.name+'</strong> &nbsp;|&nbsp; '
+    +'Subject: <strong>'+teacher.subject+'</strong> &nbsp;|&nbsp; '
+    +'Class: <strong>'+T.cls+'</strong> &nbsp;|&nbsp; '
+    +'Generated: '+now+'</p>';
+  tw.insertBefore(ph,tw.firstChild);
+  window.print();
+  setTimeout(function(){ph.remove();},500);
 }
 
 // ═══════════════════════════════════════════
