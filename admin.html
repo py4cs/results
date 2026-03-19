@@ -129,6 +129,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <button class="nav-item" onclick="showSec('secExams',this)">🗂 Exams &amp; Subjects</button>
       <button class="nav-item" onclick="showSec('secClasses',this)">🏫 Classes</button>
       <button class="nav-item" onclick="showSec('secTeacherMgmt',this)">👩‍🏫 Teachers</button>
+      <button class="nav-item" onclick="showSec('secPrincipalMgmt',this)">🎓 Principals</button>
       <span class="nav-sep">Marks</span>
       <button class="nav-item" onclick="showSec('secMarks',this)">📝 Upload Marks</button>
       <button class="nav-item" onclick="showSec('secEnterMarks',this);initEnterMarks()">✍️ Enter Marks</button>
@@ -153,7 +154,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
         <div class="card">
           <div class="card-title">Upload Students</div>
           <div class="card-sub">Bulk upload or update student records. Existing records will be updated.</div>
-          <div class="info-box">Required columns: <code>Examno, Name, Class, Gender, Phoneno</code></div>
+          <div class="info-box">Required columns: <code>Admno, Name, Class, Gender, Phoneno</code></div>
           <div class="upload-box" onclick="document.getElementById('fileInput').click()">
             <div class="ub-icon">📂</div><p>Click to select students CSV file</p><small>Supports .csv files</small>
           </div>
@@ -184,7 +185,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div id="viewStatus" class="status-bar"></div>
           <div class="tscroll">
             <table class="ptable" id="allStudentsTable">
-              <thead><tr><th>Exam No</th><th>Name</th><th>Class</th><th>Gender</th><th>Phone</th><th>Actions</th></tr></thead>
+              <thead><tr><th>Admission No</th><th>Name</th><th>Class</th><th>Gender</th><th>Phone</th><th>Actions</th></tr></thead>
               <tbody><tr><td colspan="6" style="text-align:center;color:var(--g400);padding:20px">Click Load / Refresh</td></tr></tbody>
             </table>
           </div>
@@ -248,7 +249,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       </div>
 
       <!-- MANAGE TEACHERS -->
-      <div id="secTeacherMgmt" class="hidden">
+      <div id="secTeacherMgmt","secPrincipalMgmt" class="hidden">
         <div class="card">
           <div class="card-title">Manage Teachers</div>
           <div class="card-sub">Add, edit or remove teachers. Changes take effect immediately on next login.</div>
@@ -333,7 +334,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
             <div class="prog-wrap hidden" id="emProgWrap"><div class="prog-bar" id="emProgBar" style="width:0%"></div></div>
             <div class="tscroll">
               <table class="ptable" id="emTable">
-                <thead><tr><th>#</th><th>Exam No</th><th>Name</th><th>Marks <small style="font-weight:400;color:var(--g400)">(AB for absent)</small></th><th>Status</th></tr></thead>
+                <thead><tr><th>#</th><th>Admission No</th><th>Name</th><th>Marks <small style="font-weight:400;color:var(--g400)">(AB for absent)</small></th><th>Status</th></tr></thead>
                 <tbody></tbody>
               </table>
             </div>
@@ -360,10 +361,21 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div id="vmStatus" class="status-bar" style="margin-top:12px"></div>
           <div class="tscroll">
             <table class="ptable" id="vmTable">
-              <thead><tr><th>Exam No</th><th>Class</th><th>Marks</th><th>Max</th><th>%</th><th>Rank</th><th>Class Size</th><th>Class Avg</th></tr></thead>
+              <thead><tr><th>Admission No</th><th>Class</th><th>Marks</th><th>Max</th><th>%</th><th>Rank</th><th>Class Size</th><th>Class Avg</th></tr></thead>
               <tbody><tr><td colspan="8" style="text-align:center;color:var(--g400);padding:20px">Select and load</td></tr></tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <!-- PRINCIPAL MANAGEMENT -->
+      <div id="secPrincipalMgmt" class="hidden">
+        <div class="card">
+          <div class="card-title">🎓 Principal Management</div>
+          <div class="card-sub">Add or remove principals. Each principal gets a Firebase login account automatically.</div>
+          <div id="principalStatus" class="status-bar"></div>
+          <div id="principalListWrap" style="margin-bottom:16px"></div>
+          <button class="btn btn-green" onclick="openPrincipalModal(null)" style="width:auto">➕ Add Principal</button>
         </div>
       </div>
 
@@ -373,7 +385,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div class="card-title">Edit a Single Student's Mark</div>
           <div class="card-sub">Find a student, update their mark. Ranks recalculate automatically for the whole class.</div>
           <div class="form-row-3" style="margin-bottom:12px">
-            <div class="fg" style="margin:0"><label>Exam No</label><input type="text" id="emExamNo" placeholder="e.g. 1001"></div>
+            <div class="fg" style="margin:0"><label>Admission No</label><input type="text" id="emExamNo" placeholder="e.g. 12D01"></div>
             <div class="fg" style="margin:0"><label>Subject</label><select id="emSubject"></select></div>
             <div class="fg" style="margin:0"><label>Exam</label><select id="emExam"></select></div>
           </div>
@@ -427,7 +439,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div class="card-title">Student Preview</div>
           <div class="card-sub">See exactly what a student will see when they log in.</div>
           <div class="form-row" style="margin-bottom:12px">
-            <div class="fg" style="margin:0"><label>Exam Number</label><input type="text" id="prevExamNo" placeholder="e.g. 1001"></div>
+            <div class="fg" style="margin:0"><label>Admission No</label><input type="text" id="prevExamNo" placeholder="e.g. 12D01"></div>
             <div class="fg" style="margin:0;display:flex;align-items:flex-end"><button class="btn btn-outline" onclick="loadPreview()" style="width:100%">👀 Preview</button></div>
           </div>
           <div id="previewStatus" class="status-bar"></div>
@@ -464,7 +476,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div style="display:flex;flex-direction:column;gap:14px">
             <div style="padding:16px;border:1px solid var(--g200);border-radius:10px">
               <strong style="font-size:.88rem">All Students</strong>
-              <p style="font-size:.78rem;color:var(--g600);margin:4px 0 10px">Exam No, Name, Class, Gender, Phone</p>
+              <p style="font-size:.78rem;color:var(--g600);margin:4px 0 10px">Admission No, Name, Class, Gender, Phone</p>
               <button class="btn btn-outline" onclick="exportStudents()">⬇ Download Students CSV</button>
             </div>
             <div style="padding:16px;border:1px solid var(--g200);border-radius:10px">
@@ -678,6 +690,9 @@ async function loadExamConfig(){
     if(cfg.teachers&&Array.isArray(cfg.teachers)){
       TEACHERS_CFG=cfg.teachers;
     } else { TEACHERS_CFG=[]; }
+    if(cfg.principals&&Array.isArray(cfg.principals)){
+      PRINCIPALS_CFG=cfg.principals;
+    } else { PRINCIPALS_CFG=[]; }
   } else {
     EXAMS=[];EXAM_MAX={};EXAM_PASS={};SUBJECTS=[];CLASSES=[];TEACHERS_CFG=[];
   }
@@ -688,6 +703,7 @@ async function loadExamConfig(){
   renderSubjectList();
   renderClassList();
   renderTeacherList();
+  renderPrincipalList();
 }
 
 function populateAllExamDropdowns(){
@@ -782,7 +798,7 @@ function togglePassInput(){
 
 async function saveExamConfig(){
   var examArr=EXAMS.map(function(ex){return{name:ex,max:EXAM_MAX[ex]||100,passMark:EXAM_PASS[ex]!=null?EXAM_PASS[ex]:null};});
-  await fsSet("settings","config",{exams:examArr,subjects:SUBJECTS,classes:CLASSES,teachers:TEACHERS_CFG});
+  await fsSet("settings","config",{exams:examArr,subjects:SUBJECTS,classes:CLASSES,teachers:TEACHERS_CFG,principals:PRINCIPALS_CFG});
 }
 
 function populateAllClassDropdowns(){
@@ -1105,6 +1121,7 @@ async function adminLogout(){
 // ═══════════════════════════════════════════════════════
 var CLASSES=[]; // loaded from Firestore /settings/config
 var TEACHERS_CFG=[]; // loaded from Firestore /settings/config
+var PRINCIPALS_CFG=[]; // loaded from Firestore /settings/config
 var SECS=["secStudents","secViewStudents","secExams","secClasses","secTeacherMgmt","secMarks","secEnterMarks","secViewMarks","secEditMark","secOverview","secAnalytics","secMissing","secDupes","secPreview","secExport"];
 function showSec(id,btn){
   SECS.forEach(function(s){$(s).classList.add("hidden");});$(id).classList.remove("hidden");
@@ -1127,7 +1144,7 @@ function handleStudentFile(input){
       if(miss.length){showStatus("stuStatus","Missing columns: "+miss.join(", "),"err");return;}
       _stuRows=parsed.rows.map(function(r){var n={};Object.keys(r).forEach(function(k){n[k.toLowerCase()]=String(r[k]).trim();});return n;}).filter(function(r){return r.examno;});
       var thead=$("stuPreviewTable").querySelector("thead"),tbody=$("stuPreviewTable").querySelector("tbody");
-      thead.innerHTML="<tr><th>Exam No</th><th>Name</th><th>Class</th><th>Gender</th><th>Phone</th></tr>";
+      thead.innerHTML="<tr><th>Admission No</th><th>Name</th><th>Class</th><th>Gender</th><th>Phone</th></tr>";
       tbody.innerHTML=_stuRows.slice(0,10).map(function(r){return"<tr><td>"+r.examno+"</td><td>"+r.name+"</td><td>"+r.class+"</td><td>"+r.gender+"</td><td>"+r.phoneno+"</td></tr>";}).join("");
       $("stuPreviewTitle").textContent="Preview — "+_stuRows.length+" students (first 10 shown)";
       $("stuPreviewWrap").classList.remove("hidden");
@@ -1260,7 +1277,7 @@ function handleMarksFile(input){
       var invalidRows=_marksRows.filter(function(r){return r.marks!==null&&r.marks>maxM;});
       var abCount=_marksRows.filter(function(r){return r.marks===null;}).length;
       var thead=$("marksPreviewTable").querySelector("thead"),tbody=$("marksPreviewTable").querySelector("tbody");
-      thead.innerHTML="<tr><th>Exam No</th><th>Marks</th><th>Max</th><th>Status</th></tr>";
+      thead.innerHTML="<tr><th>Admission No</th><th>Marks</th><th>Max</th><th>Status</th></tr>";
       tbody.innerHTML=_marksRows.slice(0,15).map(function(r){
         var isAb=r.marks===null;
         var isInvalid=r.marks!==null&&r.marks>maxM;
@@ -1630,7 +1647,7 @@ async function viewMarks(){
       var ra=a[exam].rank||9999,rb=b[exam].rank||9999;
       return ra-rb;
     });
-    $("vmTable").querySelector("thead").innerHTML="<tr><th>Exam No</th><th>Class</th><th>Marks</th><th>Max</th><th>%</th><th>Rank</th><th>Class Size</th><th>Class Avg</th></tr>";
+    $("vmTable").querySelector("thead").innerHTML="<tr><th>Admission No</th><th>Class</th><th>Marks</th><th>Max</th><th>%</th><th>Rank</th><th>Class Size</th><th>Class Avg</th></tr>";
     var tbody=$("vmTable").querySelector("tbody");
     tbody.innerHTML=matching.length
       ?matching.map(function(r){
@@ -1831,7 +1848,7 @@ async function loadMissing(){
     var students=await fsGetAll("students");
     var results=await fsGetAll("results");
     var resMap={};results.forEach(function(r){resMap[r.examNo+"_"+r.subject]=r;});
-    var html='<div class="tscroll"><table class="ptable"><thead><tr><th>Exam No</th><th>Name</th><th>Class</th>';
+    var html='<div class="tscroll"><table class="ptable"><thead><tr><th>Admission No</th><th>Name</th><th>Class</th>';
     SUBJECTS.forEach(function(sub){EXAMS.forEach(function(ex){html+="<th>"+sub.slice(0,1)+"-"+ex+"</th>";});});
     html+="</tr></thead><tbody>";
     var issues=0;
@@ -1891,7 +1908,7 @@ async function loadPreview(){
     for(var i=0;i<SUBJECTS.length;i++){var r=await fsGet("results",en+"_"+SUBJECTS[i]);if(r)results[SUBJECTS[i]]=r;}
     hideStatus("previewStatus");
     var html='<div style="border:2px solid var(--blue-border);border-radius:12px;overflow:hidden;margin-top:12px">';
-    html+='<div style="background:var(--blue);padding:14px 16px;color:#fff"><strong>'+student.name+'</strong> — Exam No: '+en+' | Class: '+student.class+'</div>';
+    html+='<div style="background:var(--blue);padding:14px 16px;color:#fff"><strong>'+student.name+'</strong> — Admission No: '+en+' | Class: '+student.class+'</div>';
     SUBJECTS.forEach(function(subj){
       var res=results[subj];
       html+='<div style="padding:14px 16px;border-bottom:1px solid var(--g100)"><strong style="font-size:.84rem;color:var(--blue)">'+subj+'</strong>';
@@ -2038,7 +2055,7 @@ async function loadOverview(){
         html+='<div style="overflow-x:auto"><table class="ptable">'
           +'<thead><tr>'
             +'<th style="width:36px">#</th>'
-            +'<th>Exam No</th>'
+            +'<th>Admission No</th>'
             +'<th>Name</th>'
             +'<th>Gender</th>'
             +'<th>Phone</th>'
@@ -2101,6 +2118,113 @@ function renderTeacherDirectory(byClass){
 }
 
 // ═══════════════════════════════════════════════════════
+// PRINCIPAL MANAGEMENT
+// ═══════════════════════════════════════════════════════
+function renderPrincipalList(){
+  var wrap=$("principalListWrap");if(!wrap)return;
+  if(!PRINCIPALS_CFG.length){wrap.innerHTML="<div style='color:var(--g400);font-size:.82rem;padding:8px'>No principals added yet.</div>";return;}
+  var html='<table class="ptable"><thead><tr><th>ID</th><th>Name</th><th>Auth</th><th>Actions</th></tr></thead><tbody>';
+  PRINCIPALS_CFG.forEach(function(p){
+    html+="<tr>"
+      +"<td><strong>"+p.id+"</strong></td>"
+      +"<td>"+p.name+"</td>"
+      +"<td><span class='badge badge-grey'>🔒 Firebase Auth</span></td>"
+      +"<td style='display:flex;gap:6px'>"
+        +"<button class='btn btn-outline btn-sm' data-pid='"+p.id+"' onclick='openPrincipalModal(this.dataset.pid)'>✏️</button>"
+        +"<button class='btn btn-red btn-sm' data-pid='"+p.id+"' onclick='deletePrincipal(this.dataset.pid)'>🗑</button>"
+      +"</td></tr>";
+  });
+  html+="</tbody></table>";
+  wrap.innerHTML=html;
+}
+
+function openPrincipalModal(id){
+  if(id){
+    var p=PRINCIPALS_CFG.find(function(x){return x.id===id;});if(!p)return;
+    $("principalModalTitle").textContent="✏️ Edit Principal";
+    $("principalEditId").value=id;
+    $("principalIdInput").value=p.id;
+    $("principalIdInput").disabled=true;
+    $("principalName").value=p.name;
+    $("principalPass").value="";
+  } else {
+    $("principalModalTitle").textContent="➕ Add Principal";
+    $("principalEditId").value="";
+    $("principalIdInput").value="";
+    $("principalIdInput").disabled=false;
+    $("principalName").value="";
+    $("principalPass").value="";
+  }
+  hideStatus("principalModalStatus");
+  $("principalModal").classList.remove("hidden");
+}
+function closePrincipalModal(){$("principalModal").classList.add("hidden");}
+
+async function savePrincipal(){
+  var isEdit=!!$("principalEditId").value;
+  var id=$("principalIdInput").value.trim();
+  var name=$("principalName").value.trim();
+  var pass=$("principalPass").value.trim();
+  if(!id||!name||!pass){showStatus("principalModalStatus","ID, Name and Password are required.","err");return;}
+  if(!isEdit&&PRINCIPALS_CFG.find(function(p){return p.id===id;})){showStatus("principalModalStatus","Principal ID "+id+" already exists.","err");return;}
+  showStatus("principalModalStatus",isEdit?"Updating...":"Creating Firebase account...","info");
+  var email=id+"@velammal.com";
+  try{
+    if(isEdit){
+      await updateFirebaseAuthPassword(email,pass);
+    } else {
+      await createFirebaseAuthUser(email,pass);
+    }
+  }catch(e){
+    showStatus("principalModalStatus","Firebase Auth error: "+e.message,"err");return;
+  }
+  var entry={id:id,name:name};
+  var prev=PRINCIPALS_CFG.slice();
+  if(isEdit){
+    var idx=PRINCIPALS_CFG.findIndex(function(p){return p.id===id;});
+    if(idx>=0)PRINCIPALS_CFG[idx]=entry; else PRINCIPALS_CFG.push(entry);
+  } else {
+    PRINCIPALS_CFG.push(entry);
+  }
+  try{
+    await saveExamConfig();
+    renderPrincipalList();
+    closePrincipalModal();
+    showStatus("principalStatus",(isEdit?"Updated":"Added")+" principal "+name+". Firebase account "+(isEdit?"updated":"created")+".","ok");
+  }catch(e){
+    PRINCIPALS_CFG=prev;
+    showStatus("principalModalStatus","Firestore error: "+e.message,"err");
+  }
+}
+
+async function deletePrincipal(id){
+  var p=PRINCIPALS_CFG.find(function(x){return x.id===id;});
+  if(!p)return;
+  if(!confirm("Delete principal "+p.name+" ("+id+")?\nThis will disable their login. Cannot be undone."))return;
+  var prev=PRINCIPALS_CFG.slice();
+  PRINCIPALS_CFG=PRINCIPALS_CFG.filter(function(x){return x.id!==id;});
+  try{
+    try{
+      var user=_fbAuth.currentUser;
+      if(user){
+        var token=await user.getIdToken();
+        var rndPass="disabled_"+Math.random().toString(36).slice(2)+"_"+Date.now();
+        await fetch("https://identitytoolkit.googleapis.com/v1/accounts:update?key=AIzaSyC79jcB_6TgJIG4ngXmPDY6Zjmg8PC0-pU",{
+          method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({email:id+"@velammal.com",password:rndPass,returnSecureToken:false,idToken:token})
+        });
+      }
+    }catch(ae){console.warn("Firebase Auth cleanup:",ae.message);}
+    await saveExamConfig();
+    renderPrincipalList();
+    showStatus("principalStatus","Deleted principal "+p.name+". Login disabled.","ok");
+  }catch(e){
+    PRINCIPALS_CFG=prev;
+    showStatus("principalStatus","Error: "+e.message,"err");
+  }
+}
+
+// ═══════════════════════════════════════════════════════
 // NUKE EVERYTHING
 // ═══════════════════════════════════════════════════════
 function openNukeModal(){
@@ -2146,6 +2270,24 @@ document.addEventListener("keydown",function(e){
   if(e.key==="Escape"){closeEditModal();closeNukeModal();}
 });
 </script>
+
+<!-- PRINCIPAL MODAL -->
+<div id="principalModal" class="modal-bg hidden">
+  <div class="modal" style="max-width:440px">
+    <h3 id="principalModalTitle">➕ Add Principal</h3>
+    <input type="hidden" id="principalEditId">
+    <div class="form-row">
+      <div class="fg"><label>Principal ID</label><input type="text" id="principalIdInput" placeholder="e.g. P001"></div>
+      <div class="fg"><label>Name</label><input type="text" id="principalName" placeholder="e.g. Dr. Kumar"></div>
+    </div>
+    <div class="fg"><label>Password</label><input type="text" id="principalPass" placeholder="e.g. vval@2024"></div>
+    <div id="principalModalStatus" class="status-bar"></div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closePrincipalModal()">Cancel</button>
+      <button class="btn btn-green" onclick="savePrincipal()">💾 Save</button>
+    </div>
+  </div>
+</div>
 
 <!-- ENTER MARKS CONFLICT MODAL -->
 <div id="emConflictModal" class="modal-bg hidden">

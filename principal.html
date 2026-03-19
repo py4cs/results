@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Principal Dashboard — Velammal</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<style>
+:root{
+  --blue:#0a1f6e;--blue-lt:#2952d9;--blue-pale:#eef2ff;--blue-border:#c7d2fe;
+  --gold:#e9a820;--cream:#f0f2fc;--g50:#f8fafc;--g100:#f1f5f9;--g200:#e2e8f0;
+  --g400:#94a3b8;--g600:#475569;--g800:#1e293b;
+  --green:#16a34a;--green-lt:#dcfce7;--red:#dc2626;--red-lt:#fee2e2;
+  --org:#f97316;--org-lt:#ffedd5;
+  --sh-sm:0 1px 4px rgba(10,31,110,.07);--sh-md:0 4px 16px rgba(10,31,110,.12);
+  --r:12px;--p:20px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:var(--g800);min-height:100vh;}
+.hidden{display:none!important;}
+
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,var(--cream) 60%,#dbeafe);}
+.login-box{background:#fff;border-radius:20px;box-shadow:0 8px 32px rgba(10,31,110,.16);padding:36px 32px;width:100%;max-width:400px;border:1px solid var(--blue-border);}
+.login-box .logo{font-size:2rem;text-align:center;margin-bottom:8px;}
+.login-box h1{font-size:1.3rem;font-weight:800;color:var(--blue);text-align:center;margin-bottom:4px;}
+.login-box p{font-size:.82rem;color:var(--g600);text-align:center;margin-bottom:24px;}
+.fg{margin-bottom:14px;}
+.fg label{display:block;font-size:.78rem;font-weight:700;color:var(--g800);margin-bottom:6px;}
+.fg input{width:100%;padding:11px 14px;border:1.5px solid var(--g200);border-radius:8px;font-size:.95rem;font-family:inherit;background:var(--g50);color:var(--g800);}
+.fg input:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(10,31,110,.08);}
+.l-err{background:var(--red-lt);color:var(--red);padding:10px 14px;border-radius:8px;font-size:.82rem;font-weight:500;margin-top:12px;display:none;border-left:3px solid var(--red);}
+.btn-login{width:100%;padding:13px;background:linear-gradient(135deg,var(--blue),var(--blue-lt));color:#fff;border:none;border-radius:8px;font-size:.9rem;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;}
+.btn-login:disabled{opacity:.6;cursor:not-allowed;}
+
+/* APP */
+.app-wrap{display:none;flex-direction:column;min-height:100vh;}
+.topbar{background:linear-gradient(135deg,var(--blue),var(--blue-lt));padding:0 var(--p);display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,48,135,.25);}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.topbar h1{color:#fff;font-size:.95rem;font-weight:800;}
+.topbar small{color:rgba(255,255,255,.6);font-size:.7rem;display:block;}
+.tb-badge{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 12px;border-radius:20px;font-size:.75rem;font-weight:700;}
+.tb-right{display:flex;align-items:center;gap:10px;}
+.lo-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:6px 14px;border-radius:20px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;}
+.refresh-btn{background:var(--gold);border:none;color:var(--blue);padding:6px 14px;border-radius:20px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;}
+
+/* LAYOUT */
+.main{flex:1;padding:var(--p);max-width:1400px;margin:0 auto;width:100%;}
+
+/* LOADING */
+.loading-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;}
+.loading-spinner{width:48px;height:48px;border:4px solid var(--blue-border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{font-size:.95rem;font-weight:600;color:var(--g600);}
+
+/* FILTERS */
+.filter-bar{background:#fff;border-radius:var(--r);padding:14px 16px;box-shadow:var(--sh-sm);border:1px solid var(--g100);margin-bottom:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+.filter-bar label{font-size:.75rem;font-weight:700;color:var(--g600);margin-right:4px;}
+.filter-bar select{padding:7px 12px;border:1.5px solid var(--g200);border-radius:7px;font-family:inherit;font-size:.82rem;font-weight:600;color:var(--g800);background:var(--g50);}
+.filter-bar select:focus{outline:none;border-color:var(--blue);}
+
+/* CARDS */
+.card{background:#fff;border-radius:var(--r);padding:20px;box-shadow:var(--sh-sm);border:1px solid var(--g100);margin-bottom:16px;}
+.card-title{font-size:1rem;font-weight:700;color:var(--g800);margin-bottom:4px;}
+.card-sub{font-size:.78rem;color:var(--g400);margin-bottom:16px;}
+.sec-lbl{font-size:.72rem;font-weight:800;color:var(--g400);text-transform:uppercase;letter-spacing:1px;padding:8px 0 8px;margin-top:8px;}
+
+/* STAT GRID */
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px;}
+@media(min-width:480px){.stat-grid{grid-template-columns:repeat(3,1fr);}}
+@media(min-width:900px){.stat-grid{grid-template-columns:repeat(7,1fr);}}
+.stat-card{background:#fff;border-radius:10px;padding:14px;text-align:center;box-shadow:var(--sh-sm);border:1px solid var(--g100);}
+.stat-card .sv{font-size:1.3rem;font-weight:800;color:var(--blue);}
+.stat-card .sl{font-size:.68rem;font-weight:700;color:var(--g600);margin-top:4px;text-transform:uppercase;letter-spacing:.4px;}
+.stat-card.green .sv{color:var(--green);}
+.stat-card.red .sv{color:var(--red);}
+.stat-card.gold .sv{color:var(--gold);}
+
+/* TWO COL */
+.two-col{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:16px;}
+@media(min-width:700px){.two-col{grid-template-columns:1fr 1fr;}}
+.three-col{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:16px;}
+@media(min-width:900px){.three-col{grid-template-columns:1fr 1fr 1fr;}}
+
+/* CHARTS */
+.ch240{height:240px;}
+.ch220{height:220px;}
+.ch200{height:200px;}
+
+/* TABLES */
+.tscroll{overflow-x:auto;}
+.ptable{width:100%;border-collapse:collapse;font-size:.82rem;}
+.ptable th{background:var(--g50);padding:9px 12px;text-align:left;font-size:.74rem;font-weight:700;color:var(--g600);border-bottom:2px solid var(--g200);white-space:nowrap;}
+.ptable td{padding:9px 12px;border-bottom:1px solid var(--g100);white-space:nowrap;}
+.ptable tr:hover td{background:var(--g50);}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.72rem;font-weight:700;}
+.badge-blue{background:var(--blue-pale);color:var(--blue);}
+.badge-green{background:var(--green-lt);color:var(--green);}
+.badge-red{background:var(--red-lt);color:var(--red);}
+.badge-gold{background:#fef9c3;color:#a16207;}
+.badge-grey{background:var(--g100);color:var(--g600);}
+.badge-purple{background:#f3e8ff;color:#7c3aed;}
+.badge-orange{background:var(--org-lt);color:var(--org);}
+
+/* INSIGHTS */
+.insight-list{display:flex;flex-direction:column;gap:8px;}
+.insight-item{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:8px;font-size:.84rem;}
+.insight-item.ins-green{background:var(--green-lt);color:#14532d;}
+.insight-item.ins-red{background:var(--red-lt);color:#7f1d1d;}
+.insight-item.ins-blue{background:var(--blue-pale);color:var(--blue);}
+.insight-item.ins-gold{background:#fef9c3;color:#78350f;}
+.insight-item.ins-orange{background:var(--org-lt);color:#9a3412;}
+.insight-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px;}
+
+/* REPORT */
+.report-btn{background:var(--blue);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;margin:4px;}
+.report-btn:hover{background:var(--blue-lt);}
+
+/* NAV TABS */
+.nav-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.nav-tab{padding:7px 16px;border-radius:20px;font-size:.8rem;font-weight:700;cursor:pointer;border:1.5px solid var(--g200);background:#fff;color:var(--g600);font-family:inherit;}
+.nav-tab.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+
+/* NO DATA */
+.no-data{text-align:center;color:var(--g400);padding:24px;font-size:.84rem;}
+
+/* RISK LEVEL */
+.risk-critical{color:var(--red);font-weight:700;}
+.risk-high{color:var(--org);font-weight:700;}
+.risk-monitor{color:var(--gold);font-weight:600;}
+
+@media(max-width:480px){
+  .main{padding:12px;}
+  .topbar{padding:0 12px;}
+  .card{padding:14px;}
+}
+
+@media print{
+  .topbar,.filter-bar,.nav-tabs,.report-section,.refresh-btn,.lo-btn{display:none!important;}
+  .app-wrap{display:block!important;}
+  .main{padding:0;max-width:100%;}
+  .card{box-shadow:none;border:1px solid #ddd;break-inside:avoid;}
+  body{background:#fff;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginWrap" class="login-wrap">
+  <div class="login-box">
+    <div class="logo">🎓</div>
+    <h1>Principal Dashboard</h1>
+    <p>Velammal Results Portal</p>
+    <div class="fg"><label>Principal ID</label><input type="text" id="pId" placeholder="e.g. P001" autocomplete="username"></div>
+    <div class="fg"><label>Password</label><input type="password" id="pPass" placeholder="Enter password" autocomplete="current-password"></div>
+    <button class="btn-login" id="loginBtn" onclick="doLogin()">Login</button>
+    <div class="l-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appWrap" class="app-wrap">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div><h1>Principal Dashboard</h1><small>Velammal Results Portal</small></div>
+      <span class="tb-badge" id="principalBadge">🎓</span>
+    </div>
+    <div class="tb-right">
+      <button class="refresh-btn" onclick="refreshData()">↻ Refresh</button>
+      <button class="lo-btn" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- Loading -->
+    <div id="loadingWrap" class="loading-wrap">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Loading analytics...</div>
+    </div>
+
+    <!-- Dashboard content -->
+    <div id="dashWrap" class="hidden">
+
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <div><label>Exam</label><select id="fExam" onchange="applyFilters()"><option value="">All Exams</option></select></div>
+        <div><label>Class</label><select id="fClass" onchange="applyFilters()"><option value="">All Classes</option></select></div>
+        <div><label>Subject</label><select id="fSubject" onchange="applyFilters()"><option value="">All Subjects</option></select></div>
+      </div>
+
+      <!-- Nav Tabs -->
+      <div class="nav-tabs">
+        <button class="nav-tab active" onclick="showTab('tabOverview',this)">🏫 Overview</button>
+        <button class="nav-tab" onclick="showTab('tabExam',this)">📝 Exam Analytics</button>
+        <button class="nav-tab" onclick="showTab('tabSubject',this)">📚 Subject Analytics</button>
+        <button class="nav-tab" onclick="showTab('tabClass',this)">🏆 Class Comparison</button>
+        <button class="nav-tab" onclick="showTab('tabRisk',this)">⚠️ At-Risk Students</button>
+        <button class="nav-tab" onclick="showTab('tabTrend',this)">📈 Exam Trend</button>
+        <button class="nav-tab" onclick="showTab('tabInsights',this)">💡 Insights</button>
+        <button class="nav-tab" onclick="showTab('tabReport',this)">📄 Reports</button>
+      </div>
+
+      <!-- TAB: OVERVIEW -->
+      <div id="tabOverview">
+        <div class="sec-lbl">School Overview</div>
+        <div class="stat-grid" id="overviewStats"></div>
+        <div class="two-col">
+          <div class="card"><div class="card-title">Pass vs Fail</div><div class="card-sub">Overall school performance</div><div class="ch240" id="passFailChart"></div></div>
+          <div class="card"><div class="card-title">Class Average Comparison</div><div class="card-sub">Average % per class</div><div class="ch240" id="classAvgChart"></div></div>
+        </div>
+      </div>
+
+      <!-- TAB: EXAM ANALYTICS -->
+      <div id="tabExam" class="hidden">
+        <div class="sec-lbl">Exam Analytics</div>
+        <div class="stat-grid" id="examStats" style="grid-template-columns:repeat(2,1fr)"></div>
+        <div class="two-col">
+          <div class="card"><div class="card-title">Score Distribution</div><div class="card-sub">Students by score zone</div><div class="ch240" id="examDistChart"></div></div>
+          <div class="card"><div class="card-title">Class-wise Performance</div><div class="card-sub">Average per class in selected exam</div><div class="ch240" id="examClassChart"></div></div>
+        </div>
+      </div>
+
+      <!-- TAB: SUBJECT ANALYTICS -->
+      <div id="tabSubject" class="hidden">
+        <div class="sec-lbl">Subject Analytics</div>
+        <div class="card">
+          <div class="card-title">Subject Performance</div><div class="card-sub">Average marks and pass percentage per subject</div>
+          <div class="tscroll"><table class="ptable" id="subjectTable">
+            <thead><tr><th>Subject</th><th>Avg Marks</th><th>Avg %</th><th>Pass %</th><th>Status</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </div>
+        <div class="card"><div class="card-title">Subject Comparison</div><div class="card-sub">Average % across subjects</div><div class="ch240" id="subjectChart"></div></div>
+      </div>
+
+      <!-- TAB: CLASS COMPARISON -->
+      <div id="tabClass" class="hidden">
+        <div class="sec-lbl">Class Comparison</div>
+        <div class="card">
+          <div class="card-title">Class Performance Table</div><div class="card-sub">Compare all classes across subjects</div>
+          <div class="tscroll"><table class="ptable" id="classTable">
+            <thead><tr><th>Class</th><th>Students</th><th>Avg %</th><th>Pass %</th><th>Top Score</th><th>Rank</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </div>
+        <div class="card"><div class="card-title">Class Average Chart</div><div class="card-sub">Visual comparison of class averages</div><div class="ch240" id="classCompChart"></div></div>
+      </div>
+
+      <!-- TAB: AT-RISK -->
+      <div id="tabRisk" class="hidden">
+        <div class="sec-lbl">At-Risk Students</div>
+        <div id="riskSummaryCards" class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px"></div>
+        <div class="card">
+          <div class="card-title">⚠️ At-Risk Student List</div><div class="card-sub">Students failing in 2+ subjects or below pass average</div>
+          <div class="tscroll"><table class="ptable" id="riskTable">
+            <thead><tr><th>Admission No</th><th>Name</th><th>Class</th><th>Avg %</th><th>Failed Subjects</th><th>Risk Level</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- TAB: TREND -->
+      <div id="tabTrend" class="hidden">
+        <div class="sec-lbl">Exam Trend Analysis</div>
+        <div class="card"><div class="card-title">School Performance Trend</div><div class="card-sub">Average % across all exams over time</div><div class="ch240" id="trendChart"></div></div>
+        <div class="card">
+          <div class="card-title">DRT Trend</div><div class="card-sub">Class test performance over time</div><div class="ch240" id="drtTrendChart"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Main Exam Trend</div><div class="card-sub">PT, Term, Preboard performance</div><div class="ch240" id="mainTrendChart"></div>
+        </div>
+      </div>
+
+      <!-- TAB: INSIGHTS -->
+      <div id="tabInsights" class="hidden">
+        <div class="sec-lbl">Auto-Generated Insights</div>
+        <div class="card"><div class="card-title">💡 School Insights</div><div class="card-sub">Automatically generated from latest data</div><div id="insightsList" class="insight-list" style="margin-top:8px"></div></div>
+      </div>
+
+      <!-- TAB: REPORTS -->
+      <div id="tabReport" class="hidden" class="report-section">
+        <div class="sec-lbl">Report Export</div>
+        <div class="card">
+          <div class="card-title">📄 Generate Reports</div>
+          <div class="card-sub">Reports reflect currently selected filters. Opens print dialog to save as PDF.</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
+            <button class="report-btn" onclick="printReport('overview')">🏫 School Performance</button>
+            <button class="report-btn" onclick="printReport('exam')">📝 Exam Analysis</button>
+            <button class="report-btn" onclick="printReport('subject')">📚 Subject Performance</button>
+            <button class="report-btn" onclick="printReport('class')">🏆 Class Report</button>
+            <button class="report-btn" onclick="printReport('risk')">⚠️ At-Risk Students</button>
+          </div>
+        </div>
+        <div id="reportPreview" class="card hidden">
+          <div id="reportContent"></div>
+          <div style="margin-top:16px;display:flex;gap:8px">
+            <button class="report-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+            <button class="report-btn" style="background:var(--g600)" onclick="$('reportPreview').classList.add('hidden')">✕ Close</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end dashWrap -->
+  </div><!-- end main -->
+</div><!-- end appWrap -->
+
+<script>
+// ═══════════════════════════════════════
+// FIREBASE CONFIG
+// ═══════════════════════════════════════
+var PROJECT="velammal-results", API_KEY="AIzaSyC79jcB_6TgJIG4ngXmPDY6Zjmg8PC0-pU";
+var BASE="https://firestore.googleapis.com/v1/projects/"+PROJECT+"/databases/(default)/documents";
+var P_DOMAIN="@velammal.com";
+
+var _fbApp=firebase.initializeApp({
+  apiKey:API_KEY,
+  authDomain:"velammal-results.firebaseapp.com",
+  projectId:PROJECT
+},"principal");
+var _fbAuth=firebase.auth(_fbApp);
+
+// ═══════════════════════════════════════
+// FIRESTORE REST
+// ═══════════════════════════════════════
+async function fsGet(col,id){
+  var r=await fetch(BASE+"/"+col+"/"+id+"?key="+API_KEY);
+  if(!r.ok)return null;
+  return parseDoc(await r.json());
+}
+async function fsGetAll(col){
+  var url=BASE+"/"+col+"?key="+API_KEY+"&pageSize=500",docs=[];
+  while(url){
+    var r=await fetch(url);if(!r.ok)break;
+    var data=await r.json();
+    (data.documents||[]).forEach(function(d){docs.push(Object.assign({_id:d.name.split("/").pop()},parseDoc(d)));});
+    url=data.nextPageToken?BASE+"/"+col+"?key="+API_KEY+"&pageSize=500&pageToken="+data.nextPageToken:null;
+  }
+  return docs;
+}
+function parseDoc(doc){if(!doc||!doc.fields)return{};var o={};Object.keys(doc.fields).forEach(function(k){o[k]=parseFsVal(doc.fields[k]);});return o;}
+function parseFsVal(v){
+  if(v.stringValue!==undefined)return v.stringValue;
+  if(v.integerValue!==undefined)return Number(v.integerValue);
+  if(v.doubleValue!==undefined)return Number(v.doubleValue);
+  if(v.booleanValue!==undefined)return v.booleanValue;
+  if(v.nullValue!==undefined)return null;
+  if(v.arrayValue)return(v.arrayValue.values||[]).map(parseFsVal);
+  if(v.mapValue)return parseDoc(v.mapValue);
+  return null;
+}
+
+// ═══════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════
+function $(id){return document.getElementById(id);}
+function avg(a){return a.length?a.reduce(function(s,v){return s+v;},0)/a.length:0;}
+function pct(s,m){return m>0?Math.round(s/m*100):0;}
+function mkChart(id,opts){
+  var el=$(id);if(!el)return null;
+  el.innerHTML='';
+  try{var c=new ApexCharts(el,opts);c.render();return c;}
+  catch(e){el.innerHTML='<div class="no-data">Chart unavailable</div>';return null;}
+}
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+var _cache=null; // session cache
+var _cfg=null;   // {exams, subjects, classes, teachers, principals}
+var _charts={};
+var _curPrincipal=null;
+
+// Filters
+var F={exam:'',cls:'',subject:''};
+
+// ═══════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════
+async function doLogin(){
+  var id=$('pId').value.trim(), pass=$('pPass').value;
+  if(!id||!pass){showErr("Enter Principal ID and password.");return;}
+  var btn=$('loginBtn');btn.disabled=true;btn.textContent="Logging in...";
+  $('loginErr').style.display='none';
+  try{
+    var email=id+P_DOMAIN;
+    await _fbAuth.signInWithEmailAndPassword(email,pass);
+    // Verify principal exists in config
+    var cfg=await fsGet("settings","config");
+    var principals=(cfg&&cfg.principals)||[];
+    var p=principals.find(function(x){return x.id===id;});
+    if(!p){
+      await _fbAuth.signOut();
+      showErr("Principal account not found. Contact admin.");
+      btn.disabled=false;btn.textContent="Login";return;
+    }
+    _curPrincipal=p;
+    $('principalBadge').textContent="🎓 "+p.name;
+    $('loginWrap').style.display='none';
+    $('appWrap').style.display='flex';
+    loadDashboard(cfg);
+  }catch(e){
+    showErr("Login failed. Check ID and password.");
+    console.error(e);
+  }
+  btn.disabled=false;btn.textContent="Login";
+}
+function showErr(msg){$('loginErr').textContent=msg;$('loginErr').style.display='block';}
+async function doLogout(){
+  await _fbAuth.signOut();
+  _cache=null;_cfg=null;_curPrincipal=null;
+  $('appWrap').style.display='none';
+  $('loginWrap').style.display='flex';
+  $('pId').value='';$('pPass').value='';
+  killCharts();
+}
+document.addEventListener('keydown',function(e){if(e.key==='Enter'&&$('loginWrap').style.display!=='none')doLogin();});
+
+// ═══════════════════════════════════════
+// LOAD DATA (session cache)
+// ═══════════════════════════════════════
+async function loadDashboard(cfg){
+  $('loadingWrap').classList.remove('hidden');
+  $('dashWrap').classList.add('hidden');
+  try{
+    if(_cache){
+      renderAll();
+      return;
+    }
+    _cfg=cfg||await fsGet("settings","config");
+    var students=await fsGetAll("students");
+    var results=await fsGetAll("results");
+    _cache={students:students,results:results,cfg:_cfg};
+    populateFilters();
+    renderAll();
+  }catch(e){
+    $('loadingWrap').innerHTML='<div class="no-data">Error loading data: '+e.message+'</div>';
+    return;
+  }
+  $('loadingWrap').classList.add('hidden');
+  $('dashWrap').classList.remove('hidden');
+}
+
+async function refreshData(){
+  _cache=null;
+  $('dashWrap').classList.add('hidden');
+  $('loadingWrap').classList.remove('hidden');
+  $('loadingWrap').innerHTML='<div class="loading-spinner"></div><div class="loading-text">Refreshing analytics...</div>';
+  killCharts();
+  await loadDashboard(null);
+}
+
+// ═══════════════════════════════════════
+// FILTERS
+// ═══════════════════════════════════════
+function populateFilters(){
+  if(!_cache)return;
+  var cfg=_cache.cfg;
+  var exams=(cfg&&cfg.exams&&Array.isArray(cfg.exams))?cfg.exams.map(function(e){return e.name||e;}):(cfg&&cfg.exams)||[];
+  var classes=(cfg&&cfg.classes)||[];
+  var subjects=(cfg&&cfg.subjects)||[];
+
+  var fe=$('fExam'),fc=$('fClass'),fs=$('fSubject');
+  fe.innerHTML='<option value="">All Exams</option>';
+  exams.forEach(function(e){var o=document.createElement('option');o.value=e;o.textContent=e;fe.appendChild(o);});
+  fc.innerHTML='<option value="">All Classes</option>';
+  classes.forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=c;fc.appendChild(o);});
+  fs.innerHTML='<option value="">All Subjects</option>';
+  subjects.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;fs.appendChild(o);});
+}
+function applyFilters(){
+  F.exam=$('fExam').value;
+  F.cls=$('fClass').value;
+  F.subject=$('fSubject').value;
+  killCharts();
+  renderAll();
+}
+
+// ═══════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════
+var TABS=['tabOverview','tabExam','tabSubject','tabClass','tabRisk','tabTrend','tabInsights','tabReport'];
+function showTab(id,btn){
+  TABS.forEach(function(t){$(t).classList.add('hidden');});
+  $(id).classList.remove('hidden');
+  document.querySelectorAll('.nav-tab').forEach(function(b){b.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+}
+
+// ═══════════════════════════════════════
+// CORE DATA HELPERS
+// ═══════════════════════════════════════
+function getExamNames(){
+  if(!_cache||!_cache.cfg)return[];
+  var raw=_cache.cfg.exams||[];
+  return Array.isArray(raw)?raw.map(function(e){return typeof e==='string'?e:e.name;}):[];
+}
+function getExamMax(name){
+  if(!_cache||!_cache.cfg)return 100;
+  var raw=_cache.cfg.exams||[];
+  if(!Array.isArray(raw))return 100;
+  var found=raw.find(function(e){return(e.name||e)===name;});
+  return(found&&found.max)||100;
+}
+function getExamPass(name){
+  if(!_cache||!_cache.cfg)return null;
+  var raw=_cache.cfg.exams||[];
+  if(!Array.isArray(raw))return null;
+  var found=raw.find(function(e){return(e.name||e)===name;});
+  return found?found.passMark:null;
+}
+function getSubjects(){return(_cache&&_cache.cfg&&_cache.cfg.subjects)||[];}
+function getClasses(){return(_cache&&_cache.cfg&&_cache.cfg.classes)||[];}
+
+// Build result map: { examNo_subject: resultDoc }
+function buildResMap(){
+  var m={};
+  if(!_cache)return m;
+  _cache.results.forEach(function(r){m[(r.examNo||r._id)+"_"+(r.subject||"")]= r;});
+  return m;
+}
+
+// Get filtered students
+function getStudents(){
+  if(!_cache)return[];
+  return _cache.students.filter(function(s){
+    if(F.cls&&s.class!==F.cls)return false;
+    return true;
+  });
+}
+
+// Get mark for student+subject+exam
+function getMark(resMap,admNo,subject,examName){
+  var r=resMap[admNo+"_"+subject];
+  if(!r||!r[examName]||r[examName].mark===undefined)return null;
+  return r[examName].mark;
+}
+
+// Compute student avg across filtered exams/subjects
+function stuAvg(resMap,admNo){
+  var exams=F.exam?[F.exam]:getExamNames();
+  var subjects=F.subject?[F.subject]:getSubjects();
+  var scores=[];
+  subjects.forEach(function(sub){
+    exams.forEach(function(ex){
+      var m=getMark(resMap,admNo,sub,ex);
+      if(m!==null&&m!==undefined) scores.push(pct(m,getExamMax(ex)));
+    });
+  });
+  return scores.length?Math.round(avg(scores)):null;
+}
+
+// ═══════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════
+function renderAll(){
+  if(!_cache){return;}
+  $('loadingWrap').classList.add('hidden');
+  $('dashWrap').classList.remove('hidden');
+  renderOverview();
+  renderExamTab();
+  renderSubjectTab();
+  renderClassTab();
+  renderRiskTab();
+  renderTrendTab();
+  renderInsights();
+}
+
+// ═══════════════════════════════════════
+// 1. OVERVIEW
+// ═══════════════════════════════════════
+function renderOverview(){
+  var students=getStudents();
+  var resMap=buildResMap();
+  var exams=F.exam?[F.exam]:getExamNames();
+  var subjects=F.subject?[F.subject]:getSubjects();
+  var classes=F.cls?[F.cls]:getClasses();
+
+  // Compute all student avg pcts
+  var allAvgs=students.map(function(s){return stuAvg(resMap,s._id||s.examNo);}).filter(function(a){return a!==null;});
+  var schoolAvg=allAvgs.length?Math.round(avg(allAvgs)):0;
+
+  // Pass threshold
+  var passThreshold=40;
+  var passExams=exams.filter(function(e){return getExamPass(e)!==null;});
+  if(passExams.length) passThreshold=Math.round(avg(passExams.map(function(e){var p=getExamPass(e),mx=getExamMax(e);return mx?p/mx*100:40;})));
+  var passCount=allAvgs.filter(function(a){return a>=passThreshold;}).length;
+  var failCount=allAvgs.length-passCount;
+  var passPct=allAvgs.length?Math.round(passCount/allAvgs.length*100):0;
+
+  // Top/lowest class
+  var classAvgs={};
+  classes.forEach(function(cls){
+    var clsStu=students.filter(function(s){return s.class===cls;});
+    var avgs=clsStu.map(function(s){return stuAvg(resMap,s._id||s.examNo);}).filter(function(a){return a!==null;});
+    classAvgs[cls]=avgs.length?Math.round(avg(avgs)):0;
+  });
+  var sortedCls=classes.slice().sort(function(a,b){return classAvgs[b]-classAvgs[a];});
+  var topCls=sortedCls[0]||'--';
+  var lowCls=sortedCls[sortedCls.length-1]||'--';
+
+  // Stats cards
+  $('overviewStats').innerHTML=[
+    sc2(students.length,'Total Students',''),
+    sc2(classes.length,'Classes',''),
+    sc2(subjects.length,'Subjects',''),
+    sc2(schoolAvg+'%','School Avg',''),
+    sc2(passPct+'%','Pass %','green'),
+    sc2(topCls,'Top Class','green'),
+    sc2(lowCls,'Low Class','red'),
+  ].join('');
+
+  // Pass vs Fail chart
+  if(_charts.passF){try{_charts.passF.destroy();}catch(e){}_charts.passF=null;}
+  _charts.passF=mkChart('passFailChart',{
+    chart:{type:'donut',height:240,fontFamily:'Plus Jakarta Sans,sans-serif'},
+    series:[passCount,failCount],
+    labels:['Pass','Fail'],
+    colors:['#16a34a','#dc2626'],
+    plotOptions:{pie:{donut:{size:'65%',labels:{show:true,total:{show:true,label:'Students',fontSize:'13px',fontWeight:700}}}}},
+    dataLabels:{enabled:true,formatter:function(v,o){return o.w.config.labels[o.seriesIndex]+': '+o.w.globals.series[o.seriesIndex];}},
+    legend:{position:'bottom',fontSize:'12px'}
+  });
+
+  // Class avg chart
+  var clsData=sortedCls.map(function(c){return classAvgs[c]||0;});
+  if(_charts.clsAvg){try{_charts.clsAvg.destroy();}catch(e){}_charts.clsAvg=null;}
+  _charts.clsAvg=mkChart('classAvgChart',{
+    chart:{type:'bar',height:240,toolbar:{show:false},fontFamily:'Plus Jakarta Sans,sans-serif'},
+    series:[{name:'Avg %',data:clsData}],
+    xaxis:{categories:sortedCls,labels:{style:{fontSize:'11px'}}},
+    yaxis:{min:0,max:100,labels:{formatter:function(v){return v+'%';},style:{fontSize:'11px'}}},
+    colors:clsData.map(function(v){return v>=70?'#16a34a':v>=50?'#e9a820':'#f87171';}),
+    plotOptions:{bar:{borderRadius:4,distributed:true,columnWidth:'55%'}},
+    dataLabels:{enabled:true,formatter:function(v){return v+'%';},style:{fontSize:'11px',fontWeight:700},background:{enabled:false}},
+    legend:{show:false},grid:{borderColor:'#f1f5f9'},
+    tooltip:{y:{formatter:function(v){return v+'%';}}}
+  });
+}
+function sc2(val,lbl,cls){
+  return '<div class="stat-card'+(cls?' '+cls:'')+'"><div class="sv">'+val+'</div><div class="sl">'+lbl+'</div></div>';
+}
+
+// ═══════════════════════════════════════
+// 2. EXAM TAB
+// ═══════════════════════════════════════
+function renderExamTab(){
+  var examName=F.exam||getExamNames()[getExamNames().length-1]||'';
+  if(!examName){$('examStats').innerHTML='<div class="no-data">No exams configured</div>';return;}
+  var maxM=getExamMax(examName);
+  var passMark=getExamPass(examName);
+  var students=getStudents();
+  var resMap=buildResMap();
+  var subjects=F.subject?[F.subject]:getSubjects();
+
+  var allMarks=[];
+  students.forEach(function(s){
+    var en=s._id||s.examNo;
+    subjects.forEach(function(sub){
+      var m=getMark(resMap,en,sub,examName);
+      if(m!==null&&m!==undefined) allMarks.push({mark:m,max:maxM});
+    });
+  });
+
+  var written=allMarks.filter(function(x){return x.mark!==null;});
+  var examAvgPct=written.length?Math.round(avg(written.map(function(x){return pct(x.mark,x.max);}))):0;
+  var highest=written.length?Math.max.apply(null,written.map(function(x){return x.mark;})):0;
+  var lowest=written.length?Math.min.apply(null,written.map(function(x){return x.mark;})):0;
+  var threshold=passMark!=null?passMark:maxM*0.4;
+  var passCount=written.filter(function(x){return x.mark>=threshold;}).length;
+  var passPct=written.length?Math.round(passCount/written.length*100):0;
+
+  $('examStats').innerHTML=[
+    sc2(examName,'Selected Exam',''),
+    sc2(examAvgPct+'%','Avg %',''),
+    sc2(passPct+'%','Pass %',passPct>=60?'green':passPct>=40?'gold':'red'),
+    sc2(highest+'/'+maxM,'Highest','green'),
+    sc2(lowest+'/'+maxM,'Lowest','red'),
+    sc2(written.length,'Appeared',''),
+    sc2(students.length-written.length,'Absent','red'),
+    sc2(passCount,'Passed','green'),
+  ].join('');
+
+  // Distribution chart
+  var p1=passMark!=null?passMark:Math.round(maxM*0.4);
+  var zones=[[0,p1-1],[p1,Math.round(maxM*0.5)],[Math.round(maxM*0.5)+1,Math.round(maxM*0.65)],[Math.round(maxM*0.65)+1,Math.round(maxM*0.8)],[Math.round(maxM*0.8)+1,maxM]];
+  var zLabels=['Fail','Below Avg','Average','Good','Excellent'];
+  var zCols=['#f87171','#fca5a5','#fde68a','#86efac','#16a34a'];
+  var total=written.length;
+  var counts=zones.map(function(z){return written.filter(function(x){return x.mark>=z[0]&&x.mark<=z[1];}).length;});
+  if(_charts.examDist){try{_charts.examDist.destroy();}catch(e){}_charts.examDist=null;}
+  _charts.examDist=mkChart('examDistChart',{
+    chart:{type:'bar',height:240,toolbar:{show:false},fontFamily:'Plus Jakarta Sans,sans-serif'},
+    series:[{name:'Students',data:counts}],
+    xaxis:{categories:zLabels,labels:{style:{fontSize:'11px',fontWeight:600}}},
+    yaxis:{min:0,forceNiceScale:true,labels:{formatter:function(v){return Number.isInteger(v)?v:'';},style:{fontSize:'11px'}}},
+    colors:zCols,
+    plotOptions:{bar:{borderRadius:4,distributed:true,columnWidth:'60%'}},
+    dataLabels:{enabled:true,formatter:function(v){var p=total?Math.round(v/total*100):0;return v?(v+' ('+p+'%)'):'';},style:{fontSize:'11px',fontWeight:700},background:{enabled:false}},
+    legend:{show:false},grid:{borderColor:'#f1f5f9'},
+    tooltip:{y:{formatter:function(v){var p=total?Math.round(v/total*100):0;return v+' students ('+p+'%)';}}}
+  });
+
+  // Class-wise chart
+  var classes=F.cls?[F.cls]:getClasses();
+  var clsAvgs=classes.map(function(cls){
+    var clsStu=students.filter(function(s){return s.class===cls;});
+    var marks=[];
+    clsStu.forEach(function(s){
+      subjects.forEach(function(sub){
+        var m=getMark(resMap,s._id||s.examNo,sub,examName);
+        if(m!==null&&m!==undefined) marks.push(pct(m,maxM));
+      });
+    });
+    return marks.length?Math.round(avg(marks)):0;
+  });
+  if(_charts.examCls){try{_charts.examCls.destroy();}catch(e){}_charts.examCls=null;}
+  _charts.examCls=mkChart('examClassChart',{
+    chart:{type:'bar',height:240,toolbar:{show:false},fontFamily:'Plus Jakarta Sans,sans-serif'},
+    series:[{name:'Avg %',data:clsAvgs}],
+    xaxis:{categories:classes,labels:{style:{fontSize:'11px'}}},
+    yaxis:{min:0,max:100,labels:{formatter:function(v){return v+'%';},style:{fontSize:'11px'}}},
+    colors:clsAvgs.map(function(v){return v>=70?'#16a34a':v>=50?'#e9a820':'#f87171';}),
+    plotOptions:{bar:{borderRadius:4,distributed:true,columnWidth:'55%'}},
+    dataLabels:{enabled:true,formatter:function(v){return v+'%';},style:{fontSize:'11px',fontWeight:700},background:{enabled:false}},
+    legend:{show:false},grid:{borderColor:'#f1f5f9'},
+    tooltip:{y:{formatter:function(v){return v+'%';}}}
+  });
+}
+
+// ═══════════════════════════════════════
+// 3. SUBJECT TAB
+// ═══════════════════════════════════════
+function renderSubjectTab(){
+  var students=getStudents();
+  var resMap=buildResMap();
+  var exams=F.exam?[F.exam]:getExamNames();
+  var subjects=F.subject?[F.subject]:getSubjects();
+
+  var subData=subjects.map(function(sub){
+    var marks=[];var passCount=0;var total=0;
+    students.forEach(function(s){
+      exams.forEach(function(ex){
+        var m=getMark(resMap,s._id||s.examNo,sub,ex);
+        if(m!==null&&m!==undefined){
+          var maxM=getExamMax(ex);
+          marks.push(pct(m,maxM));
+          total++;
+          var p=getExamPass(ex);
+          if(p===null||m>=p) passCount++;
+        }
+      });
+    });
+    var avgPct=marks.length?Math.round(avg(marks)):null;
+    var passPct=total?Math.round(passCount/total*100):null;
+    return{sub:sub,avgPct:avgPct,passPct:passPct,total:total};
+  });
+
+  // Table
+  var tbody=document.querySelector('#subjectTable tbody');
+  tbody.innerHTML=subData.map(function(d){
+    var col=d.avgPct>=70?'green':d.avgPct>=50?'gold':'red';
+    var status=d.avgPct>=70?'<span class="badge badge-green">Strong</span>':d.avgPct>=50?'<span class="badge badge-gold">Average</span>':'<span class="badge badge-red">Needs Help</span>';
+    return '<tr>'
+      +'<td><strong>'+d.sub+'</strong></td>'
+      +'<td>'+( d.avgPct!==null?d.avgPct+'%':'--')+'</td>'
+      +'<td style="color:var(--'+(d.avgPct>=70?'green':d.avgPct>=50?'gold':'red')+');font-weight:700">'+(d.avgPct!==null?d.avgPct+'%':'--')+'</td>'
+      +'<td>'+(d.passPct!==null?d.passPct+'%':'--')+'</td>'
+      +'<td>'+status+'</td>'
+    +'</tr>';
+  }).join('');
+
+  // Chart
+  var subAvgs=subData.map(function(d){return d.avgPct||0;});
+  if(_charts.subChart){try{_charts.subChart.destroy();}catch(e){}_charts.subChart=null;}
+  _charts.subChart=mkChart('subjectChart',{
+    chart:{type:'bar',height:240,toolbar:{show:false},fontFamily:'Plus Jakarta Sans,sans-serif'},
+    series:[{name:'Avg %',data:subAvgs}],
+    xaxis:{categories:subjects,labels:{style:{fontSize:'11px'}}},
+    yaxis:{min:0,max:100,labels:{formatter:function(v){return v+'%';},style:{fontSize:'11px'}}},
+    colors:subAvgs.map(function(v){return v>=70?'#16a34a':v>=50?'#e9a820':'#f87171';}),
+    plotOptions:{bar:{borderRadius:4,distributed:true,columnWidth:'55%'}},
+    dataLabels:{enabled:true,formatter:function(v){return v+'%';},style:{fontSize:'11px',fontWeight:700},background:{enabled:false}},
+    legend:{show:false},grid:{borderColor:'#f1f5f9'},
+    tooltip:{y:{formatter:function(v){return v+'%';}}}
+  });
+}
+
+// ═══════════════════════════════════════
+// 4. CLASS TAB
+// ═══════════════════════════════════════
+function renderClassTab(){
+  var students=_cache.students; // all students for class comparison
+  var resMap=buildResMap();
+  var exams=F.exam?[F.exam]:getExamNames();
+  var subjects=F.subject?[F.subject]:getSubjects();
+  var classes=getClasses();
+
+  var clsData=classes.map(function(cls){
+    var clsStu=students.filter(function(s){return s.class===cls;});
+    var avgs=[];var topScore=0;var passCount=0;var total=0;
+    var threshold=40;
+    clsStu.forEach(function(s){
+      var stuPcts=[];
+      subjects.forEach(function(sub){
+        exams.forEach(function(ex){
+          var m=getMark(resMap,s._id||s.examNo,sub,ex);
+          if(m!==null&&m!==undefined){
+            var maxM=getExamMax(ex);var p=pct(m,maxM);
+            stuPcts.push(p);
+            if(m>topScore)topScore=m;
+            total++;
+            var pm=getExamPass(ex);
+            if(pm===null||m>=pm)passCount++;
+          }
+        });
+      });
+      if(stuPcts.length) avgs.push(Math.round(avg(stuPcts)));
+    });
+    var clsAvg=avgs.length?Math.round(avg(avgs)):0;
+    var passPct=total?Math.round(passCount/total*100):0;
+    return{cls:cls,total:clsStu.length,avg:clsAvg,passPct:passPct,topScore:topScore};
+  }).sort(function(a,b){return b.avg-a.avg;});
+
+  // Table
+  var tbody=document.querySelector('#classTable tbody');
+  tbody.innerHTML=clsData.map(function(d,i){
+    var rankBadge=i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1);
+    return '<tr>'
+      +'<td><strong>'+d.cls+'</strong></td>'
+      +'<td>'+d.total+'</td>'
+      +'<td style="font-weight:700;color:'+(d.avg>=70?'var(--green)':d.avg>=50?'var(--org)':'var(--red)')+'">'+d.avg+'%</td>'
+      +'<td>'+d.passPct+'%</td>'
+      +'<td>'+d.topScore+'</td>'
+      +'<td>'+rankBadge+'</td>'
+    +'</tr>';
+  }).join('');
+
+  // Chart
+  var clsAvgs=clsData.map(function(d){return d.avg;});
+  var clsNames=clsData.map(function(d){return d.cls;});
+  if(_charts.clsComp){try{_charts.clsComp.destroy();}catch(e){}_charts.clsComp=null;}
+  _charts.clsComp=mkChart('classCompChart',{
+    chart:{type:'bar',height:240,toolbar:{show:false},fontFamily:'Plus Jakarta Sans,sans-serif'},
+    series:[{name:'Avg %',data:clsAvgs}],
+    xaxis:{categories:clsNames,labels:{style:{fontSize:'11px'}}},
+    yaxis:{min:0,max:100,labels:{formatter:function(v){return v+'%';},style:{fontSize:'11px'}}},
+    colors:clsAvgs.map(function(v){return v>=70?'#16a34a':v>=50?'#e9a820':'#f87171';}),
+    plotOptions:{bar:{borderRadius:4,distributed:true,columnWidth:'55%'}},
+    dataLabels:{enabled:true,formatter:function(v){return v+'%';},style:{fontSize:'11px',fontWeight:700},background:{enabled:false}},
+    legend:{show:false},grid:{borderColor:'#f1f5f9'},
+    tooltip:{y:{formatter:function(v){return v+'%';}}}
+  });
+}
+
+// ═══════════════════════════════════════
+// 5. AT-RISK TAB
+// ═══════════════════════════════════════
+function renderRiskTab(){
+  var students=getStudents();
+  var resMap=buildResMap();
+  var exams=F.exam?[F.exam]:getExamNames();
+  var subjects=F.subject?[F.subject]:getSubjects();
+
+  var riskStudents=[];
+  students.forEach(function(s){
+    var en=s._id||s.examNo;
+    var failedSubs=[];var allPcts=[];
+    subjects.forEach(function(sub){
+      var subMarks=[];
+      exams.forEach(function(ex){
+        var m=getMark(resMap,en,sub,ex);
+        if(m!==null&&m!==undefined){
+          var maxM=getExamMax(ex);
+          subMarks.push(pct(m,maxM));
+          allPcts.push(pct(m,maxM));
+          var pm=getExamPass(ex);
+          if(pm!==null&&m<pm) failedSubs.push(sub+' ('+ex+')');
+        }
+      });
+    });
+    var stuAvgPct=allPcts.length?Math.round(avg(allPcts)):null;
+    // At-risk: failed 2+ subject-exam combos OR avg below 40%
+    var uniqueFailSubs=[...new Set(failedSubs.map(function(f){return f.split(' ')[0];}))];
+    if(uniqueFailSubs.length>=2||(stuAvgPct!==null&&stuAvgPct<40)){
+      riskStudents.push({
+        admNo:en,name:s.name,cls:s.class,
+        avgPct:stuAvgPct,
+        failedSubs:uniqueFailSubs,
+        riskLevel:stuAvgPct<20?'Critical':stuAvgPct<35?'High':'Monitor'
+      });
+    }
+  });
+  riskStudents.sort(function(a,b){return(a.avgPct||0)-(b.avgPct||0);});
+
+  var critical=riskStudents.filter(function(s){return s.riskLevel==='Critical';}).length;
+  var high=riskStudents.filter(function(s){return s.riskLevel==='High';}).length;
+  var monitor=riskStudents.filter(function(s){return s.riskLevel==='Monitor';}).length;
+
+  $('riskSummaryCards').innerHTML=[
+    sc2(riskStudents.length,'Total At-Risk','red'),
+    sc2(critical,'Critical 🚨','red'),
+    sc2(high,'High ⚠️','gold'),
+    sc2(monitor,'Monitor 📌',''),
+  ].join('');
+
+  var tbody=document.querySelector('#riskTable tbody');
+  tbody.innerHTML=riskStudents.length
+    ?riskStudents.map(function(s){
+      var rCls=s.riskLevel==='Critical'?'risk-critical':s.riskLevel==='High'?'risk-high':'risk-monitor';
+      var badge=s.riskLevel==='Critical'?'badge-red':s.riskLevel==='High'?'badge-orange':'badge-gold';
+      return '<tr>'
+        +'<td><strong>'+s.admNo+'</strong></td>'
+        +'<td>'+s.name+'</td>'
+        +'<td><span class="badge badge-blue">'+s.cls+'</span></td>'
+        +'<td class="'+rCls+'">'+(s.avgPct!==null?s.avgPct+'%':'--')+'</td>'
+        +'<td>'+s.failedSubs.join(', ')+'</td>'
+        +'<td><span class="badge '+badge+'">'+s.riskLevel+'</span></td>'
+      +'</tr>';
+    }).join('')
+    :'<tr><td colspan="6" class="no-data">No at-risk students 🎉</td></tr>';
+}
+
+// ═══════════════════════════════════════
+// 6. TREND TAB
+// ═══════════════════════════════════════
+function renderTrendTab(){
+  var students=getStudents();
+  var resMap=buildResMap();
+  var allExams=getExamNames();
+  var subjects=F.subject?[F.subject]:getSubjects();
+
+  function examAvgPct(examName){
+    var marks=[];
+    students.forEach(function(s){
+      subjects.forEach(function(sub){
+        var m=getMark(resMap,s._id||s.examNo,sub,examName);
+        if(m!==null&&m!==undefined) marks.push(pct(m,getExamMax(examName)));
+      });
+    });
+    return marks.length?Math.round(avg(marks)):null;
+  }
+
+  var trendData=allExams.map(function(ex){return{name:ex,avg:examAvgPct(ex)};}).filter(function(d){return d.avg!==null;});
+  var drtData=trendData.filter(function(d){return d.name.toUpperCase().indexOf('DRT')>=0;});
+  var mainData=trendData.filter(function(d){return d.name.toUpperCase().indexOf('DRT')<0;});
+
+  function makeTrendChart(wrId,data,label,col){
+    if(_charts[wrId]){try{_charts[wrId].destroy();}catch(e){}_charts[wrId]=null;}
+    if(!data.length){$(wrId).innerHTML='<div class="no-data">No data yet</div>';return;}
+    _charts[wrId]=mkChart(wrId,{
+      chart:{type:'line',height:200,toolbar:{show:false},fontFamily:'Plus Jakarta Sans,sans-serif'},
+      series:[{name:label,data:data.map(function(d){return d.avg;})}],
+      xaxis:{categories:data.map(function(d){return d.name;}),labels:{style:{fontSize:'11px'}}},
+      yaxis:{min:0,max:100,labels:{formatter:function(v){return v+'%';},style:{fontSize:'11px'}}},
+      colors:[col],
+      stroke:{curve:'smooth',width:3},
+      markers:{size:5},
+      dataLabels:{enabled:true,formatter:function(v){return v+'%';},style:{fontSize:'11px',fontWeight:700}},
+      grid:{borderColor:'#f1f5f9'},
+      tooltip:{y:{formatter:function(v){return v+'%';}}}
+    });
+  }
+
+  makeTrendChart('trendChart',trendData,'School Avg %','#0a1f6e');
+  makeTrendChart('drtTrendChart',drtData,'DRT Avg %','#2952d9');
+  makeTrendChart('mainTrendChart',mainData,'Main Exam Avg %','#16a34a');
+}
+
+// ═══════════════════════════════════════
+// 7. INSIGHTS ENGINE
+// ═══════════════════════════════════════
+function renderInsights(){
+  var students=getStudents();
+  var resMap=buildResMap();
+  var exams=F.exam?[F.exam]:getExamNames();
+  var subjects=F.subject?[F.subject]:getSubjects();
+  var classes=getClasses();
+  var insights=[];
+
+  // School avg
+  var allAvgs=students.map(function(s){return stuAvg(resMap,s._id||s.examNo);}).filter(function(a){return a!==null;});
+  var schoolAvg=allAvgs.length?Math.round(avg(allAvgs)):0;
+  if(schoolAvg>=75) insights.push({cls:'ins-green',icon:'🌟',text:'School average is '+schoolAvg+'% — excellent overall performance!'});
+  else if(schoolAvg>=60) insights.push({cls:'ins-blue',icon:'📊',text:'School average is '+schoolAvg+'% — good performance with room to improve.'});
+  else insights.push({cls:'ins-red',icon:'⚠️',text:'School average is '+schoolAvg+'% — needs immediate attention across subjects.'});
+
+  // Top and lowest class
+  var clsAvgs={};
+  classes.forEach(function(cls){
+    var clsStu=students.filter(function(s){return s.class===cls;});
+    var avgs=clsStu.map(function(s){return stuAvg(resMap,s._id||s.examNo);}).filter(function(a){return a!==null;});
+    if(avgs.length) clsAvgs[cls]=Math.round(avg(avgs));
+  });
+  var sortedCls=Object.keys(clsAvgs).sort(function(a,b){return clsAvgs[b]-clsAvgs[a];});
+  if(sortedCls.length>=2){
+    insights.push({cls:'ins-green',icon:'🏆',text:sortedCls[0]+' is the top performing class with '+clsAvgs[sortedCls[0]]+'% average.'});
+    insights.push({cls:'ins-red',icon:'📉',text:sortedCls[sortedCls.length-1]+' has the lowest average at '+clsAvgs[sortedCls[sortedCls.length-1]]+'%. Needs support.'});
+  }
+
+  // Subject insights
+  var subAvgs={};
+  subjects.forEach(function(sub){
+    var marks=[];
+    students.forEach(function(s){
+      exams.forEach(function(ex){
+        var m=getMark(resMap,s._id||s.examNo,sub,ex);
+        if(m!==null&&m!==undefined) marks.push(pct(m,getExamMax(ex)));
+      });
+    });
+    if(marks.length) subAvgs[sub]=Math.round(avg(marks));
+  });
+  var sortedSub=Object.keys(subAvgs).sort(function(a,b){return subAvgs[b]-subAvgs[a];});
+  if(sortedSub.length>=1){
+    insights.push({cls:'ins-green',icon:'📚',text:sortedSub[0]+' is the top performing subject at '+subAvgs[sortedSub[0]]+'% average.'});
+    if(sortedSub.length>=2){
+      var lowSub=sortedSub[sortedSub.length-1];
+      if(subAvgs[lowSub]<schoolAvg)
+        insights.push({cls:'ins-orange',icon:'📌',text:lowSub+' is below school average at '+subAvgs[lowSub]+'%. Extra focus needed.'});
+    }
+  }
+
+  // At-risk count
+  var riskCount=0;
+  students.forEach(function(s){
+    var a=stuAvg(resMap,s._id||s.examNo);
+    if(a!==null&&a<40) riskCount++;
+  });
+  if(riskCount>0) insights.push({cls:'ins-red',icon:'🚨',text:riskCount+' student'+(riskCount>1?'s are':' is')+' at risk of failing. Immediate intervention recommended.'});
+  else insights.push({cls:'ins-green',icon:'✅',text:'No students are critically at risk based on current data.'});
+
+  // Trend insight (last 2 exams)
+  if(exams.length>=2){
+    var ex1=exams[exams.length-2],ex2=exams[exams.length-1];
+    function exAvg(ex){
+      var m=[];
+      students.forEach(function(s){
+        subjects.forEach(function(sub){
+          var mk=getMark(resMap,s._id||s.examNo,sub,ex);
+          if(mk!==null&&mk!==undefined) m.push(pct(mk,getExamMax(ex)));
+        });
+      });
+      return m.length?Math.round(avg(m)):null;
+    }
+    var a1=exAvg(ex1),a2=exAvg(ex2);
+    if(a1!==null&&a2!==null){
+      var diff=a2-a1;
+      if(diff>5) insights.push({cls:'ins-green',icon:'📈',text:'School performance improved by '+diff+'% from '+ex1+' to '+ex2+'. Great progress!'});
+      else if(diff<-5) insights.push({cls:'ins-orange',icon:'📉',text:'School performance dropped by '+Math.abs(diff)+'% from '+ex1+' to '+ex2+'. Review needed.'});
+      else insights.push({cls:'ins-blue',icon:'➡️',text:'School performance is consistent between '+ex1+' and '+ex2+'.'});
+    }
+  }
+
+  $('insightsList').innerHTML=insights.length
+    ?insights.map(function(i){return '<div class="insight-item '+i.cls+'"><span class="insight-icon">'+i.icon+'</span><span>'+i.text+'</span></div>';}).join('')
+    :'<div class="no-data">No insights yet. Upload data first.</div>';
+}
+
+// ═══════════════════════════════════════
+// 8. REPORTS
+// ═══════════════════════════════════════
+function printReport(type){
+  var titles={overview:'School Performance Report',exam:'Exam Analysis Report',subject:'Subject Performance Report',class:'Class Report',risk:'At-Risk Students Report'};
+  var now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
+  var filterDesc='';
+  if(F.exam) filterDesc+='Exam: '+F.exam+' | ';
+  if(F.cls) filterDesc+='Class: '+F.cls+' | ';
+  if(F.subject) filterDesc+='Subject: '+F.subject+' | ';
+  if(filterDesc) filterDesc=filterDesc.slice(0,-3);
+
+  var content='<div style="font-family:Plus Jakarta Sans,sans-serif;padding:20px">';
+  content+='<div style="text-align:center;border-bottom:2px solid #0a1f6e;padding-bottom:16px;margin-bottom:20px">';
+  content+='<h2 style="color:#0a1f6e;font-size:1.3rem">Velammal School</h2>';
+  content+='<h3 style="color:#475569;font-size:1rem;margin-top:4px">'+titles[type]+'</h3>';
+  content+='<p style="font-size:.8rem;color:#94a3b8;margin-top:6px">Generated: '+now+(filterDesc?' | '+filterDesc:'')+'</p>';
+  content+='</div>';
+
+  // Add relevant section content
+  if(type==='overview'||type==='class'){
+    content+='<h4 style="color:#0a1f6e;margin-bottom:10px">Class Performance</h4>';
+    content+=document.querySelector('#classTable').outerHTML;
+  }
+  if(type==='overview'||type==='subject'){
+    content+='<h4 style="color:#0a1f6e;margin:20px 0 10px">Subject Performance</h4>';
+    content+=document.querySelector('#subjectTable').outerHTML;
+  }
+  if(type==='risk'){
+    content+='<h4 style="color:#dc2626;margin-bottom:10px">At-Risk Students</h4>';
+    content+=document.querySelector('#riskTable').outerHTML;
+  }
+  if(type==='exam'){
+    content+='<h4 style="color:#0a1f6e;margin-bottom:10px">Exam Summary Cards</h4>';
+    content+=document.querySelector('#examStats').outerHTML;
+  }
+  content+='</div>';
+
+  $('reportContent').innerHTML=content;
+  $('reportPreview').classList.remove('hidden');
+  $('reportPreview').scrollIntoView({behavior:'smooth'});
+}
+
+// ═══════════════════════════════════════
+// KILL CHARTS
+// ═══════════════════════════════════════
+function killCharts(){
+  Object.keys(_charts).forEach(function(k){
+    if(_charts[k]){try{_charts[k].destroy();}catch(e){}_charts[k]=null;}
+  });
+}
+
+// Keyboard enter on login
+document.addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&$('loginWrap').style.display!=='none') doLogin();
+});
+</script>
+</body>
+</html>

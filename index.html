@@ -199,7 +199,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <div id="sForm">
         <div class="l-title">Student Login</div>
         <p class="l-sub">Enter your exam number and registered phone number</p>
-        <div class="fg"><label>Exam Number</label><input id="examNo" type="text" inputmode="numeric" placeholder="e.g. 12D01"></div>
+        <div class="fg"><label>Admission No</label><input id="examNo" type="text" inputmode="numeric" placeholder="e.g. 12D01"></div>
         <div class="fg"><label>Phone Number</label><input id="phone" type="tel" inputmode="numeric" placeholder="Parent's Phone Number"></div>
         <button class="l-btn" id="sBtn" onclick="studentLogin()">Login</button>
         <div class="l-err" id="sErr"></div>
@@ -356,7 +356,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <div class="card-title">🔍 View Student Dashboard</div>
       <div class="card-sub">Search by name or exam number</div>
       <div class="t-search">
-        <input type="text" id="stuSearchInput" placeholder="Type name or exam no..." oninput="searchStudents()">
+        <input type="text" id="stuSearchInput" placeholder="Type name or admission no..." oninput="searchStudents()">
         <button onclick="searchStudents()">Search</button>
       </div>
       <div id="stuSearchResults"></div>
@@ -1406,7 +1406,7 @@ function searchStudents(){
   }).slice(0,10);
   $('stuSearchResults').innerHTML=res.length
     ?'<div class="stu-list">'+res.map(function(s){
-      return '<div class="stu-item" data-en="'+s.examNo+'"><strong>'+s.name+'</strong><span>Exam No: '+s.examNo+' · Class '+s.class+'</span></div>';
+      return '<div class="stu-item" data-en="'+s.examNo+'"><strong>'+s.name+'</strong><span>Admission No: '+s.examNo+' · Class '+s.class+'</span></div>';
     }).join('')+'</div>'
     :"<div class='no-data' style='min-height:50px'>No students found</div>";
   setTimeout(function(){
