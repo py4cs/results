@@ -141,12 +141,18 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
 }
 
 @media print{
-  .topbar,.filter-bar,.nav-tabs,.report-section,.refresh-btn,.lo-btn{display:none!important;}
+  .topbar,.filter-bar,.nav-tabs,.report-section,.refresh-btn,.lo-btn,.print-btn-p{display:none!important;}
   .app-wrap{display:block!important;}
   .main{padding:0;max-width:100%;}
   .card{box-shadow:none;border:1px solid #ddd;break-inside:avoid;}
   body{background:#fff;}
+  .chart-print-img{display:block!important;}
+  .print-report-header{display:block!important;}
 }
+.print-report-header{display:none;padding:12px 0 16px;border-bottom:2px solid #0a1f6e;margin-bottom:16px;}
+.print-report-header h2{color:#0a1f6e;font-size:1.1rem;font-weight:800;}
+.print-report-header p{color:#475569;font-size:.78rem;margin-top:4px;}
+.print-btn-p{background:var(--gold);border:none;color:var(--blue);padding:6px 14px;border-radius:20px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;}
 </style>
 </head>
 <body>
@@ -173,6 +179,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
     </div>
     <div class="tb-right">
       <button class="refresh-btn" onclick="refreshData()">↻ Refresh</button>
+      <button class="print-btn-p" onclick="printPrincipalReport()">🖨️ Export PDF</button>
       <button class="lo-btn" onclick="doLogout()">Logout</button>
     </div>
   </div>
@@ -457,7 +464,16 @@ async function loadDashboard(cfg){
     }
     _cfg=cfg||await fsGet("settings","config");
     var students=await fsGetAll("students");
-    var results=await fsGetAll("results");
+    // Fetch results directly by admNo_Subject — targeted reads only
+    var subjects=(_cfg&&_cfg.subjects)||[];
+    var results=[];
+    for(var si=0;si<students.length;si++){
+      var admNo=students[si]._id||students[si].admNo||students[si].examNo||"";
+      for(var sj=0;sj<subjects.length;sj++){
+        var doc=await fsGet("results",admNo+"_"+subjects[sj]);
+        if(doc&&doc.subject) results.push(Object.assign({_id:admNo+"_"+subjects[sj]},doc));
+      }
+    }
     _cache={students:students,results:results,cfg:_cfg};
     populateFilters();
     renderAll();
@@ -540,11 +556,14 @@ function getExamPass(name){
 function getSubjects(){return(_cache&&_cache.cfg&&_cache.cfg.subjects)||[];}
 function getClasses(){return(_cache&&_cache.cfg&&_cache.cfg.classes)||[];}
 
-// Build result map: { examNo_subject: resultDoc }
+// Build result map: { admNo_subject: resultDoc }
 function buildResMap(){
   var m={};
   if(!_cache)return m;
-  _cache.results.forEach(function(r){m[(r.examNo||r._id)+"_"+(r.subject||"")]= r;});
+  _cache.results.forEach(function(r){
+    var key=(r.admNo||r.examNo||r._id)+"_"+(r.subject||"");
+    m[key]=r;
+  });
   return m;
 }
 
@@ -561,7 +580,8 @@ function getStudents(){
 function getMark(resMap,admNo,subject,examName){
   var r=resMap[admNo+"_"+subject];
   if(!r||!r[examName]||r[examName].mark===undefined)return null;
-  return r[examName].mark;
+  var m=r[examName].mark;
+  return m===null?null:Number(m);
 }
 
 // Compute student avg across filtered exams/subjects
@@ -605,7 +625,7 @@ function renderOverview(){
   var classes=F.cls?[F.cls]:getClasses();
 
   // Compute all student avg pcts
-  var allAvgs=students.map(function(s){return stuAvg(resMap,s._id||s.examNo);}).filter(function(a){return a!==null;});
+  var allAvgs=students.map(function(s){return stuAvg(resMap,s._id||s.admNo||s.examNo);}).filter(function(a){return a!==null;});
   var schoolAvg=allAvgs.length?Math.round(avg(allAvgs)):0;
 
   // Pass threshold
@@ -620,7 +640,7 @@ function renderOverview(){
   var classAvgs={};
   classes.forEach(function(cls){
     var clsStu=students.filter(function(s){return s.class===cls;});
-    var avgs=clsStu.map(function(s){return stuAvg(resMap,s._id||s.examNo);}).filter(function(a){return a!==null;});
+    var avgs=clsStu.map(function(s){return stuAvg(resMap,s._id||s.admNo||s.examNo);}).filter(function(a){return a!==null;});
     classAvgs[cls]=avgs.length?Math.round(avg(avgs)):0;
   });
   var sortedCls=classes.slice().sort(function(a,b){return classAvgs[b]-classAvgs[a];});
@@ -683,7 +703,7 @@ function renderExamTab(){
 
   var allMarks=[];
   students.forEach(function(s){
-    var en=s._id||s.examNo;
+    var en=s._id||s.admNo||s.examNo;
     subjects.forEach(function(sub){
       var m=getMark(resMap,en,sub,examName);
       if(m!==null&&m!==undefined) allMarks.push({mark:m,max:maxM});
@@ -736,7 +756,7 @@ function renderExamTab(){
     var marks=[];
     clsStu.forEach(function(s){
       subjects.forEach(function(sub){
-        var m=getMark(resMap,s._id||s.examNo,sub,examName);
+        var m=getMark(resMap,s._id||s.admNo||s.examNo,sub,examName);
         if(m!==null&&m!==undefined) marks.push(pct(m,maxM));
       });
     });
@@ -769,7 +789,7 @@ function renderSubjectTab(){
     var marks=[];var passCount=0;var total=0;
     students.forEach(function(s){
       exams.forEach(function(ex){
-        var m=getMark(resMap,s._id||s.examNo,sub,ex);
+        var m=getMark(resMap,s._id||s.admNo||s.examNo,sub,ex);
         if(m!==null&&m!==undefined){
           var maxM=getExamMax(ex);
           marks.push(pct(m,maxM));
@@ -832,7 +852,7 @@ function renderClassTab(){
       var stuPcts=[];
       subjects.forEach(function(sub){
         exams.forEach(function(ex){
-          var m=getMark(resMap,s._id||s.examNo,sub,ex);
+          var m=getMark(resMap,s._id||s.admNo||s.examNo,sub,ex);
           if(m!==null&&m!==undefined){
             var maxM=getExamMax(ex);var p=pct(m,maxM);
             stuPcts.push(p);
@@ -892,7 +912,7 @@ function renderRiskTab(){
 
   var riskStudents=[];
   students.forEach(function(s){
-    var en=s._id||s.examNo;
+    var en=s._id||s.admNo||s.examNo;
     var failedSubs=[];var allPcts=[];
     subjects.forEach(function(sub){
       var subMarks=[];
@@ -962,7 +982,7 @@ function renderTrendTab(){
     var marks=[];
     students.forEach(function(s){
       subjects.forEach(function(sub){
-        var m=getMark(resMap,s._id||s.examNo,sub,examName);
+        var m=getMark(resMap,s._id||s.admNo||s.examNo,sub,examName);
         if(m!==null&&m!==undefined) marks.push(pct(m,getExamMax(examName)));
       });
     });
@@ -1007,7 +1027,7 @@ function renderInsights(){
   var insights=[];
 
   // School avg
-  var allAvgs=students.map(function(s){return stuAvg(resMap,s._id||s.examNo);}).filter(function(a){return a!==null;});
+  var allAvgs=students.map(function(s){return stuAvg(resMap,s._id||s.admNo||s.examNo);}).filter(function(a){return a!==null;});
   var schoolAvg=allAvgs.length?Math.round(avg(allAvgs)):0;
   if(schoolAvg>=75) insights.push({cls:'ins-green',icon:'🌟',text:'School average is '+schoolAvg+'% — excellent overall performance!'});
   else if(schoolAvg>=60) insights.push({cls:'ins-blue',icon:'📊',text:'School average is '+schoolAvg+'% — good performance with room to improve.'});
@@ -1017,7 +1037,7 @@ function renderInsights(){
   var clsAvgs={};
   classes.forEach(function(cls){
     var clsStu=students.filter(function(s){return s.class===cls;});
-    var avgs=clsStu.map(function(s){return stuAvg(resMap,s._id||s.examNo);}).filter(function(a){return a!==null;});
+    var avgs=clsStu.map(function(s){return stuAvg(resMap,s._id||s.admNo||s.examNo);}).filter(function(a){return a!==null;});
     if(avgs.length) clsAvgs[cls]=Math.round(avg(avgs));
   });
   var sortedCls=Object.keys(clsAvgs).sort(function(a,b){return clsAvgs[b]-clsAvgs[a];});
@@ -1032,7 +1052,7 @@ function renderInsights(){
     var marks=[];
     students.forEach(function(s){
       exams.forEach(function(ex){
-        var m=getMark(resMap,s._id||s.examNo,sub,ex);
+        var m=getMark(resMap,s._id||s.admNo||s.examNo,sub,ex);
         if(m!==null&&m!==undefined) marks.push(pct(m,getExamMax(ex)));
       });
     });
@@ -1051,7 +1071,7 @@ function renderInsights(){
   // At-risk count
   var riskCount=0;
   students.forEach(function(s){
-    var a=stuAvg(resMap,s._id||s.examNo);
+    var a=stuAvg(resMap,s._id||s.admNo||s.examNo);
     if(a!==null&&a<40) riskCount++;
   });
   if(riskCount>0) insights.push({cls:'ins-red',icon:'🚨',text:riskCount+' student'+(riskCount>1?'s are':' is')+' at risk of failing. Immediate intervention recommended.'});
@@ -1064,7 +1084,7 @@ function renderInsights(){
       var m=[];
       students.forEach(function(s){
         subjects.forEach(function(sub){
-          var mk=getMark(resMap,s._id||s.examNo,sub,ex);
+          var mk=getMark(resMap,s._id||s.admNo||s.examNo,sub,ex);
           if(mk!==null&&mk!==undefined) m.push(pct(mk,getExamMax(ex)));
         });
       });
@@ -1145,7 +1165,7 @@ function searchPrincipalStudent(){
   }
   $('pStuSearchResults').innerHTML='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">'
     +res.map(function(s){
-      var admNo=s.admNo||s.examNo||s._id||"";
+      var admNo=s._id||s.admNo||s.examNo||"";
       return '<div data-admno="'+admNo+'" onclick="showPrincipalStudentDetail(this.dataset.admno)" '
         +'style="padding:8px 14px;background:var(--blue-pale);border:1.5px solid var(--blue-border);border-radius:8px;cursor:pointer;font-size:.84rem;font-weight:600;color:var(--blue)">'
         +'<strong>'+s.name+'</strong> <span style="color:var(--g600);font-weight:400">'+admNo+' · '+s.class+'</span>'
@@ -1225,12 +1245,128 @@ function showPrincipalStudentDetail(admNo){
 }
 
 // ═══════════════════════════════════════
+// PRINT / PDF EXPORT
+// ═══════════════════════════════════════
+async function printPrincipalReport(){
+  var now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
+  // Add print header
+  var existing=$('pPrintHeader');if(existing)existing.remove();
+  var ph=document.createElement('div');
+  ph.id='pPrintHeader';ph.className='p-print-header';ph.style.display='block';
+  var filterDesc='';
+  if(F.exam) filterDesc+='Exam: '+F.exam+' | ';
+  if(F.cls) filterDesc+='Class: '+F.cls+' | ';
+  if(F.subject) filterDesc+='Subject: '+F.subject+' | ';
+  if(filterDesc) filterDesc=filterDesc.slice(0,-3);
+  ph.innerHTML='<h2>Velammal School — Principal Analytics Report</h2>'
+    +'<p>Generated: '+now+(filterDesc?' &nbsp;|&nbsp; Filters: '+filterDesc:'')+'</p>';
+  document.querySelector('.main').insertBefore(ph,document.querySelector('.main').firstChild);
+
+  // Convert all charts to images
+  var chartDivIds=Object.keys(_charts);
+  var swaps=[];
+  for(var i=0;i<chartDivIds.length;i++){
+    var key=chartDivIds[i];
+    var ch=_charts[key];
+    if(!ch) continue;
+    // Find the chart's DOM element
+    var chartEl=document.querySelector('[id$="Chart"],[id$="chart"],[id$="Wrap"]');
+    // Use SVG fallback
+    var containers=['passFailChart','classAvgChart','examDistChart','examClassChart',
+      'subjectChart','classCompChart','trendChart','drtTrendChart','mainTrendChart'];
+    for(var j=0;j<containers.length;j++){
+      var el=$(containers[j]);
+      if(!el||!el.querySelector('svg')) continue;
+      var orig=el.innerHTML;
+      var svg=el.querySelector('svg');
+      try{
+        var svgData=new XMLSerializer().serializeToString(svg);
+        var imgEl=new Image();
+        await new Promise(function(res){
+          imgEl.onload=function(){
+            var canvas=document.createElement('canvas');
+            canvas.width=svg.clientWidth||500;canvas.height=svg.clientHeight||240;
+            canvas.getContext('2d').drawImage(imgEl,0,0);
+            swaps.push({el:el,orig:orig});
+            el.innerHTML='<img src="'+canvas.toDataURL()+'" style="width:100%;max-height:240px;object-fit:contain">';
+            res();
+          };
+          imgEl.onerror=function(){res();};
+          imgEl.src='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(svgData)));
+        });
+      }catch(e){}
+    }
+    break; // only do once — containers loop handles all
+  }
+
+  window.print();
+  setTimeout(function(){
+    swaps.forEach(function(x){x.el.innerHTML=x.orig;});
+    ph.remove();
+  },1000);
+}
+
+// ═══════════════════════════════════════
 // KILL CHARTS
 // ═══════════════════════════════════════
 function killCharts(){
   Object.keys(_charts).forEach(function(k){
     if(_charts[k]){try{_charts[k].destroy();}catch(e){}_charts[k]=null;}
   });
+}
+
+// ═══════════════════════════════════════
+// CHART TO IMAGE PRINT
+// ═══════════════════════════════════════
+async function chartsToImagesP(chartObj){
+  var swaps=[];
+  var keys=Object.keys(chartObj);
+  for(var i=0;i<keys.length;i++){
+    var k=keys[i];var ch=chartObj[k];if(!ch)continue;
+    try{
+      var uri=await ch.dataURI({scale:2});
+      var imgSrc=uri.imgURI||uri;
+      var el=ch.el;
+      if(el&&imgSrc){
+        var img=document.createElement('img');
+        img.src=imgSrc;img.style.width='100%';img.style.maxHeight='260px';img.style.objectFit='contain';
+        img.className='chart-print-img';
+        el.parentNode.insertBefore(img,el);
+        el.style.display='none';
+        swaps.push({el:el,img:img});
+      }
+    }catch(e){console.warn('Chart export failed:',k,e);}
+  }
+  return swaps;
+}
+function restoreChartsP(swaps){
+  swaps.forEach(function(s){
+    s.el.style.display='';
+    if(s.img&&s.img.parentNode)s.img.parentNode.removeChild(s.img);
+  });
+}
+
+async function printPrincipalReport(){
+  var now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
+  // Add print header
+  var main=document.querySelector('.main');
+  var existing=$('pPrintHeader');if(existing)existing.remove();
+  var ph=document.createElement('div');
+  ph.id='pPrintHeader';ph.className='print-report-header';ph.style.display='block';
+  ph.innerHTML='<h2>Velammal School — Principal Analytics Report</h2>'
+    +'<p>Principal: <strong>'+(_curPrincipal?_curPrincipal.name:'')+'</strong> &nbsp;|&nbsp; Generated: '+now
+    +(($('fExam').value||$('fClass').value||$('fSubject').value)
+      ?'&nbsp;|&nbsp; Filters: '+[$('fExam').value,$('fClass').value,$('fSubject').value].filter(Boolean).join(', ')
+      :'')
+    +'</p>';
+  main.insertBefore(ph,main.firstChild);
+  // Convert all charts to images
+  var swaps=await chartsToImagesP(_charts);
+  window.print();
+  setTimeout(function(){
+    restoreChartsP(swaps);
+    ph.remove();
+  },800);
 }
 
 // Keyboard enter on login

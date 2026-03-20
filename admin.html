@@ -155,7 +155,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
         <div class="card">
           <div class="card-title">Upload Students</div>
           <div class="card-sub">Bulk upload or update student records. Existing records will be updated.</div>
-          <div class="info-box">Required columns: <code>Admno, Name, Class, Phoneno</code></div>
+          <div class="info-box">Required columns: <code>Admno, Examno, Name, Class, Phoneno</code></div>
           <div class="upload-box" onclick="document.getElementById('fileInput').click()">
             <div class="ub-icon">📂</div><p>Click to select students CSV file</p><small>Supports .csv files</small>
           </div>
@@ -187,7 +187,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div id="viewStatus" class="status-bar"></div>
           <div class="tscroll">
             <table class="ptable" id="allStudentsTable">
-              <thead><tr><th>Admission No</th><th>Name</th><th>Class</th><th>Phone</th><th>Actions</th></tr></thead>
+              <thead><tr><th>Admission No</th><th>Exam No</th><th>Name</th><th>Class</th><th>Phone</th><th>Actions</th></tr></thead>
               <tbody><tr><td colspan="6" style="text-align:center;color:var(--g400);padding:20px">Click Load / Refresh</td></tr></tbody>
             </table>
           </div>
@@ -1133,13 +1133,13 @@ function handleStudentFile(input){
   reader.onload=function(e){
     try{
       var parsed=parseCSV(e.target.result);
-      var req=["Admno","Name","Class","Phoneno"];
+      var req=["Admno","Examno","Name","Class","Phoneno"];
       var miss=req.filter(function(r){return!parsed.headers.some(function(h){return h.toLowerCase()===r.toLowerCase();});});
       if(miss.length){showStatus("stuStatus","Missing columns: "+miss.join(", "),"err");return;}
-      _stuRows=parsed.rows.map(function(r){var n={};Object.keys(r).forEach(function(k){n[k.toLowerCase()]=String(r[k]).trim();});return n;}).filter(function(r){return r.admno;});
+      _stuRows=parsed.rows.map(function(r){var n={};Object.keys(r).forEach(function(k){n[k.toLowerCase()]=String(r[k]).trim();});return n;}).filter(function(r){return r.admno&&r.examno;});
       var thead=$("stuPreviewTable").querySelector("thead"),tbody=$("stuPreviewTable").querySelector("tbody");
-      thead.innerHTML="<tr><th>Admission No</th><th>Name</th><th>Class</th><th>Phone</th></tr>";
-      tbody.innerHTML=_stuRows.slice(0,10).map(function(r){return"<tr><td>"+r.admno+"</td><td>"+r.name+"</td><td>"+r.class+"</td><td>"+r.phoneno+"</td></tr>";}).join("");
+      thead.innerHTML="<tr><th>Admission No</th><th>Exam No</th><th>Name</th><th>Class</th><th>Phone</th></tr>";
+      tbody.innerHTML=_stuRows.slice(0,10).map(function(r){return"<tr><td>"+r.admno+"</td><td>"+r.examno+"</td><td>"+r.name+"</td><td>"+r.class+"</td><td>"+r.phoneno+"</td></tr>";}).join("");
       $("stuPreviewTitle").textContent="Preview — "+_stuRows.length+" students (first 10 shown)";
       $("stuPreviewWrap").classList.remove("hidden");
       showStatus("stuStatus",_stuRows.length+" students loaded. Review and click Upload.","ok");
@@ -1153,7 +1153,7 @@ async function uploadStudents(){
   var done=0,errors=0;
   for(var i=0;i<_stuRows.length;i++){
     var r=_stuRows[i];
-    try{await fsSet("students",r.admno,{name:r.name,class:r.class,phone:r.phoneno,admNo:r.admno});done++;}
+    try{await fsSet("students",r.admno,{name:r.name,class:r.class,phone:r.phoneno,admNo:r.admno,examNo:r.examno});done++;}
     catch(e){errors++;console.error(e);}
     setProgress("stuProgBar","stuProgWrap",Math.round((i+1)/_stuRows.length*100));
   }
@@ -1196,7 +1196,7 @@ function renderStudentsTable(){
   tbody.innerHTML=_allStudents.length
     ?_allStudents.map(function(r){
       var id=r._id||r.examNo;
-      return"<tr><td><strong>"+id+"</strong></td><td>"+r.name+"</td><td><span class='badge badge-blue'>"+r.class+"</span></td><td>"+(r.phone||"")+"</td>"
+      return"<tr><td><strong>"+id+"</strong></td><td>"+(r.examNo||r.examno||"--")+"</td><td>"+r.name+"</td><td><span class='badge badge-blue'>"+r.class+"</span></td><td>"+(r.phone||"")+"</td>"
         +"<td style='display:flex;gap:6px'><button class='btn btn-outline btn-sm' onclick='openEditModal(\""+id+"\")'>✏️</button>"
         +"<button class='btn btn-red btn-sm' onclick='deleteStudent(\""+id+"\",\""+r.name.replace(/"/g,"")+"\")'>🗑</button></td></tr>";
     }).join("")
@@ -1312,16 +1312,22 @@ async function uploadMarks(){
     return;
   }
 
-  showStatus("marksStatus","Loading student class info...","info");
+  showStatus("marksStatus","Loading student info...","info");
   var allStudents=await fsGetAll("students");
-  var classMap={};allStudents.forEach(function(s){classMap[s._id||s.examNo]=s.class||"";});
+  // Build ExamNo → {admNo, class} map
+  var examNoMap={};
+  allStudents.forEach(function(s){
+    var en=String(s.examNo||s.examno||"").trim();
+    if(en) examNoMap[en]={admNo:s._id||s.admNo,cls:s.class||""};
+  });
 
-  // Group by class — absent (null) students still belong to a class
+  // Group by class using ExamNo→class mapping
   var groups={};
   _marksRows.forEach(function(r){
-    var cls=classFilter||classMap[r.examno]||"Unknown";
+    var info=examNoMap[String(r.examno).trim()]||{};
+    var cls=classFilter||info.cls||"Unknown";
     if(!groups[cls])groups[cls]=[];
-    groups[cls].push(r);
+    groups[cls].push(Object.assign({},r,{_admNo:info.admNo||r.examno}));
   });
 
   showStatus("marksStatus","Calculating ranks per class (absent excluded from ranks)...","info");
@@ -1344,12 +1350,14 @@ async function uploadMarks(){
       if(i>0&&sorted[i].marks<sorted[i-1].marks)rank=i+1;
       sorted[i]._rank=rank;
     }
-    var rankMap={};sorted.forEach(function(r){rankMap[r.examno]=r._rank;});
+    var rankMap={};sorted.forEach(function(r){rankMap[r._admNo||r.examno]=r._rank;});
     rows.forEach(function(r){
-      rankData[r.examno]={
-        rank:r.marks!==null?rankMap[r.examno]:null,
+      var key=r._admNo||r.examno;
+      rankData[key]={
+        rank:r.marks!==null?rankMap[key]:null,
         classSize:classSize, // includes absentees
-        classAvg:classAvg,classAvgPct:classAvgPct,cls:cls
+        classAvg:classAvg,classAvgPct:classAvgPct,cls:cls,
+        admNo:r._admNo||r.examno,examNo:r.examno
       };
     });
   });
@@ -1358,13 +1366,15 @@ async function uploadMarks(){
   $("marksProgWrap").classList.remove("hidden");
   var done=0,errors=0;
   for(var j=0;j<_marksRows.length;j++){
-    var r=_marksRows[j],info=rankData[r.examno]||{},resultId=r.examno+"_"+subject;
+    var r=_marksRows[j];
+    var admNo=r._admNo||r.examno;
+    var info=rankData[admNo]||{};
+    var resultId=admNo+"_"+subject;
     try{
       var existing=await fsGet("results",resultId);
-      var data=existing||{examNo:r.examno,subject:subject};
-      // mark: null = absent, number (including 0) = actual score
+      var data=existing||{admNo:admNo,examNo:r.examno,subject:subject};
       data[examCol]={mark:r.marks,max:maxMarks,rank:info.rank!=null?info.rank:null,classSize:info.classSize||0,classAvg:info.classAvg||0,classAvgPct:info.classAvgPct||0};
-      data.examNo=r.examno;data.subject=subject;
+      data.admNo=admNo;data.examNo=r.examno;data.subject=subject;
       if(info.cls)data.class=info.cls;
       await fsSet("results",resultId,data);done++;
     }catch(e){errors++;console.error(e);}
@@ -1407,10 +1417,11 @@ async function loadEnterMarks(){
     _emStudents=allStudents.filter(function(s){return s.class===cls;}).sort(function(a,b){return(a.name||"").localeCompare(b.name||"");});
     if(!_emStudents.length){showStatus("emStatus","No students found in class "+cls,"warn");return;}
 
-    // Check existing marks
+    // Check existing marks using admNo_Subject
     var existingResults=[];
     for(var i=0;i<_emStudents.length;i++){
-      var resultId=(_emStudents[i]._id||_emStudents[i].examNo)+"_"+subj;
+      var admNo=_emStudents[i]._id||_emStudents[i].admNo||_emStudents[i].examNo;
+      var resultId=admNo+"_"+subj;
       var r=await fsGet("results",resultId);
       if(r&&r[exam]&&r[exam].mark!==undefined){existingResults.push(r);}
     }
@@ -1562,16 +1573,17 @@ async function saveEnterMarks(){
   var done=0,errors=0;
   for(var j=0;j<marksRows.length;j++){
     var r=marksRows[j];
-    var resultId=r.examno+"_"+subj;
+    var admNo=_emStudents[j]?(_emStudents[j]._id||_emStudents[j].admNo||_emStudents[j].examNo):r.examno;
+    var resultId=admNo+"_"+subj;
     try{
       var existing=await fsGet("results",resultId);
-      var data=existing||{examNo:r.examno,subject:subj,class:cls};
+      var data=existing||{admNo:admNo,examNo:_emStudents[j]?(_emStudents[j].examNo||admNo):admNo,subject:subj,class:cls};
       data[exam]={
         mark:r.marks,max:maxM,
         rank:r.marks!==null?rankMap[r.examno]:null,
         classSize:classSize,classAvg:classAvg,classAvgPct:classAvgPct
       };
-      data.examNo=r.examno;data.subject=subj;data.class=cls;
+      data.admNo=admNo;data.subject=subj;data.class=cls;
       await fsSet("results",resultId,data);
       $("em-status-"+j).innerHTML="<span class='badge badge-green'>✓ Saved</span>";
       done++;
@@ -1928,7 +1940,7 @@ async function exportStudents(){
   try{
     var students=await fsGetAll("students");
     students.sort(function(a,b){return(a.class||"").localeCompare(b.class||"")||(a.name||"").localeCompare(b.name||"");});
-    downloadCSV("velammal_students.csv",students.map(function(s){return{AdmNo:s._id||s.admNo||s.examNo,Name:s.name,Class:s.class,Phone:s.phone};}),["AdmNo","Name","Class","Phone"]);
+    downloadCSV("velammal_students.csv",students.map(function(s){return{AdmNo:s._id||s.admNo,ExamNo:s.examNo||"",Name:s.name,Class:s.class,Phone:s.phone};}),["AdmNo","ExamNo","Name","Class","Phone"]);
     showStatus("exportStatus","Students CSV downloaded!","ok");
   }catch(e){showStatus("exportStatus","Error: "+e.message,"err");}
 }

@@ -89,7 +89,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
   .print-header{display:block!important;}
   .page{display:flex!important;}
   #sDash .hero{background:#0a1f6e!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-  .ch200,.ch220,.ch240{display:none;}
+  .chart-print-img{display:block!important;}
 }
 .print-header{display:none;padding:12px 0 16px;border-bottom:2px solid #0a1f6e;margin-bottom:16px;}
 .print-header h2{color:#0a1f6e;font-size:1.1rem;font-weight:800;}
@@ -608,16 +608,22 @@ async function studentLogin(){
     await loadConfig();
     var cached=loadSession();
     var d;
-    if(cached&&cached.type==='student'&&cached.examNo===en&&cached.phone===ph&&EXAMS.length){
+    if(cached&&cached.type==='student'&&(cached.examNo===en||cached.admNo===en)&&cached.phone===ph&&EXAMS.length){
       d=cached;
     } else {
+      // Fetch student by admNo
       var student = await fsGet('students/'+en);
-      if(!student||!student.name) throw new Error('Invalid exam number or phone number.');
-      if(String(student.phone).trim() !== ph) throw new Error('Invalid exam number or phone number.');
-      var rRows = await fsQuery('results','examNo','EQUAL',en);
+      if(!student||!student.name) throw new Error('Invalid admission number or phone number.');
+      if(String(student.phone).trim() !== ph) throw new Error('Invalid admission number or phone number.');
+      // Fetch results directly by admNo_Subject for each subject (efficient — no query needed)
       var results={};
-      rRows.forEach(function(r){ results[r.subject]=r; });
-      d={type:'student',examNo:en,phone:ph,student:student,results:results};
+      var subjectsToFetch=SUBJECTS.length?SUBJECTS:[];
+      for(var si=0;si<subjectsToFetch.length;si++){
+        var sub=subjectsToFetch[si];
+        var resultDoc=await fsGet('results/'+en+'_'+sub);
+        if(resultDoc&&resultDoc.subject) results[sub]=resultDoc;
+      }
+      d={type:'student',examNo:en,admNo:en,phone:ph,student:student,results:results};
       saveSession(d);
     }
     _cur=d; go('sDash');
@@ -651,22 +657,22 @@ async function teacherLogin(){
     // Fetch students for teacher's classes
     var students = teacher.classes.length ? await fsQueryIn('students','class',teacher.classes) : [];
 
-    // Fetch ALL results for teacher's subject, then build nested map:
-    // results[examNo][examName] = {mark, max, rank, classSize, classAvg, classAvgPct}
-    var rRows = await fsQuery('results','subject','EQUAL',teacher.subject);
+    // Fetch results directly by admNo_Subject for each student — targeted reads only
     var results={};
-    rRows.forEach(function(r){
-      // r.id is like "1001_CS" — r.examNo is the student exam number
-      var en = String(r.examNo||r.id);
-      if(!results[en]) results[en]={};
-      // Copy all exam keys (DRT-1, PT-1 etc.) into results[examNo]
-      Object.keys(r).forEach(function(k){
-        if(k!=='examNo'&&k!=='subject'&&k!=='class'&&k!=='id') results[en][k]=r[k];
-      });
-      // Also store subject so openStudentPreview can find it
-      results[en]._subject = r.subject;
-      results[en]._examNo  = en;
-    });
+    for(var ti=0;ti<students.length;ti++){
+      var s=students[ti];
+      var admNo=s._id||s.admNo||s.examNo;
+      var resultDoc=await fsGet('results/'+admNo+'_'+teacher.subject);
+      if(resultDoc&&resultDoc.subject){
+        if(!results[admNo]) results[admNo]={};
+        Object.keys(resultDoc).forEach(function(k){
+          if(k!=='admNo'&&k!=='examNo'&&k!=='subject'&&k!=='class'&&k!=='_id') results[admNo][k]=resultDoc[k];
+        });
+        results[admNo]._subject=resultDoc.subject;
+        results[admNo]._examNo=resultDoc.examNo||admNo;
+        results[admNo]._admNo=admNo;
+      }
+    }
 
     _cur={type:'teacher',teacher:teacher,students:students,results:results};
     T.cls=teacher.classes[0]||'';
@@ -689,12 +695,49 @@ function logout(){
 }
 
 // ═══════════════════════════════════════════
-// PRINT / PDF EXPORT
+// PRINT / PDF EXPORT — Chart to Image
 // ═══════════════════════════════════════════
-function printStudentReport(){
+
+// Convert all ApexCharts in a chart object to PNG images, print, then restore
+async function chartsToImages(chartObj){
+  var swaps=[];
+  var keys=Object.keys(chartObj);
+  for(var i=0;i<keys.length;i++){
+    var k=keys[i];
+    var ch=chartObj[k];
+    if(!ch) continue;
+    try{
+      var uri=await ch.dataURI({scale:2});
+      var imgSrc=uri.imgURI||uri;
+      var el=ch.el;
+      if(el&&imgSrc){
+        var img=document.createElement('img');
+        img.src=imgSrc;
+        img.style.width='100%';
+        img.style.maxHeight='240px';
+        img.style.objectFit='contain';
+        img.className='chart-print-img';
+        el.parentNode.insertBefore(img,el);
+        el.style.display='none';
+        swaps.push({el:el,img:img});
+      }
+    }catch(e){console.warn('Chart export failed:',k,e);}
+  }
+  return swaps;
+}
+
+function restoreCharts(swaps){
+  swaps.forEach(function(s){
+    s.el.style.display='';
+    if(s.img&&s.img.parentNode) s.img.parentNode.removeChild(s.img);
+  });
+}
+
+async function printStudentReport(){
   if(!_cur||_cur.type!=='student') return;
   var student=_cur.student;
   var now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
+
   // Build print header
   var ph=$('sPrintHeader');
   if(ph){
@@ -704,85 +747,85 @@ function printStudentReport(){
       +'Class: <strong>'+student.class+'</strong> &nbsp;|&nbsp; '
       +'Generated: '+now+'</p>';
   }
-  // Show all subjects for print — temporarily render all
-  var allSubjs=Object.keys(_cur.results||{});
-  // Build a hidden print content area with all subjects
-  var printArea=document.getElementById('sPrintAllSubjects');
+
+  // Build all-subject marks table for print
+  var printArea=$('sPrintAllSubjects');
   if(!printArea){
     printArea=document.createElement('div');
     printArea.id='sPrintAllSubjects';
-    printArea.style.display='none';
     document.querySelector('.s-wrap').appendChild(printArea);
   }
-  var html='';
+  var allSubjs=Object.keys(_cur.results||{});
+  var html='<div style="page-break-before:always"><h3 style="color:#0a1f6e;margin-bottom:12px;font-size:.95rem">📊 Subject-wise Marks</h3>';
   allSubjs.forEach(function(sub){
-    var res=_cur.results[sub];
-    if(!res) return;
+    var res=_cur.results[sub];if(!res)return;
     var exams=EXAMS.map(function(col){
       var e=res[col];if(!e||e.mark===undefined)return null;
       var m=e.mark;var mx=e.max||examMax(col);
-      return{name:col,type:examCategory(col),max:mx,score:m,
-        pct:m!=null?pct(m,mx):null,rank:e.rank,classSize:e.classSize||0,
-        classAvg:e.classAvg||0,classAvgPct:e.classAvgPct||0,absent:m===null};
+      return{name:col,max:mx,score:m,pct:m!=null?pct(m,mx):null,
+        rank:e.rank,classSize:e.classSize||0,classAvg:e.classAvg||0,classAvgPct:e.classAvgPct||0,absent:m===null};
     }).filter(Boolean);
-    if(!exams.length) return;
+    if(!exams.length)return;
     var taken=exams.filter(function(e){return!e.absent;});
     var subAvg=taken.length?Math.round(avg(taken.map(function(e){return e.pct;}))):null;
-    html+='<div style="margin-bottom:20px;break-inside:avoid">'
-      +'<div style="background:#0a1f6e;color:#fff;padding:8px 12px;border-radius:6px 6px 0 0;font-weight:700;font-size:.88rem;display:flex;justify-content:space-between">'
-        +'<span>'+sub+'</span>'
-        +(subAvg!==null?'<span>Overall: '+subAvg+'%</span>':'')
+    html+='<div style="margin-bottom:16px;break-inside:avoid">'
+      +'<div style="background:#0a1f6e;color:#fff;padding:7px 12px;font-weight:700;font-size:.85rem;display:flex;justify-content:space-between;border-radius:4px 4px 0 0">'
+        +'<span>'+sub+'</span>'+(subAvg!==null?'<span>Avg: '+subAvg+'%</span>':'')
       +'</div>'
-      +'<table style="width:100%;border-collapse:collapse;font-size:.8rem">'
-      +'<thead><tr style="background:#f1f5f9">'
-        +'<th style="padding:7px 10px;text-align:left;border:1px solid #e2e8f0">Exam</th>'
-        +'<th style="padding:7px 10px;text-align:left;border:1px solid #e2e8f0">Max</th>'
-        +'<th style="padding:7px 10px;text-align:left;border:1px solid #e2e8f0">Score</th>'
-        +'<th style="padding:7px 10px;text-align:left;border:1px solid #e2e8f0">%</th>'
-        +'<th style="padding:7px 10px;text-align:left;border:1px solid #e2e8f0">Class Avg</th>'
-        +'<th style="padding:7px 10px;text-align:left;border:1px solid #e2e8f0">Rank</th>'
-      +'</tr></thead><tbody>';
+      +'<table style="width:100%;border-collapse:collapse;font-size:.79rem"><thead>'
+        +'<tr style="background:#f1f5f9"><th style="padding:6px 10px;text-align:left;border:1px solid #e2e8f0">Exam</th>'
+        +'<th style="padding:6px 10px;border:1px solid #e2e8f0">Max</th>'
+        +'<th style="padding:6px 10px;border:1px solid #e2e8f0">Score (%)</th>'
+        +'<th style="padding:6px 10px;border:1px solid #e2e8f0">Class Avg</th>'
+        +'<th style="padding:6px 10px;border:1px solid #e2e8f0">Rank</th></tr></thead><tbody>';
     exams.forEach(function(e){
-      var scoreCell=e.absent?'AB':(e.score+' ('+e.pct+'%)');
-      var avgCell=e.absent?'--':(e.classAvg+' ('+e.classAvgPct+'%)');
-      var rankCell=e.rank?('#'+e.rank+' / '+e.classSize):(e.absent?'AB':'--');
       html+='<tr>'
-        +'<td style="padding:7px 10px;border:1px solid #e2e8f0"><strong>'+e.name+'</strong></td>'
-        +'<td style="padding:7px 10px;border:1px solid #e2e8f0">'+e.max+'</td>'
-        +'<td style="padding:7px 10px;border:1px solid #e2e8f0">'+scoreCell+'</td>'
-        +'<td style="padding:7px 10px;border:1px solid #e2e8f0">'+(e.pct!==null?e.pct+'%':'--')+'</td>'
-        +'<td style="padding:7px 10px;border:1px solid #e2e8f0">'+avgCell+'</td>'
-        +'<td style="padding:7px 10px;border:1px solid #e2e8f0">'+rankCell+'</td>'
+        +'<td style="padding:6px 10px;border:1px solid #e2e8f0"><strong>'+e.name+'</strong></td>'
+        +'<td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:center">'+e.max+'</td>'
+        +'<td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:center">'+(e.absent?'AB':(e.score+' ('+e.pct+'%)'))+'</td>'
+        +'<td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:center">'+(e.absent?'--':(e.classAvg+' ('+e.classAvgPct+'%)'))+'</td>'
+        +'<td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:center">'+(e.rank?('#'+e.rank+'/'+e.classSize):(e.absent?'AB':'--'))+'</td>'
       +'</tr>';
     });
     html+='</tbody></table></div>';
   });
+  html+='</div>';
   printArea.innerHTML=html;
   printArea.style.display='block';
+
+  // Convert charts to images
+  var swaps=await chartsToImages(sCharts);
   window.print();
-  setTimeout(function(){printArea.style.display='none';},500);
+  setTimeout(function(){
+    restoreCharts(swaps);
+    printArea.style.display='none';
+  },800);
 }
 
-function printTeacherReport(){
+async function printTeacherReport(){
   if(!_cur||_cur.type!=='teacher') return;
   var teacher=_cur.teacher;
   var now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
-  // Add print header temporarily to teacher wrap
+
+  // Add print header
   var tw=document.querySelector('.t-wrap');
-  var existing=document.getElementById('tPrintHeader');
-  if(existing) existing.remove();
+  var existing=$('tPrintHeader');if(existing)existing.remove();
   var ph=document.createElement('div');
-  ph.id='tPrintHeader';
-  ph.className='print-header';
-  ph.style.display='block';
+  ph.id='tPrintHeader';ph.className='print-header';ph.style.display='block';
   ph.innerHTML='<h2>Velammal School — Class Performance Report</h2>'
     +'<p>Teacher: <strong>'+teacher.name+'</strong> &nbsp;|&nbsp; '
     +'Subject: <strong>'+teacher.subject+'</strong> &nbsp;|&nbsp; '
     +'Class: <strong>'+T.cls+'</strong> &nbsp;|&nbsp; '
     +'Generated: '+now+'</p>';
   tw.insertBefore(ph,tw.firstChild);
+
+  // Convert charts to images
+  var swaps=await chartsToImages(tCharts);
   window.print();
-  setTimeout(function(){ph.remove();},500);
+  setTimeout(function(){
+    restoreCharts(swaps);
+    ph.remove();
+  },800);
 }
 
 // ═══════════════════════════════════════════
