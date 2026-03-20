@@ -204,14 +204,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           </div>
           <div class="form-row-3" style="margin-bottom:12px">
             <div class="fg" style="margin:0"><label>Exam Name</label><input type="text" id="newExamName" placeholder="e.g. DRT-1, PT-2"></div>
-            <div class="fg" style="margin:0"><label>Max Marks</label><input type="number" id="newExamMax" value="100" min="1" max="200"></div>
-            <div class="fg" style="margin:0">
-              <label>Pass Mark</label>
-              <input type="number" id="newExamPass" placeholder="e.g. 40" min="1" max="200">
-              <label style="margin-top:6px;display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;color:var(--g600);cursor:pointer">
-                <input type="checkbox" id="newExamNoPass" onchange="togglePassInput()"> No Pass Mark
-              </label>
-            </div>
           </div>
           <div id="examStatus" class="status-bar"></div>
           <button class="btn btn-green" onclick="addExam()">＋ Add Exam</button>
@@ -236,7 +228,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <div id="secClasses" class="hidden">
         <div class="card">
           <div class="card-title">Manage Classes</div>
-          <div class="card-sub">Add or remove classes. Removing a class <strong>permanently deletes all students and marks</strong> for that class.</div>
+          <div class="card-sub">Add or remove classes. A class can only be removed if no students exist in it.</div>
           <div id="classListWrap" style="margin-bottom:16px;min-height:32px">
             <span style="color:var(--g400);font-size:.82rem">Loading...</span>
           </div>
@@ -272,8 +264,15 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
             <div class="fg" style="margin:0"><label>Subject</label><select id="selSubject"></select></div>
             <div class="fg" style="margin:0"><label>Exam</label><select id="selExam" onchange="updateMaxMarks()"></select></div>
           </div>
-          <div class="form-row" style="margin-bottom:12px">
+          <div class="form-row-3" style="margin-bottom:12px">
             <div class="fg" style="margin:0"><label>Max Marks</label><input type="number" id="maxMarks" value="100" min="1" max="200"></div>
+            <div class="fg" style="margin:0">
+              <label>Pass Mark</label>
+              <input type="number" id="uploadPassMark" placeholder="e.g. 40">
+              <label style="margin-top:6px;display:flex;align-items:center;gap:6px;font-size:.76rem;font-weight:600;color:var(--g600);cursor:pointer">
+                <input type="checkbox" id="uploadNoPass" onchange="toggleUploadPass()"> No Pass Mark
+              </label>
+            </div>
             <div class="fg" style="margin:0"><label>Class Filter (optional)</label>
               <select id="selClass"><option value="">All Classes</option></select>
             </div>
@@ -304,6 +303,16 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
             <div class="fg" style="margin:0"><label>Class</label><select id="emClass"></select></div>
             <div class="fg" style="margin:0"><label>Subject</label><select id="emSubject"></select></div>
             <div class="fg" style="margin:0"><label>Exam</label><select id="emExam"></select></div>
+          </div>
+          <div class="form-row" style="margin-bottom:10px">
+            <div class="fg" style="margin:0"><label>Max Marks</label><input type="number" id="emMaxM" value="100" min="1" max="200"></div>
+            <div class="fg" style="margin:0">
+              <label>Pass Mark</label>
+              <input type="number" id="emPassMarkInput" placeholder="e.g. 40">
+              <label style="margin-top:5px;display:flex;align-items:center;gap:5px;font-size:.76rem;font-weight:600;color:var(--g600);cursor:pointer">
+                <input type="checkbox" id="emNoPass" onchange="toggleEmPass()"> No Pass Mark
+              </label>
+            </div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <button class="btn btn-outline" onclick="loadEnterMarks()">↻ Load Students</button>
@@ -626,8 +635,8 @@ function setProgress(bar,wrap,p){$(wrap).classList.remove("hidden");$(bar).style
 function avg(a){return a.length?a.reduce(function(s,v){return s+v;},0)/a.length:0;}
 
 // Pass mark helpers
-function getPassMark(exam){return EXAM_PASS[exam]!=null?EXAM_PASS[exam]:null;}
-function hasPassMark(exam){return EXAM_PASS[exam]!=null;}
+function getPassMark(exam){return null;} // pass mark now per result doc
+function hasPassMark(exam){return false;} // pass mark now per result doc
 // Returns: "pass", "fail", or null (no pass mark concept)
 function passStatus(mark,exam){
   if(mark===null)return null; // absent
@@ -679,13 +688,8 @@ async function loadExamConfig(){
   var cfg=await fsGet("settings","config");
   if(cfg){
     if(cfg.exams&&Array.isArray(cfg.exams)){
-      EXAMS=cfg.exams.map(function(e){return e.name;});
-      EXAM_MAX={};EXAM_PASS={};
-      cfg.exams.forEach(function(e){
-        EXAM_MAX[e.name]=e.max||100;
-        EXAM_PASS[e.name]=e.passMark!=null?e.passMark:null;
-      });
-    } else { EXAMS=[];EXAM_MAX={};EXAM_PASS={}; }
+      EXAMS=cfg.exams.map(function(e){return e.name||e;});
+    } else { EXAMS=[]; }
     if(cfg.subjects&&Array.isArray(cfg.subjects)){
       SUBJECTS=cfg.subjects;
     } else { SUBJECTS=[]; }
@@ -785,21 +789,28 @@ function renderExamList(){
   var wrap=$("examListWrap");if(!wrap)return;
   if(!EXAMS.length){wrap.innerHTML="<span style='color:var(--g400);font-size:.82rem'>No exams added yet.</span>";return;}
   wrap.innerHTML=EXAMS.map(function(ex){
-    var pm=EXAM_PASS[ex];
-    var pmText=pm!=null?" | pass: "+pm:" | no pass mark";
     return"<span class='exam-tag'>"+ex
-      +" <small style='font-weight:500;opacity:.7'>(max "+EXAM_MAX[ex]+pmText+")</small>"
       +"<button onclick='removeExam(this.dataset.ex)' data-ex='"+ex+"' title='Remove'>✕</button></span>";
   }).join("");
 }
 function togglePassInput(){
-  var cb=$("newExamNoPass"),inp=$("newExamPass");
+  // kept for compatibility
+}
+function toggleUploadPass(){
+  var cb=$("uploadNoPass"),inp=$("uploadPassMark");
+  if(!cb||!inp)return;
+  if(cb.checked){inp.value="";inp.disabled=true;inp.style.opacity=".4";}
+  else{inp.disabled=false;inp.style.opacity="1";}
+}
+function toggleEmPass(){
+  var cb=$("emNoPass"),inp=$("emPassMarkInput");
+  if(!cb||!inp)return;
   if(cb.checked){inp.value="";inp.disabled=true;inp.style.opacity=".4";}
   else{inp.disabled=false;inp.style.opacity="1";}
 }
 
 async function saveExamConfig(){
-  var examArr=EXAMS.map(function(ex){return{name:ex,max:EXAM_MAX[ex]||100,passMark:EXAM_PASS[ex]!=null?EXAM_PASS[ex]:null};});
+  var examArr=EXAMS.map(function(ex){return{name:ex};});
   await fsSet("settings","config",{exams:examArr,subjects:SUBJECTS,classes:CLASSES,teachers:TEACHERS_CFG,principals:PRINCIPALS_CFG});
 }
 
@@ -878,21 +889,16 @@ async function removeClass(name){
 
 async function addExam(){
   var name=$("newExamName").value.trim().toUpperCase();
-  var max=Number($("newExamMax").value)||100;
-  var noPass=$("newExamNoPass").checked;
-  var passVal=noPass?null:Number($("newExamPass").value)||null;
   if(!name){showStatus("examStatus","Enter an exam name.","err");return;}
   if(EXAMS.includes(name)){showStatus("examStatus",name+" already exists.","warn");return;}
-  EXAMS.push(name);EXAM_MAX[name]=max;EXAM_PASS[name]=passVal;
+  EXAMS.push(name);
   try{
     await saveExamConfig();
     populateAllExamDropdowns();
     renderExamList();
-    $("newExamName").value="";$("newExamMax").value="100";$("newExamPass").value="";
-    $("newExamNoPass").checked=false;togglePassInput();
-    var pmMsg=passVal!=null?" | pass: "+passVal:" | no pass mark";
-    showStatus("examStatus","✅ "+name+" added (max: "+max+pmMsg+")","ok");
-  }catch(e){showStatus("examStatus","Error: "+e.message,"err");}
+    $("newExamName").value="";
+    showStatus("examStatus","✅ "+name+" added. Set max & pass mark when uploading marks.","ok");
+  }catch(e){EXAMS.pop();showStatus("examStatus","Error: "+e.message,"err");}
 }
 
 async function removeExam(name){
@@ -915,8 +921,7 @@ async function removeExam(name){
 }
 
 function updateMaxMarks(){
-  var ex=$("selExam");if(!ex||!ex.value)return;
-  $("maxMarks").value=EXAM_MAX[ex.value]||100;
+  // Max marks now entered manually per subject per exam
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1304,6 +1309,8 @@ async function uploadMarks(){
   if(!_marksRows.length){showStatus("marksStatus","No data.","err");return;}
   var subject=$("selSubject").value,examCol=$("selExam").value,maxMarks=Number($("maxMarks").value)||100;
   var classFilter=$("selClass").value;
+  var noPass=$("uploadNoPass")&&$("uploadNoPass").checked;
+  var passMark=noPass?null:(Number($("uploadPassMark").value)||null);
   if(!examCol){showStatus("marksStatus","No exam selected. Please add exams in Manage Exams first.","err");return;}
   // Block if any marks exceed max
   var invalidRows=_marksRows.filter(function(r){return r.marks!==null&&r.marks>maxMarks;});
@@ -1373,7 +1380,7 @@ async function uploadMarks(){
     try{
       var existing=await fsGet("results",resultId);
       var data=existing||{admNo:admNo,examNo:r.examno,subject:subject};
-      data[examCol]={mark:r.marks,max:maxMarks,rank:info.rank!=null?info.rank:null,classSize:info.classSize||0,classAvg:info.classAvg||0,classAvgPct:info.classAvgPct||0};
+      data[examCol]={mark:r.marks,max:maxMarks,passMark:passMark,rank:info.rank!=null?info.rank:null,classSize:info.classSize||0,classAvg:info.classAvg||0,classAvgPct:info.classAvgPct||0};
       data.admNo=admNo;data.examNo=r.examno;data.subject=subject;
       if(info.cls)data.class=info.cls;
       await fsSet("results",resultId,data);done++;
@@ -1398,7 +1405,7 @@ function initEnterMarks(){
   es.innerHTML="<option value=''>Select Subject</option>";
   SUBJECTS.forEach(function(s){var o=document.createElement("option");o.value=s;o.textContent=s;es.appendChild(o);});
   ee.innerHTML="<option value=''>Select Exam</option>";
-  EXAMS.forEach(function(e){var o=document.createElement("option");o.value=e;o.textContent=e+" (max: "+(EXAM_MAX[e]||100)+")";ee.appendChild(o);});
+  EXAMS.forEach(function(e){var o=document.createElement("option");o.value=e;o.textContent=e;ee.appendChild(o);});
   $("emTableWrap").classList.add("hidden");
   hideStatus("emStatus");
   $("emMaxLabel").textContent="";
@@ -1407,8 +1414,10 @@ function initEnterMarks(){
 async function loadEnterMarks(){
   var cls=$("emClass").value, subj=$("emSubject").value, exam=$("emExam").value;
   if(!cls||!subj||!exam){showStatus("emStatus","Please select Class, Subject and Exam.","err");return;}
-  var maxM=EXAM_MAX[exam]||100;
-  $("emMaxLabel").textContent="Max marks: "+maxM+(EXAM_PASS[exam]!=null?" | Pass: "+EXAM_PASS[exam]:"");
+  var maxM=Number($("emMaxM").value)||100;
+  var noPassEm=$("emNoPass")&&$("emNoPass").checked;
+  var emPassMark=noPassEm?null:(Number($("emPassMarkInput").value)||null);
+  $("emMaxLabel").textContent="Max: "+maxM+(emPassMark!=null?" | Pass: "+emPassMark:" | No pass mark");
   showStatus("emStatus","Checking existing marks...","info");
 
   // Check if marks already exist for this combination
@@ -1536,6 +1545,8 @@ function emKeyNav(e,idx,last){
 async function saveEnterMarks(){
   var tbl=$("emTable");
   var cls=tbl.dataset.cls,subj=tbl.dataset.subj,exam=tbl.dataset.exam,maxM=Number(tbl.dataset.maxM);
+  var noPassEm=$("emNoPass")&&$("emNoPass").checked;
+  var emPassMark=noPassEm?null:(Number($("emPassMarkInput").value)||null);
   if(!cls||!subj||!exam){showStatus("emStatus","No data to save.","err");return;}
 
   // Validate all inputs first
@@ -1579,7 +1590,7 @@ async function saveEnterMarks(){
       var existing=await fsGet("results",resultId);
       var data=existing||{admNo:admNo,examNo:_emStudents[j]?(_emStudents[j].examNo||admNo):admNo,subject:subj,class:cls};
       data[exam]={
-        mark:r.marks,max:maxM,
+        mark:r.marks,max:maxM,passMark:emPassMark,
         rank:r.marks!==null?rankMap[r.examno]:null,
         classSize:classSize,classAvg:classAvg,classAvgPct:classAvgPct
       };

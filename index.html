@@ -222,7 +222,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <div id="tForm" class="hidden">
         <div class="l-title">Teacher Login</div>
         <p class="l-sub">Sign in with your Teacher ID and password</p>
-        <div class="fg"><label>Teacher ID</label><input id="tUser" type="text" inputmode="numeric" placeholder=""></div>
+        <div class="fg"><label>Teacher ID</label><input id="tUser" type="text" inputmode="numeric" placeholder="Enter your Teacher ID"></div>
         <div class="fg"><label>Password</label><input id="tPass" type="password" placeholder="Password"></div>
         <button class="l-btn" id="tBtn" onclick="teacherLogin()">Login</button>
         <div class="l-err" id="tErr"></div>
@@ -504,9 +504,13 @@ var CLASSES = [];       // ["12D","12E"]
 
 // Helpers — used throughout render functions
 function examMax(name){ return (EXAM_CFG[name]&&EXAM_CFG[name].max)||100; }
-function examPass(name){ return EXAM_CFG[name]!=null?EXAM_CFG[name].passMark:null; }
+function examPass(name){ return (EXAM_CFG[name]!=null&&EXAM_CFG[name].passMark!=null)?EXAM_CFG[name].passMark:null; }
 function hasPass(name){ return examPass(name)!==null; }
 function isPass(mark,name){ var p=examPass(name); return p!==null&&mark>=p; }
+// Per-result passMark helpers (used when result doc has passMark field)
+function resultPassMark(examObj){ return examObj&&examObj.passMark!==undefined?examObj.passMark:null; }
+function resultHasPass(examObj){ return resultPassMark(examObj)!==null; }
+function resultIsPass(mark,examObj){ var p=resultPassMark(examObj); return p!==null&&mark!==null&&mark>=p; }
 // Classify exam type by name pattern for chart grouping
 function examCategory(name){
   var n=name.toUpperCase();
@@ -521,9 +525,9 @@ async function loadConfig(){
   try{
     var cfg = await fsGet('settings/config');
     if(cfg&&cfg.exams&&Array.isArray(cfg.exams)){
-      EXAMS = cfg.exams.map(function(e){return e.name;});
+      EXAMS = cfg.exams.map(function(e){return e.name||e;});
       EXAM_CFG = {};
-      cfg.exams.forEach(function(e){ EXAM_CFG[e.name]={max:e.max||100,passMark:e.passMark!=null?e.passMark:null}; });
+      // max/passMark now stored per result doc — config just has names
     }
     if(cfg&&cfg.subjects&&Array.isArray(cfg.subjects)){
       SUBJECTS = cfg.subjects;
@@ -860,7 +864,9 @@ function renderSubj(res,subject,name){
     var cat=examCategory(col);
     return {name:col,type:cat,max:mx,score:m,
       pct:m!=null?pct(m,mx):null,rank:e.rank||null,
-      classSize:e.classSize||0,classAvg:e.classAvg||0,classAvgPct:e.classAvgPct||0,absent:m===null};
+      classSize:e.classSize||0,classAvg:e.classAvg||0,classAvgPct:e.classAvgPct||0,
+      passMark:e.passMark!==undefined?e.passMark:null,
+      absent:m===null};
   }).filter(Boolean);
 
   // taken = exams with actual marks (including 0), absent excluded
@@ -931,8 +937,12 @@ function renderSubj(res,subject,name){
       ?'<span class="rk-pill '+(e.rank<=3?'rk-top':e.rank<=Math.ceil(e.classSize/2)?'rk-mid':'rk-low')+'">#'+e.rank+' / '+e.classSize+'</span>'
       :(e.absent?'<span style="color:var(--org)">AB</span>':'--');
     var pBadge='';
-    if(has&&e.pct!=null&&hasPass(e.name)){
-      pBadge=isPass(e.score,e.name)?' <span class="gb gb-a">Pass</span>':' <span class="gb gb-d">Fail</span>';
+    if(has&&e.pct!=null){
+      if(e.passMark!==null&&e.passMark!==undefined){
+        pBadge=resultIsPass(e.score,e)?' <span class="gb gb-a">Pass</span>':' <span class="gb gb-d">Fail</span>';
+      } else if(hasPass(e.name)){
+        pBadge=isPass(e.score,e.name)?' <span class="gb gb-a">Pass</span>':' <span class="gb gb-d">Fail</span>';
+      }
     }
     var scoreCell=e.absent
       ?'<span style="color:var(--org);font-weight:700">AB</span>'
@@ -1123,19 +1133,34 @@ function renderTDash(){
   var sd=students.filter(function(s){return s.class===T.cls;});
   if(!sd.length){ $('tSumGrid').innerHTML='<div class="no-data">No students for '+T.cls+'</div>'; return; }
 
+  // Use admNo as key for results lookup
   var activeEx=EXAMS.filter(function(col){
     return sd.some(function(s){
-      var r=results[String(s.examNo||s.id)];
+      var admNo=s._id||s.admNo||s.examNo||"";
+      var r=results[admNo];
       return r&&r[col]&&r[col].mark!=null;
     });
-  }).map(function(col){ return {name:col,type:examCategory(col),max:examMax(col)}; });
+  }).map(function(col){
+    // Get max from first available result doc for this exam
+    var maxVal=100;
+    for(var si=0;si<sd.length;si++){
+      var admNo=sd[si]._id||sd[si].admNo||sd[si].examNo||"";
+      var r=results[admNo];
+      if(r&&r[col]&&r[col].max){maxVal=r[col].max;break;}
+    }
+    return {name:col,type:examCategory(col),max:maxVal};
+  });
 
   var sdata=sd.map(function(s){
-    var r=results[String(s.examNo||s.id)];
-    return Object.assign({},s,{marks:activeEx.map(function(ex){
+    var admNo=s._id||s.admNo||s.examNo||"";
+    var r=results[admNo];
+    return Object.assign({},s,{_admNo:admNo,marks:activeEx.map(function(ex){
       if(!r||!r[ex.name]||r[ex.name].mark===undefined) return null;
       var m=r[ex.name].mark;
       return (m===null||m===undefined)?null:Number(m);
+    }),passMark:activeEx.map(function(ex){
+      if(!r||!r[ex.name]) return null;
+      return r[ex.name].passMark!==undefined?r[ex.name].passMark:null;
     })});
   });
 
@@ -1151,10 +1176,24 @@ function renderTDash(){
   var hi=allP.length?Math.max.apply(null,allP):0;
   var lo=allP.length?Math.min.apply(null,allP):0;
   var ca=allP.length?Math.round(avg(allP)):0;
-  // Pass = student avg >= lowest pass mark among exams with pass marks (or 40 default)
-  var passThreshold=40;
-  var passExams=activeEx.filter(function(e){return hasPass(e.name);});
-  if(passExams.length) passThreshold=Math.round(avg(passExams.map(function(e){return examPass(e.name)/e.max*100;})));
+  // Pass threshold — use passMark from result docs (per subject per exam)
+  // Build per-student pass/fail from their actual result docs
+  var passThreshold=40; // fallback default
+  // Try to get pass threshold from first result doc that has passMark
+  var foundPass=false;
+  for(var pi=0;pi<sd.length&&!foundPass;pi++){
+    var admNoP=sd[pi]._id||sd[pi].admNo||sd[pi].examNo||"";
+    var rP=results[admNoP];
+    if(rP){
+      for(var ei=0;ei<activeEx.length&&!foundPass;ei++){
+        var eP=rP[activeEx[ei].name];
+        if(eP&&eP.passMark!=null){
+          passThreshold=Math.round(eP.passMark/activeEx[ei].max*100);
+          foundPass=true;
+        }
+      }
+    }
+  }
   var pass=allP.filter(function(p){return p>=passThreshold;}).length;
   var withResults=sdata.filter(function(s){return s.marks.some(function(m){return m!==null&&m!==undefined;});}).length;
   // DRT avg across all DRTs
@@ -1430,7 +1469,8 @@ function renderClassComparison(teacher, students, results, activeEx){
   classes.forEach(function(cls){
     var sd=students.filter(function(s){return s.class===cls;});
     classData[cls]=sd.map(function(s){
-      var r=results[String(s.examNo||s.id)];
+      var admNo=s._id||s.admNo||s.examNo||"";
+      var r=results[admNo];
       return Object.assign({},s,{marks:activeEx.map(function(ex){
         if(!r||!r[ex.name]||r[ex.name].mark===undefined) return null;
         var m=r[ex.name].mark;
@@ -1593,7 +1633,7 @@ function searchStudents(){
   $('stuSearchResults').innerHTML=res.length
     ?'<div class="stu-list">'+res.map(function(s){
       var admNo=s.admNo||s.examNo||s._id||"";
-      return '<div class="stu-item" data-en="'+admNo+'"><strong>'+s.name+'</strong><span>Admission No: '+admNo+' · Class '+s.class+'</span></div>';
+      return '<div class="stu-item" data-en="'+admNo+'"><strong>'+s.name+'</strong><span>Adm: '+admNo+' · Class '+s.class+(s.phone?' · 📞 '+s.phone:'')+'</span></div>';
     }).join('')+'</div>'
     :"<div class='no-data' style='min-height:50px'>No students found</div>";
   setTimeout(function(){
@@ -1610,7 +1650,8 @@ function openStudentPreview(examNo){
 
   // Teacher results keyed by examNo — one doc per student containing all exam marks for teacher's subject
   // The doc has: subject, examNo, plus exam keys like "DRT-1":{mark,rank,...}
-  var resDoc=_cur.results[student.examNo]||_cur.results[student.id]||null;
+  var admNo=student._id||student.admNo||student.examNo||"";
+  var resDoc=_cur.results[admNo]||_cur.results[student.examNo]||_cur.results[student.id]||null;
 
   // Build results map keyed by subject — teacher only has their own subject
   var results={};

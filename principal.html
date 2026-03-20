@@ -629,9 +629,7 @@ function renderOverview(){
   var schoolAvg=allAvgs.length?Math.round(avg(allAvgs)):0;
 
   // Pass threshold
-  var passThreshold=40;
-  var passExams=exams.filter(function(e){return getExamPass(e)!==null;});
-  if(passExams.length) passThreshold=Math.round(avg(passExams.map(function(e){var p=getExamPass(e),mx=getExamMax(e);return mx?p/mx*100:40;})));
+  var passThreshold=40; // fallback
   var passCount=allAvgs.filter(function(a){return a>=passThreshold;}).length;
   var failCount=allAvgs.length-passCount;
   var passPct=allAvgs.length?Math.round(passCount/allAvgs.length*100):0;
@@ -1168,7 +1166,7 @@ function searchPrincipalStudent(){
       var admNo=s._id||s.admNo||s.examNo||"";
       return '<div data-admno="'+admNo+'" onclick="showPrincipalStudentDetail(this.dataset.admno)" '
         +'style="padding:8px 14px;background:var(--blue-pale);border:1.5px solid var(--blue-border);border-radius:8px;cursor:pointer;font-size:.84rem;font-weight:600;color:var(--blue)">'
-        +'<strong>'+s.name+'</strong> <span style="color:var(--g600);font-weight:400">'+admNo+' · '+s.class+'</span>'
+        +'<strong>'+s.name+'</strong> <span style="color:var(--g600);font-weight:400">'+admNo+' · '+s.class+(s.phone?' · 📞 '+s.phone:'')+'</span>'
       +'</div>';
     }).join('')
   +'</div>';
