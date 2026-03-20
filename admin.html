@@ -1215,13 +1215,34 @@ function openEditModal(id){
 function closeEditModal(){$("editModal").classList.add("hidden");}
 async function saveStudent(){
   var id=$("editExamNo").value;
-  var data={admNo:id,name:$("editName").value.trim(),class:$("editClass").value,phone:$("editPhone").value.trim()};
+  var newClass=$("editClass").value;
+  var data={admNo:id,name:$("editName").value.trim(),class:newClass,phone:$("editPhone").value.trim()};
   if(!data.name||!data.phone){showStatus("editStatus","Name and phone required.","err");return;}
   try{
-    await fsSet("students",id,data);showStatus("editStatus","Saved!","ok");
-    var idx=_allStudents.findIndex(function(x){return(x._id||x.examNo)===id;});
+    // Get old class to check if class changed
+    var oldStudent=_allStudents.find(function(x){return(x._id||x.admNo||x.examNo)===id;});
+    var oldClass=oldStudent?oldStudent.class:"";
+    await fsSet("students",id,data);
+    // If class changed — update class field in all result docs (rank/marks untouched)
+    if(oldClass&&oldClass!==newClass){
+      showStatus("editStatus","Class changed — updating result records...","info");
+      var updated=0;
+      for(var si=0;si<SUBJECTS.length;si++){
+        var resultId=id+"_"+SUBJECTS[si];
+        var existing=await fsGet("results",resultId);
+        if(existing&&existing.subject){
+          existing.class=newClass;
+          await fsSet("results",resultId,existing);
+          updated++;
+        }
+      }
+      showStatus("editStatus","✅ Saved! Class updated in "+updated+" result record(s).","ok");
+    } else {
+      showStatus("editStatus","✅ Saved!","ok");
+    }
+    var idx=_allStudents.findIndex(function(x){return(x._id||x.admNo||x.examNo)===id;});
     if(idx>=0)_allStudents[idx]=Object.assign({},_allStudents[idx],data);
-    renderStudentsTable();setTimeout(closeEditModal,800);
+    renderStudentsTable();setTimeout(closeEditModal,1500);
   }catch(e){showStatus("editStatus","Error: "+e.message,"err");}
 }
 async function deleteStudent(examNo,name){
