@@ -673,7 +673,6 @@ async function teacherLogin(){
           if(k!=='admNo'&&k!=='examNo'&&k!=='subject'&&k!=='class'&&k!=='_id') results[admNo][k]=resultDoc[k];
         });
         results[admNo]._subject=resultDoc.subject;
-        results[admNo]._examNo=resultDoc.examNo||admNo;
         results[admNo]._admNo=admNo;
       }
     }
@@ -1330,7 +1329,7 @@ function renderTDash(){
     var absentLatest=sdata.filter(function(s){return s.marks[latI]===null||s.marks[latI]===undefined;});
     $("absentLatestWrap").innerHTML=absentLatest.length
       ?'<div class="stu-list">'+absentLatest.map(function(s){
-          return '<div class="stu-item" data-en="'+s.examNo+'"><strong>'+s.name+'</strong>'
+          return '<div class="stu-item" data-en="'+(s._id||s.admNo||s.examNo)+'"><strong>'+s.name+'</strong>'
             +'<span style="color:var(--red);font-weight:700">Absent in '+latEx.name+'</span></div>';
         }).join('')+'</div>'
       :'<div class="no-data" style="min-height:50px">All students present in '+latEx.name+' 👍</div>';
@@ -1345,7 +1344,7 @@ function renderTDash(){
     var medals=['🥇','🥈','🥉'];
     $("topWrap").innerHTML=sorted.length
       ?'<div class="stu-list">'+sorted.slice(0,3).map(function(s,i){
-          return '<div class="stu-item" data-en="'+s.examNo+'">'
+          return '<div class="stu-item" data-en="'+(s._id||s.admNo||s.examNo)+'">'
             +'<strong>'+medals[i]+' '+s.name+'</strong>'
             +'<span style="color:var(--green);font-weight:700">'+s.marks[latI]+'/'+latEx.max+' ('+pct(s.marks[latI],latEx.max)+'%)</span>'
           +'</div>';
@@ -1355,7 +1354,7 @@ function renderTDash(){
     var riskLbl=function(m,max){var p=pct(m,max);return p<40?'🚨 Critical':p<55?'⚠️ Needs Help':'📌 Monitor';};
     $("bottomWrap").innerHTML=bottom.length
       ?'<div class="stu-list">'+bottom.map(function(s){
-          return '<div class="stu-item" data-en="'+s.examNo+'">'
+          return '<div class="stu-item" data-en="'+(s._id||s.admNo||s.examNo)+'">'
             +'<strong>'+s.name+'</strong>'
             +'<span style="color:var(--red);font-weight:700">'+s.marks[latI]+'/'+latEx.max+' · '+riskLbl(s.marks[latI],latEx.max)+'</span>'
           +'</div>';
@@ -1556,13 +1555,13 @@ function renderClassInsights(sdata, activeEx, passThreshold){
       var written=sdata.filter(function(x){return x.marks[i]!==null&&x.marks[i]!==undefined;});
       if(!written.length) return true;
       var sorted=written.slice().sort(function(a,b){return b.marks[i]-a.marks[i];});
-      var rank=sorted.findIndex(function(x){return String(x.examNo)===String(s.examNo);})+1;
+      var rank=sorted.findIndex(function(x){return String(x._id||x.admNo||x.examNo)===String(s._id||s.admNo||s.examNo);})+1;
       return s.marks[i]!==null && rank<=3;
     });
   });
   $("toppersWrap").innerHTML=toppers.length
     ?'<div class="stu-list">'+toppers.map(function(s){
-      return '<div class="stu-item" data-en="'+s.examNo+'"><strong>'+s.name+'</strong><span>🏆 Top 3 every exam</span></div>';
+      return '<div class="stu-item" data-en="'+(s._id||s.admNo||s.examNo)+'"><strong>'+s.name+'</strong><span>🏆 Top 3 every exam</span></div>';
     }).join('')+'</div>'
     :"<div class='no-data' style='min-height:60px'>"+(activeEx.length<2?"Need 2+ exams":"No consistent toppers yet")+"</div>";
 
@@ -1645,13 +1644,13 @@ function searchStudents(){
 
 function openStudentPreview(examNo){
   if(!_cur||_cur.type!=='teacher') return;
-  var student=_cur.students.find(function(s){return String(s.examNo)===String(examNo)||String(s.id)===String(examNo);});
+  var student=_cur.students.find(function(s){return String(s._id||s.admNo||s.examNo)===String(examNo)||String(s.id)===String(examNo);});
   if(!student){ alert('Student not found'); return; }
 
   // Teacher results keyed by examNo — one doc per student containing all exam marks for teacher's subject
   // The doc has: subject, examNo, plus exam keys like "DRT-1":{mark,rank,...}
   var admNo=student._id||student.admNo||student.examNo||"";
-  var resDoc=_cur.results[admNo]||_cur.results[student.examNo]||_cur.results[student.id]||null;
+  var resDoc=_cur.results[admNo]||null;
 
   // Build results map keyed by subject — teacher only has their own subject
   var results={};
@@ -1661,7 +1660,7 @@ function openStudentPreview(examNo){
   }
   var subjs=Object.keys(results);
 
-  $('spTitle').textContent=student.name+' · Class '+student.class;
+  $('spTitle').textContent=student.name+' · Class '+student.class+(admNo?' · '+admNo:'');
   var spBody=$('spBody');
   spBody.innerHTML='';
   if(!subjs.length){

@@ -155,7 +155,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
         <div class="card">
           <div class="card-title">Upload Students</div>
           <div class="card-sub">Bulk upload or update student records. Existing records will be updated.</div>
-          <div class="info-box">Required columns: <code>Admno, Examno, Name, Class, Phoneno</code></div>
+          <div class="info-box">Required columns: <code>Admno, Name, Class, Phoneno</code></div>
           <div class="upload-box" onclick="document.getElementById('fileInput').click()">
             <div class="ub-icon">📂</div><p>Click to select students CSV file</p><small>Supports .csv files</small>
           </div>
@@ -179,7 +179,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div class="card-title">All Students</div>
           <div class="card-sub">Edit individual records or bulk delete an entire class.</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
-            <select id="viewClassFilter" style="padding:9px 12px;border:1.5px solid var(--g200);border-radius:8px;font-family:inherit;font-size:.84rem;"><option value="">Select Class</option></select>
+            <select id="viewClassFilter" style="padding:9px 12px;border:1.5px solid var(--g200);border-radius:8px;font-family:inherit;font-size:.84rem;"><option value="">All Classes</option></select>
             <button class="btn btn-outline" onclick="loadAllStudents()">↻ Load</button>
             <select id="bulkClass" style="padding:9px 12px;border:1.5px solid var(--g200);border-radius:8px;font-family:inherit;font-size:.84rem;"><option value="">Select class to bulk delete</option></select>
             <button class="btn btn-red" onclick="bulkDeleteClass()">🗑 Delete Class</button>
@@ -187,7 +187,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div id="viewStatus" class="status-bar"></div>
           <div class="tscroll">
             <table class="ptable" id="allStudentsTable">
-              <thead><tr><th>Admission No</th><th>Exam No</th><th>Name</th><th>Class</th><th>Phone</th><th>Actions</th></tr></thead>
+              <thead><tr><th>Admission No</th><th>Name</th><th>Class</th><th>Phone</th><th>Actions</th></tr></thead>
               <tbody><tr><td colspan="6" style="text-align:center;color:var(--g400);padding:20px">Click Load / Refresh</td></tr></tbody>
             </table>
           </div>
@@ -277,9 +277,9 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
               <select id="selClass"><option value="">All Classes</option></select>
             </div>
           </div>
-          <div class="info-box">Required columns: <code>Examno, Marks</code> — leave Marks blank or write <code>AB</code> for absent, <code>0</code> for scored zero</div>
+          <div class="info-box">Required columns: <code>Admno, Marks</code> — leave Marks blank or write <code>AB</code> for absent, <code>0</code> for scored zero</div>
           <div class="upload-box" onclick="document.getElementById('marksFileInput').click()">
-            <div class="ub-icon">📊</div><p>Click to select marks CSV file</p><small>Columns: Examno, Marks</small>
+            <div class="ub-icon">📊</div><p>Click to select marks CSV file</p><small>Columns: Admno, Marks</small>
           </div>
           <input type="file" id="marksFileInput" accept=".csv" onchange="handleMarksFile(this)" style="display:none">
           <div id="marksStatus" class="status-bar"></div>
@@ -826,7 +826,7 @@ function populateAllClassDropdowns(){
   // View students class filter dropdown
   var vcf=$("viewClassFilter");if(vcf){
     var prev=vcf.value;
-    vcf.innerHTML="<option value=''>Select Class</option>";
+    vcf.innerHTML="<option value=''>All Classes</option>";
     CLASSES.forEach(function(c){var o=document.createElement("option");o.value=c;o.textContent=c;vcf.appendChild(o);});
     if(CLASSES.includes(prev))vcf.value=prev;
   }
@@ -1138,13 +1138,13 @@ function handleStudentFile(input){
   reader.onload=function(e){
     try{
       var parsed=parseCSV(e.target.result);
-      var req=["Admno","Examno","Name","Class","Phoneno"];
+      var req=["Admno","Name","Class","Phoneno"];
       var miss=req.filter(function(r){return!parsed.headers.some(function(h){return h.toLowerCase()===r.toLowerCase();});});
       if(miss.length){showStatus("stuStatus","Missing columns: "+miss.join(", "),"err");return;}
-      _stuRows=parsed.rows.map(function(r){var n={};Object.keys(r).forEach(function(k){n[k.toLowerCase()]=String(r[k]).trim();});return n;}).filter(function(r){return r.admno&&r.examno;});
+      _stuRows=parsed.rows.map(function(r){var n={};Object.keys(r).forEach(function(k){n[k.toLowerCase()]=String(r[k]).trim();});return n;}).filter(function(r){return r.admno;});
       var thead=$("stuPreviewTable").querySelector("thead"),tbody=$("stuPreviewTable").querySelector("tbody");
-      thead.innerHTML="<tr><th>Admission No</th><th>Exam No</th><th>Name</th><th>Class</th><th>Phone</th></tr>";
-      tbody.innerHTML=_stuRows.slice(0,10).map(function(r){return"<tr><td>"+r.admno+"</td><td>"+r.examno+"</td><td>"+r.name+"</td><td>"+r.class+"</td><td>"+r.phoneno+"</td></tr>";}).join("");
+      thead.innerHTML="<tr><th>Admission No</th><th>Name</th><th>Class</th><th>Phone</th></tr>";
+      tbody.innerHTML=_stuRows.slice(0,10).map(function(r){return"<tr><td>"+r.admno+"</td><td>"+r.name+"</td><td>"+r.class+"</td><td>"+r.phoneno+"</td></tr>";}).join("");
       $("stuPreviewTitle").textContent="Preview — "+_stuRows.length+" students (first 10 shown)";
       $("stuPreviewWrap").classList.remove("hidden");
       showStatus("stuStatus",_stuRows.length+" students loaded. Review and click Upload.","ok");
@@ -1158,7 +1158,7 @@ async function uploadStudents(){
   var done=0,errors=0;
   for(var i=0;i<_stuRows.length;i++){
     var r=_stuRows[i];
-    try{await fsSet("students",r.admno,{name:r.name,class:r.class,phone:r.phoneno,admNo:r.admno,examNo:r.examno});done++;}
+    try{await fsSet("students",r.admno,{name:r.name,class:r.class,phone:r.phoneno,admNo:r.admno});done++;}
     catch(e){errors++;console.error(e);}
     setProgress("stuProgBar","stuProgWrap",Math.round((i+1)/_stuRows.length*100));
   }
@@ -1185,14 +1185,13 @@ async function loadStats(){
 // ═══════════════════════════════════════════════════════
 async function loadAllStudents(){
   var cls=$("viewClassFilter")?$("viewClassFilter").value:"";
-  if(!cls){showStatus("viewStatus","Please select a class first.","warn");return;}
-  showStatus("viewStatus","Loading "+cls+"...","info");
+  showStatus("viewStatus","Loading"+(cls?" "+cls:" all classes")+"...","info");
   try{
     var all=await fsGetAll("students");
-    _allStudents=all.filter(function(s){return s.class===cls;});
-    _allStudents.sort(function(a,b){return(a.name||"").localeCompare(b.name||"");});
+    _allStudents=cls?all.filter(function(s){return s.class===cls;}):all;
+    _allStudents.sort(function(a,b){return(a.class||"").localeCompare(b.class||"")||(a.name||"").localeCompare(b.name||"");});
     renderStudentsTable();
-    showStatus("viewStatus",_allStudents.length+" students in "+cls,"ok");
+    showStatus("viewStatus",_allStudents.length+" student"+(cls?" in "+cls:" across all classes"),"ok");
     setTimeout(function(){hideStatus("viewStatus");},2000);
   }catch(e){showStatus("viewStatus","Error: "+e.message,"err");}
 }
@@ -1200,15 +1199,15 @@ function renderStudentsTable(){
   var tbody=$("allStudentsTable").querySelector("tbody");
   tbody.innerHTML=_allStudents.length
     ?_allStudents.map(function(r){
-      var id=r._id||r.examNo;
-      return"<tr><td><strong>"+id+"</strong></td><td>"+(r.examNo||r.examno||"--")+"</td><td>"+r.name+"</td><td><span class='badge badge-blue'>"+r.class+"</span></td><td>"+(r.phone||"")+"</td>"
+      var id=r._id||r.admNo||r.examNo;
+      return"<tr><td><strong>"+id+"</strong></td><td>"+r.name+"</td><td><span class='badge badge-blue'>"+r.class+"</span></td><td>"+(r.phone||"")+"</td>"
         +"<td style='display:flex;gap:6px'><button class='btn btn-outline btn-sm' onclick='openEditModal(\""+id+"\")'>✏️</button>"
         +"<button class='btn btn-red btn-sm' onclick='deleteStudent(\""+id+"\",\""+r.name.replace(/"/g,"")+"\")'>🗑</button></td></tr>";
     }).join("")
     :"<tr><td colspan='6' style='text-align:center;color:var(--g400);padding:20px'>No students found</td></tr>";
 }
 function openEditModal(id){
-  var s=_allStudents.find(function(x){return(x._id||x.examNo)===id;});if(!s)return;
+  var s=_allStudents.find(function(x){return(x._id||x.admNo||x.examNo)===id;});if(!s)return;
   $("editExamNo").value=id;$("editName").value=s.name||"";$("editClass").value=s.class||(CLASSES.length?CLASSES[0]:"");
   $("editPhone").value=s.phone||"";
   hideStatus("editStatus");$("editModal").classList.remove("hidden");
@@ -1233,10 +1232,10 @@ async function deleteStudent(examNo,name){
     await fsDelete("students",examNo);
     // Delete all result docs for this student
     var allRes=await fsGetAll("results");
-    var stuRes=allRes.filter(function(r){return String(r.examNo)===String(examNo)||r._id===examNo;});
+    var stuRes=allRes.filter(function(r){return String(r.admNo||r.examNo)===String(examNo)||r._id.startsWith(examNo+"_");});
     for(var i=0;i<stuRes.length;i++){try{await fsDelete("results",stuRes[i]._id);}catch(e){}}
     showStatus("viewStatus","Deleted "+name+" and "+stuRes.length+" result record(s).","ok");
-    _allStudents=_allStudents.filter(function(s){return(s._id||s.examNo)!==examNo;});
+    _allStudents=_allStudents.filter(function(s){return(s._id||s.admNo||s.examNo)!==examNo;});
     renderStudentsTable();loadStats();
   }catch(e){showStatus("viewStatus","Error: "+e.message,"err");}
 }
@@ -1269,13 +1268,13 @@ function handleMarksFile(input){
   reader.onload=function(e){
     try{
       var parsed=parseCSV(e.target.result);
-      if(!parsed.headers.some(function(h){return h.toLowerCase()==="examno";})||!parsed.headers.some(function(h){return h.toLowerCase()==="marks";})){
-        showStatus("marksStatus","File must have Examno and Marks columns.","err");return;
+      if(!parsed.headers.some(function(h){return h.toLowerCase()==="admno";})||!parsed.headers.some(function(h){return h.toLowerCase()==="marks";})){
+        showStatus("marksStatus","File must have Admno and Marks columns.","err");return;
       }
       _marksRows=parsed.rows.map(function(r){
         var n={};Object.keys(r).forEach(function(k){n[k.toLowerCase()]=r[k];});
-        return{examno:String(n.examno||"").trim(),marks:parseMark(n.marks)};
-      }).filter(function(r){return r.examno;});
+        return{admno:String(n.admno||"").trim(),marks:parseMark(n.marks)};
+      }).filter(function(r){return r.admno;});
       var maxM=Number($("maxMarks").value)||100;
       // Validate — find rows where marks exceed max
       var invalidRows=_marksRows.filter(function(r){return r.marks!==null&&r.marks>maxM;});
@@ -1287,7 +1286,7 @@ function handleMarksFile(input){
         var isInvalid=r.marks!==null&&r.marks>maxM;
         var rowStyle=isInvalid?"background:#fef2f2":"";
         return"<tr style='"+rowStyle+"'>"
-          +"<td>"+r.examno+"</td>"
+          +"<td>"+r.admno+"</td>"
           +"<td>"+(isAb?"<span class='badge badge-purple'>AB</span>":"<span style='"+(isInvalid?"color:var(--red);font-weight:700":"")+"'>"+r.marks+"</span>")+"</td>"
           +"<td>"+maxM+"</td>"
           +"<td>"+(isAb?"<span style='color:var(--org)'>Absent</span>":isInvalid?"<span class='badge badge-red'>❌ Exceeds max!</span>":"<span class='badge badge-blue'>"+Math.round(r.marks/maxM*100)+"%</span>")+"</td>"
@@ -1321,20 +1320,19 @@ async function uploadMarks(){
 
   showStatus("marksStatus","Loading student info...","info");
   var allStudents=await fsGetAll("students");
-  // Build ExamNo → {admNo, class} map
-  var examNoMap={};
+  // Build AdmNo → class map directly
+  var admNoClassMap={};
   allStudents.forEach(function(s){
-    var en=String(s.examNo||s.examno||"").trim();
-    if(en) examNoMap[en]={admNo:s._id||s.admNo,cls:s.class||""};
+    var an=String(s._id||s.admNo||"").trim();
+    if(an) admNoClassMap[an]=s.class||"";
   });
 
-  // Group by class using ExamNo→class mapping
+  // Group by class using admNo directly
   var groups={};
   _marksRows.forEach(function(r){
-    var info=examNoMap[String(r.examno).trim()]||{};
-    var cls=classFilter||info.cls||"Unknown";
+    var cls=classFilter||admNoClassMap[r.admno]||"Unknown";
     if(!groups[cls])groups[cls]=[];
-    groups[cls].push(Object.assign({},r,{_admNo:info.admNo||r.examno}));
+    groups[cls].push(r);
   });
 
   showStatus("marksStatus","Calculating ranks per class (absent excluded from ranks)...","info");
@@ -1357,14 +1355,13 @@ async function uploadMarks(){
       if(i>0&&sorted[i].marks<sorted[i-1].marks)rank=i+1;
       sorted[i]._rank=rank;
     }
-    var rankMap={};sorted.forEach(function(r){rankMap[r._admNo||r.examno]=r._rank;});
+    var rankMap={};sorted.forEach(function(r){rankMap[r.admno]=r._rank;});
     rows.forEach(function(r){
-      var key=r._admNo||r.examno;
-      rankData[key]={
-        rank:r.marks!==null?rankMap[key]:null,
-        classSize:classSize, // includes absentees
+      rankData[r.admno]={
+        rank:r.marks!==null?rankMap[r.admno]:null,
+        classSize:classSize,
         classAvg:classAvg,classAvgPct:classAvgPct,cls:cls,
-        admNo:r._admNo||r.examno,examNo:r.examno
+        admNo:r.admno
       };
     });
   });
@@ -1374,14 +1371,14 @@ async function uploadMarks(){
   var done=0,errors=0;
   for(var j=0;j<_marksRows.length;j++){
     var r=_marksRows[j];
-    var admNo=r._admNo||r.examno;
+    var admNo=r.admno;
     var info=rankData[admNo]||{};
     var resultId=admNo+"_"+subject;
     try{
       var existing=await fsGet("results",resultId);
-      var data=existing||{admNo:admNo,examNo:r.examno,subject:subject};
+      var data=existing||{admNo:admNo,subject:subject};
       data[examCol]={mark:r.marks,max:maxMarks,passMark:passMark,rank:info.rank!=null?info.rank:null,classSize:info.classSize||0,classAvg:info.classAvg||0,classAvgPct:info.classAvgPct||0};
-      data.admNo=admNo;data.examNo=r.examno;data.subject=subject;
+      data.admNo=admNo;data.subject=subject;
       if(info.cls)data.class=info.cls;
       await fsSet("results",resultId,data);done++;
     }catch(e){errors++;console.error(e);}
@@ -1951,7 +1948,7 @@ async function exportStudents(){
   try{
     var students=await fsGetAll("students");
     students.sort(function(a,b){return(a.class||"").localeCompare(b.class||"")||(a.name||"").localeCompare(b.name||"");});
-    downloadCSV("velammal_students.csv",students.map(function(s){return{AdmNo:s._id||s.admNo,ExamNo:s.examNo||"",Name:s.name,Class:s.class,Phone:s.phone};}),["AdmNo","ExamNo","Name","Class","Phone"]);
+    downloadCSV("velammal_students.csv",students.map(function(s){return{AdmNo:s._id||s.admNo,Name:s.name,Class:s.class,Phone:s.phone};}),["AdmNo","Name","Class","Phone"]);
     showStatus("exportStatus","Students CSV downloaded!","ok");
   }catch(e){showStatus("exportStatus","Error: "+e.message,"err");}
 }
@@ -1969,7 +1966,7 @@ async function exportMarks(){
         return{ExamNo:r.examNo,Marks:isAb?"AB":e.mark,Max:isAb?"":e.max,Percent:isAb?"":Math.round(e.mark/e.max*100),Result:isAb?"AB":ps===null?"--":ps==="pass"?"Pass":"Fail",Rank:isAb?"AB":(e.rank||""),ClassSize:e.classSize||"",ClassAvg:e.classAvg||""};
       });
     if(!rows.length){showStatus("exportStatus","No marks for "+subj+" – "+exam,"warn");return;}
-    downloadCSV("velammal_"+subj+"_"+exam+".csv",rows,["ExamNo","Marks","Max","Percent","Result","Rank","ClassSize","ClassAvg"]);
+    downloadCSV("velammal_"+subj+"_"+exam+".csv",rows,["AdmNo","Marks","Max","Percent","Result","Rank","ClassSize","ClassAvg"]);
     showStatus("exportStatus",rows.length+" records downloaded!","ok");
   }catch(e){showStatus("exportStatus","Error: "+e.message,"err");}
 }

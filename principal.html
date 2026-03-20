@@ -561,7 +561,7 @@ function buildResMap(){
   var m={};
   if(!_cache)return m;
   _cache.results.forEach(function(r){
-    var key=(r.admNo||r.examNo||r._id)+"_"+(r.subject||"");
+    var key=(r.admNo||r._id)+"_"+(r.subject||"");
     m[key]=r;
   });
   return m;
@@ -1185,7 +1185,7 @@ function showPrincipalStudentDetail(admNo){
   // Get subjects this student has marks for
   var subjects=getSubjects().filter(function(sub){
     var r=resMap[admNo+"_"+sub];
-    return r&&Object.keys(r).some(function(k){return k!=='examNo'&&k!=='subject'&&k!=='class'&&k!=='_id'&&r[k]&&typeof r[k]==='object'&&r[k].mark!==undefined;});
+    return r&&Object.keys(r).some(function(k){return k!=='admNo'&&k!=='subject'&&k!=='class'&&k!=='_id'&&r[k]&&typeof r[k]==='object'&&r[k].mark!==undefined;});
   });
 
   // Header
@@ -1193,7 +1193,7 @@ function showPrincipalStudentDetail(admNo){
     +'<div style="width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.2rem;color:var(--blue)">'+( student.name||"?")[0]+'</div>'
     +'<div>'
       +'<div style="font-size:1rem;font-weight:700">'+student.name+'</div>'
-      +'<div style="font-size:.78rem;opacity:.7">Admission No: '+admNo+' · Class '+student.class+'</div>'
+      +'<div style="font-size:.78rem;opacity:.7">'+admNo+' · Class '+student.class+'</div>'
     +'</div>'
   +'</div>';
 
