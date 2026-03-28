@@ -204,7 +204,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
 
 <!-- LOGIN -->
 <div class="lp" id="loginPage">
-  <div class="lh"><h1>Velammal Results Portal</h1><p>Academic Year 2025-26</p></div>
+  <div class="lh"><h1>Velammal Vidyalaya Alapakkam</h1><p>Results Portal &nbsp;|&nbsp; Academic Year 2025-26</p></div>
   <div class="lb">
     <div class="lc">
       <div class="l-tabs">
@@ -215,9 +215,12 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
         <div class="l-title">Student Login</div>
         <p class="l-sub">Enter your admission number and registered phone number</p>
         <div class="fg"><label>Admission No</label><input id="examNo" type="text" inputmode="numeric" placeholder="e.g. H1822"></div>
-        <div class="fg"><label>Phone Number</label><input id="phone" type="tel" inputmode="numeric" placeholder="Parent's Phone Number"></div>
+        <div class="fg"><label>Phone Number</label><input id="phone" type="tel" inputmode="numeric" placeholder="10-digit parent's mobile number"></div>
         <button class="l-btn" id="sBtn" onclick="studentLogin()">Login</button>
         <div class="l-err" id="sErr"></div>
+        <div style="margin-top:12px;padding:10px 12px;background:var(--blue-pale);border-radius:8px;border-left:3px solid var(--blue);font-size:.78rem;color:var(--g600);">
+          📋 Your <strong>Admission No</strong> and <strong>Parent's Mobile Number</strong> are printed on your <strong>ID Card</strong>.
+        </div>
       </div>
       <div id="tForm" class="hidden">
         <div class="l-title">Teacher Login</div>
@@ -234,7 +237,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
 <!-- STUDENT DASH -->
 <div class="page" id="sDash">
   <div class="topbar">
-    <div class="tb-brand"><span>Velammal Results</span><small>2025-26</small></div>
+    <div class="tb-brand"><span>Velammal Vidyalaya Alapakkam</span><small>Results Portal | 2025-26</small></div>
     <div class="tb-r">
       <div class="u-badge"><div class="u-av" id="sAv">S</div><div class="u-info"><span id="sName"></span><small id="sMeta"></small></div></div>
       <button class="print-btn" onclick="printStudentReport()">🖨️ Export PDF</button>
@@ -285,7 +288,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
 <!-- TEACHER DASH -->
 <div class="page" id="tDash">
   <div class="topbar">
-    <div class="tb-brand"><span>Velammal Results</span><small>Teacher View</small></div>
+    <div class="tb-brand"><span>Velammal Vidyalaya Alapakkam</span><small>Teacher Portal | 2025-26</small></div>
     <div class="tb-r">
       <div class="u-badge"><div class="u-av" id="tAv">T</div><div class="u-info"><span id="tName"></span><small id="tSubLabel" style="color:var(--gold-lt)"></small></div></div>
       <button class="print-btn" onclick="printTeacherReport()">🖨️ Export PDF</button>
@@ -406,6 +409,22 @@ async function fsGet(path) {
   const r = await fetch(BASE + "/" + path + "?key=" + API_KEY);
   if (!r.ok) throw new Error("Not found");
   return parseDoc(await r.json());
+}
+async function fsWrite(col, id, data) {
+  try {
+    var fields = {};
+    Object.keys(data).forEach(function(k) {
+      var v = data[k];
+      if (typeof v === 'string') fields[k] = {stringValue: v};
+      else if (typeof v === 'number') fields[k] = {integerValue: String(v)};
+      else if (typeof v === 'boolean') fields[k] = {booleanValue: v};
+    });
+    await fetch(BASE + "/" + col + "/" + id + "?key=" + API_KEY, {
+      method: "PATCH",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({fields: fields})
+    });
+  } catch(e) { /* silent fail — tracking is non-critical */ }
 }
 
 async function fsQuery(col, field, op, value) {
@@ -569,6 +588,19 @@ function setBtn(id,loading){ var b=$(id); b.disabled=loading; b.textContent=load
 function saveSession(d){ try{ sessionStorage.setItem('vva',JSON.stringify(d)); }catch(e){} }
 function loadSession(){ try{ var s=sessionStorage.getItem('vva'); return s?JSON.parse(s):null; }catch(e){ return null; } }
 function clearSession(){ sessionStorage.removeItem('vva'); }
+var _trackLogins=null; // cached tracking flag
+async function checkAndTrack(userId, role, name){
+  try{
+    if(_trackLogins===null){
+      var cfg=await fsGet('settings/config');
+      _trackLogins=cfg&&cfg.trackLogins===true;
+    }
+    if(_trackLogins){
+      var now=Date.now();
+      await fsWrite('lastLogin',userId,{role:role,name:name,timestamp:now});
+    }
+  }catch(e){ /* silent */ }
+}
 
 // ═══════════════════════════════════════════
 // PAGE SWITCH
@@ -631,6 +663,7 @@ async function studentLogin(){
       saveSession(d);
     }
     _cur=d; go('sDash');
+    checkAndTrack(en, 'student', d.student.name||en);
     setTimeout(function(){ renderStudent(d); },50);
   } catch(e){ showErr('sErr',e.message); }
   finally { setBtn('sBtn',false); }
@@ -680,6 +713,7 @@ async function teacherLogin(){
     _cur={type:'teacher',teacher:teacher,students:students,results:results};
     T.cls=teacher.classes[0]||'';
     saveSession(_cur); // save for session restore on refresh
+    checkAndTrack(u, 'teacher', teacher.name||u);
     go('tDash');
     setTimeout(function(){ renderTeacher(); },50);
   } catch(e){ showErr('tErr','Login error: '+e.message); }

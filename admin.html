@@ -106,7 +106,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
 <div id="loginWrap" class="login-wrap">
   <div class="login-box">
     <h1>Admin Panel</h1>
-    <p>Velammal Results Portal</p>
+    <p>Velammal Vidyalaya Alapakkam — Results Portal 2025-26</p>
     <div class="fg"><label>Email</label><input type="email" id="adminEmail" placeholder="e.g. admin@velammal.com"></div>
     <div class="fg"><label>Password</label><input type="password" id="adminPass" placeholder="Enter password"></div>
     <button class="btn btn-primary" onclick="adminLogin()">Login</button>
@@ -117,7 +117,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
 <!-- MAIN APP -->
 <div id="appWrap" class="hidden">
   <div class="topbar">
-    <div><h1>Velammal Admin Panel</h1><small>Results Portal Management</small></div>
+    <div><h1>Velammal Vidyalaya Alapakkam</h1><small>Admin Panel | Results Portal 2025-26</small></div>
     <button class="lo-btn" onclick="adminLogout()">Logout</button>
   </div>
   <div class="app-wrap">
@@ -144,6 +144,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <button class="nav-item" onclick="showSec('secPreview',this)">👀 Student Preview</button>
       <span class="nav-sep">Other</span>
       <button class="nav-item" onclick="showSec('secExport',this)">⬇️ Export CSV</button>
+      <button class="nav-item" onclick="showSec('secTracking',this);loadLoginTracking()">📊 Login Tracking</button>
       <span class="nav-sep" style="color:var(--red)">Danger Zone</span>
       <button class="nav-item" style="color:var(--red);font-weight:700" onclick="openNukeModal()">💣 Reset Everything</button>
 
@@ -514,6 +515,21 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       </div>
 
 
+
+      <!-- LOGIN TRACKING -->
+      <div id="secTracking" class="hidden">
+        <div class="card">
+          <div class="card-title">📊 Login Tracking</div>
+          <div class="card-sub">Monitor student and teacher login activity.</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+            <span style="font-size:.88rem;font-weight:600;color:var(--g800)">Tracking Status:</span>
+            <button id="trackToggleBtn" class="btn btn-outline" onclick="toggleTracking()" style="min-width:120px">Loading...</button>
+            <span id="trackStatusLabel" style="font-size:.82rem;color:var(--g600)"></span>
+          </div>
+          <div id="trackStatus" class="status-bar"></div>
+        </div>
+        <div id="trackDashWrap"></div>
+      </div>
 
     </div>
   </div>
@@ -1121,7 +1137,7 @@ async function adminLogout(){
 var CLASSES=[]; // loaded from Firestore /settings/config
 var TEACHERS_CFG=[]; // loaded from Firestore /settings/config
 var PRINCIPALS_CFG=[]; // loaded from Firestore /settings/config
-var SECS=["secStudents","secViewStudents","secExams","secClasses","secTeacherMgmt","secPrincipalMgmt","secMarks","secEnterMarks","secViewMarks","secDeleteMarks","secEditMark","secOverview","secAnalytics","secMissing","secDupes","secPreview","secExport"];
+var SECS=["secStudents","secViewStudents","secExams","secClasses","secTeacherMgmt","secPrincipalMgmt","secMarks","secEnterMarks","secViewMarks","secDeleteMarks","secEditMark","secOverview","secAnalytics","secMissing","secDupes","secPreview","secExport","secTracking"];
 function showSec(id,btn){
   SECS.forEach(function(s){$(s).classList.add("hidden");});$(id).classList.remove("hidden");
   document.querySelectorAll(".nav-item").forEach(function(b){b.classList.remove("active");});
@@ -2298,6 +2314,143 @@ document.addEventListener("keydown",function(e){
   if(e.key==="Enter"&&$("loginWrap").style.display!=="none")adminLogin();
   if(e.key==="Escape"){closeEditModal();closeNukeModal();}
 });
+
+// ═══════════════════════════════════════════════════════
+// LOGIN TRACKING
+// ═══════════════════════════════════════════════════════
+var _trackingEnabled=null;
+
+async function toggleTracking(){
+  try{
+    showStatus("trackStatus","Updating...","info");
+    var cfg=await fsGet("settings","config");
+    var current=cfg&&cfg.trackLogins===true;
+    var newVal=!current;
+    if(!cfg)cfg={};
+    cfg.trackLogins=newVal;
+    await fsSet("settings","config",cfg);
+    _trackingEnabled=newVal;
+    updateTrackToggleUI(newVal);
+    showStatus("trackStatus",newVal?"✅ Tracking enabled.":"⚠️ Tracking disabled.","ok");
+  }catch(e){showStatus("trackStatus","Error: "+e.message,"err");}
+}
+
+function updateTrackToggleUI(enabled){
+  var btn=$("trackToggleBtn"),lbl=$("trackStatusLabel");
+  if(!btn)return;
+  if(enabled){
+    btn.textContent="🟢 ON — Click to Disable";
+    btn.className="btn btn-green";
+    if(lbl)lbl.textContent="Logins are being tracked";
+  }else{
+    btn.textContent="⚫ OFF — Click to Enable";
+    btn.className="btn btn-outline";
+    if(lbl)lbl.textContent="Tracking is disabled";
+  }
+}
+
+async function loadLoginTracking(){
+  showStatus("trackStatus","Loading...","info");
+  try{
+    var cfg=await fsGet("settings","config");
+    var enabled=cfg&&cfg.trackLogins===true;
+    _trackingEnabled=enabled;
+    updateTrackToggleUI(enabled);
+    if(!enabled){
+      $("trackDashWrap").innerHTML='<div class="card"><div class="no-data" style="min-height:80px">Tracking is disabled. Enable it to record login activity.</div></div>';
+      hideStatus("trackStatus");return;
+    }
+    var records=await fsGetAll("lastLogin");
+    hideStatus("trackStatus");
+    if(!records.length){
+      $("trackDashWrap").innerHTML='<div class="card"><div class="no-data" style="min-height:80px">No login records yet.</div></div>';
+      return;
+    }
+    var allStudents=await fsGetAll("students");
+    var loginMap={};
+    records.forEach(function(r){loginMap[r._id]=r;});
+    var now=Date.now();
+    var todayStart=new Date();todayStart.setHours(0,0,0,0);todayStart=todayStart.getTime();
+    var weekStart=now-(7*24*60*60*1000);
+    var todayCount=records.filter(function(r){return r.timestamp&&Number(r.timestamp)>=todayStart;}).length;
+    var weekCount=records.filter(function(r){return r.timestamp&&Number(r.timestamp)>=weekStart;}).length;
+    var neverCount=allStudents.filter(function(s){return !loginMap[s._id||s.admNo];}).length;
+    var inactiveCount=records.filter(function(r){return r.timestamp&&Number(r.timestamp)<weekStart;}).length;
+    var classLogin={};
+    allStudents.forEach(function(s){
+      var cls=s.class||"Unknown";
+      if(!classLogin[cls])classLogin[cls]={total:0,loggedIn:0};
+      classLogin[cls].total++;
+      if(loginMap[s._id||s.admNo])classLogin[cls].loggedIn++;
+    });
+    function statusBadge(ts){
+      if(!ts)return '<span style="background:#f1f5f9;color:#64748b;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:700">⬜ Never</span>';
+      var t=Number(ts),diff=now-t,days=Math.floor(diff/86400000);
+      if(t>=todayStart)return '<span style="background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:700">🟢 Today</span>';
+      if(days===1)return '<span style="background:#fef9c3;color:#92400e;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:700">🟡 Yesterday</span>';
+      return '<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:700">🔴 '+days+' days ago</span>';
+    }
+    function fmtDate(ts){
+      if(!ts)return "--";
+      return new Date(Number(ts)).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+    }
+    var sortedRecords=records.slice().sort(function(a,b){return Number(b.timestamp||0)-Number(a.timestamp||0);});
+    var html='';
+    // Summary cards
+    html+='<div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">';
+    function sCard(icon,val,lbl){return'<div class="stat-card"><div class="stat-icon">'+icon+'</div><div class="stat-val">'+val+'</div><div class="stat-lbl">'+lbl+'</div></div>';}
+    html+=sCard("👥","S:"+allStudents.length+" T:"+TEACHERS_CFG.length,"Registered");
+    html+=sCard("✅",todayCount,"Today");
+    html+=sCard("📅",weekCount,"This Week");
+    html+=sCard("⬜",neverCount,"Never Logged In");
+    html+=sCard("🔴",inactiveCount,"Inactive 7+ Days");
+    html+='</div>';
+    // Class engagement
+    html+='<div class="card" style="margin-bottom:14px"><div class="card-title">📊 Class Engagement</div><div class="card-sub">Students logged in at least once</div>';
+    html+='<div class="tscroll"><table class="ptable"><thead><tr><th>Class</th><th>Total</th><th>Logged In</th><th>Never</th><th>Rate</th></tr></thead><tbody>';
+    Object.keys(classLogin).sort().forEach(function(cls){
+      var d=classLogin[cls],pct=d.total?Math.round(d.loggedIn/d.total*100):0;
+      var col=pct>=75?'var(--green)':pct>=40?'var(--org)':'var(--red)';
+      html+='<tr><td><strong>'+cls+'</strong></td><td>'+d.total+'</td><td>'+d.loggedIn+'</td><td>'+(d.total-d.loggedIn)+'</td>'
+        +'<td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:8px;background:var(--g100);border-radius:4px">'
+        +'<div style="width:'+pct+'%;height:8px;background:'+col+';border-radius:4px"></div></div>'
+        +'<span style="font-size:.78rem;font-weight:700;color:'+col+'">'+pct+'%</span></div></td></tr>';
+    });
+    html+='</tbody></table></div></div>';
+    // Per-user table
+    html+='<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">';
+    html+='<div class="card-title" style="margin:0">Login Activity</div>';
+    html+='<div style="display:flex;gap:6px">';
+    html+='<button class="btn btn-outline btn-sm active" onclick="filterTrack(\'all\',this)" style="font-size:.76rem">All</button>';
+    html+='<button class="btn btn-outline btn-sm" onclick="filterTrack(\'student\',this)" style="font-size:.76rem">Students</button>';
+    html+='<button class="btn btn-outline btn-sm" onclick="filterTrack(\'teacher\',this)" style="font-size:.76rem">Teachers</button>';
+    html+='</div></div>';
+    html+='<div class="tscroll"><table class="ptable" id="trackTable"><thead><tr><th>Name</th><th>Role</th><th>Class</th><th>Last Login</th><th>Status</th></tr></thead><tbody>';
+    sortedRecords.forEach(function(r){
+      var stu=allStudents.find(function(s){return (s._id||s.admNo)===r._id;});
+      var cls=stu?stu.class:"";
+      html+='<tr data-role="'+(r.role||'')+'"><td><strong>'+(r.name||r._id)+'</strong></td>'
+        +'<td style="text-transform:capitalize">'+(r.role||'--')+'</td>'
+        +'<td>'+cls+'</td>'
+        +'<td style="font-size:.78rem;color:var(--g600)">'+fmtDate(r.timestamp)+'</td>'
+        +'<td>'+statusBadge(r.timestamp)+'</td></tr>';
+    });
+    allStudents.filter(function(s){return !loginMap[s._id||s.admNo];}).forEach(function(s){
+      html+='<tr data-role="student"><td><strong>'+(s.name||s._id)+'</strong></td>'
+        +'<td>Student</td><td>'+(s.class||'')+'</td><td>--</td><td>'+statusBadge(null)+'</td></tr>';
+    });
+    html+='</tbody></table></div></div>';
+    $("trackDashWrap").innerHTML=html;
+  }catch(e){showStatus("trackStatus","Error: "+e.message,"err");}
+}
+
+function filterTrack(role,btn){
+  document.querySelectorAll("#trackDashWrap .btn-sm").forEach(function(b){b.classList.remove("active");});
+  if(btn)btn.classList.add("active");
+  document.querySelectorAll("#trackTable tbody tr").forEach(function(row){
+    row.style.display=(role==="all"||row.dataset.role===role)?"":"none";
+  });
+}
 </script>
 
 <!-- PRINCIPAL MODAL -->
@@ -2352,6 +2505,3 @@ document.addEventListener("keydown",function(e){
     </div>
   </div>
 </div>
-
-</body>
-</html>
