@@ -570,9 +570,9 @@ function setBtn(id,loading){ var b=$(id); b.disabled=loading; b.textContent=load
 // ═══════════════════════════════════════════
 // SESSION
 // ═══════════════════════════════════════════
-function saveSession(d){ try{ sessionStorage.setItem('vva',JSON.stringify(d)); }catch(e){} }
-function loadSession(){ try{ var s=sessionStorage.getItem('vva'); return s?JSON.parse(s):null; }catch(e){ return null; } }
-function clearSession(){ sessionStorage.removeItem('vva'); }
+function saveSession(d){ try{ sessionStorage.setItem('vva_v2',JSON.stringify(d)); }catch(e){} }
+function loadSession(){ try{ var s=sessionStorage.getItem('vva_v2'); return s?JSON.parse(s):null; }catch(e){ return null; } }
+function clearSession(){ sessionStorage.removeItem('vva_v2'); sessionStorage.removeItem('vva'); }
 var _trackLogins=null; // cached tracking flag
 async function checkAndTrack(userId, role, name){
   try{
@@ -627,26 +627,19 @@ async function studentLogin(){
   setBtn('sBtn',true);
   try {
     await loadConfig();
-    var cached=loadSession();
-    var d;
-    if(cached&&cached.type==='student'&&(cached.admNo===en)&&cached.phone===ph&&EXAMS.length){
-      d=cached;
-    } else {
-      // Fetch student by admNo
-      var student = await fsGet('students', en);
-      if(!student||!student.name) throw new Error('Invalid admission number or phone number.');
-      if(String(student.phone).trim() !== ph) throw new Error('Invalid admission number or phone number.');
-      // Fetch results directly by admNo_Subject for each subject (efficient — no query needed)
-      var results={};
-      var subjectsToFetch=SUBJECTS.length?SUBJECTS:[];
-      for(var si=0;si<subjectsToFetch.length;si++){
-        var sub=subjectsToFetch[si];
-        var resultDoc=await fsGet('results', en+'_'+sub);
-        if(resultDoc&&resultDoc.subject) results[sub]=resultDoc;
-      }
-      d={type:'student',admNo:en,phone:ph,student:student,results:results};
-      saveSession(d);
+    // Always fetch fresh — never serve cached empty results
+    var student = await fsGet('students', en);
+    if(!student||!student.name) throw new Error('Invalid admission number or phone number.');
+    if(String(student.phone).trim() !== ph) throw new Error('Invalid admission number or phone number.');
+    var results={};
+    var subjectsToFetch=SUBJECTS.length?SUBJECTS:[];
+    for(var si=0;si<subjectsToFetch.length;si++){
+      var sub=subjectsToFetch[si];
+      var resultDoc=await fsGet('results', en+'_'+sub);
+      if(resultDoc&&resultDoc.subject) results[sub]=resultDoc;
     }
+    var d={type:'student',admNo:en,phone:ph,student:student,results:results};
+    saveSession(d);
     _cur=d; go('sDash');
     checkAndTrack(en, 'student', d.student.name||en);
     setTimeout(function(){ renderStudent(d); },50);
@@ -766,7 +759,8 @@ function renderSubj(res,subject,name){
   else if(oa>=60){pb.textContent='Good ✅';pb.className='perf-badge pb-gd';}
   else{pb.textContent='Keep Climbing 🚀';pb.className='perf-badge pb-ok';}
   // Build per-subject insight line for welcome banner
-  var allSubjs=Object.keys(d.results||_cur.results||{});
+  var allSubjs=Object.keys(_cur.results||{});
+  var student=_cur.student;
   var subjInsights=allSubjs.map(function(sub){
     var r=(_cur.results||{})[sub];
     if(!r) return null;
@@ -1674,13 +1668,45 @@ document.addEventListener('click',function(e){
 (function init(){
   var saved=loadSession();
   if(saved&&saved.type==='student'){
-    _cur=saved; go('sDash');
-    loadConfig().then(function(){ renderStudent(saved); });
+    go('sDash');
+    loadConfig().then(async function(){
+      // Re-fetch fresh results — don't trust cached results
+      var results={};
+      for(var si=0;si<SUBJECTS.length;si++){
+        var sub=SUBJECTS[si];
+        var r=await fsGet('results',saved.admNo+'_'+sub);
+        if(r&&r.subject) results[sub]=r;
+      }
+      saved.results=results;
+      _cur=saved;
+      saveSession(saved);
+      renderStudent(saved);
+    });
   } else if(saved&&saved.type==='teacher'){
-    _cur=saved;
-    T.cls=saved.teacher.classes[0]||'';
     go('tDash');
-    loadConfig().then(function(){ renderTeacher(); });
+    loadConfig().then(async function(){
+      // Re-fetch fresh results for teacher
+      var results={};
+      var students=saved.students||[];
+      for(var ti=0;ti<students.length;ti++){
+        var s=students[ti];
+        var admNo=s.id||s.admNo||s._id;
+        var r=await fsGet('results',admNo+'_'+(saved.teacher.subject||''));
+        if(r&&r.subject){
+          if(!results[admNo]) results[admNo]={};
+          Object.keys(r).forEach(function(k){
+            if(k!=='admNo'&&k!=='subject'&&k!=='class'&&k!=='_id') results[admNo][k]=r[k];
+          });
+          results[admNo]._subject=r.subject;
+          results[admNo]._admNo=admNo;
+        }
+      }
+      saved.results=results;
+      _cur=saved;
+      T.cls=saved.teacher.classes[0]||'';
+      saveSession(saved);
+      renderTeacher();
+    });
   } else { go('loginPage'); }
 })();
 
