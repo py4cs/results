@@ -131,6 +131,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <button class="nav-item" onclick="showSec('secTeacherMgmt',this)">👩‍🏫 Teachers</button>
       <button class="nav-item" onclick="showSec('secPrincipalMgmt',this);renderPrincipalList()">🎓 Principals</button>
       <span class="nav-sep">Marks</span>
+      <button class="nav-item" onclick="showSec('secBulkMarks',this)">📦 Bulk Upload Marks</button>
       <button class="nav-item" onclick="showSec('secMarks',this)">📝 Upload Marks</button>
       <button class="nav-item" onclick="showSec('secEnterMarks',this);initEnterMarks()">✍️ Enter Marks</button>
       <button class="nav-item" onclick="showSec('secViewMarks',this)">🔍 View Marks</button>
@@ -253,6 +254,62 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           </div>
           <div id="teacherStatus" class="status-bar"></div>
           <button class="btn btn-green" onclick="openTeacherModal()">＋ Add Teacher</button>
+        </div>
+      </div>
+
+      <!-- BULK UPLOAD MARKS -->
+      <div id="secBulkMarks" class="hidden">
+        <div class="card">
+          <div class="card-title">📦 Bulk Upload Marks</div>
+          <div class="card-sub">Upload one Excel file with multiple sheets (one sheet per class). Each sheet: Column 1 = Admission No, remaining columns = subjects.</div>
+
+          <!-- Step 1: File + Exam -->
+          <div class="form-row" style="margin-bottom:12px">
+            <div class="fg" style="margin:0">
+              <label>Exam</label>
+              <select id="bulkExam"></select>
+            </div>
+            <div class="fg" style="margin:0;display:flex;align-items:flex-end">
+              <div style="width:100%">
+                <label style="display:block;font-size:.78rem;font-weight:700;color:var(--g800);margin-bottom:6px">Excel File (.xlsx)</label>
+                <div class="upload-box" style="padding:14px;margin:0" onclick="document.getElementById('bulkFileInput').click()">
+                  <div class="ub-icon" style="font-size:1.4rem;margin-bottom:4px">📂</div>
+                  <p style="font-size:.8rem;margin:0" id="bulkFileName">Click to select .xlsx file</p>
+                </div>
+                <input type="file" id="bulkFileInput" accept=".xlsx" onchange="handleBulkFile(this)" style="display:none">
+              </div>
+            </div>
+          </div>
+
+          <div id="bulkStatus" class="status-bar"></div>
+
+          <!-- Step 2: Column mapping (shown after file loaded) -->
+          <div id="bulkConfigWrap" class="hidden">
+            <div style="border-top:2px solid var(--blue-border);margin:16px 0;padding-top:16px">
+              <div class="card-title" style="margin-bottom:4px">Step 2 — Map Columns to Subjects</div>
+              <div class="card-sub">For each subject column found in the file, select which subject it maps to and set max/pass marks.</div>
+              <div id="bulkColMapWrap"></div>
+            </div>
+
+            <!-- Step 3: Sheet selection -->
+            <div style="border-top:2px solid var(--blue-border);margin:16px 0;padding-top:16px">
+              <div class="card-title" style="margin-bottom:4px">Step 3 — Select Sheets (Classes)</div>
+              <div class="card-sub">Uncheck any sheets you don't want to upload.</div>
+              <div id="bulkSheetCheckboxes" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
+            </div>
+
+            <!-- Preview -->
+            <div id="bulkPreviewWrap" class="hidden" style="border-top:2px solid var(--blue-border);margin:16px 0;padding-top:16px">
+              <div class="card-title" style="margin-bottom:8px">Preview</div>
+              <div id="bulkPreviewTable"></div>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+              <button class="btn btn-outline" onclick="bulkPreview()">👁 Preview</button>
+              <button class="btn btn-green" onclick="bulkUpload()">⬆ Upload All</button>
+            </div>
+            <div class="prog-wrap hidden" id="bulkProgWrap"><div class="prog-bar" id="bulkProgBar" style="width:0%"></div></div>
+          </div>
         </div>
       </div>
 
@@ -732,7 +789,7 @@ async function loadExamConfig(){
 
 function populateAllExamDropdowns(){
   // Regular exam dropdowns (no All Exams option)
-  ["selExam","vmExam","emExam","expExam"].forEach(function(id){
+  ["selExam","vmExam","emExam","expExam","bulkExam"].forEach(function(id){
     var el=$(id);if(!el)return;
     var prev=el.value;
     el.innerHTML="";
@@ -1137,7 +1194,7 @@ async function adminLogout(){
 var CLASSES=[]; // loaded from Firestore /settings/config
 var TEACHERS_CFG=[]; // loaded from Firestore /settings/config
 var PRINCIPALS_CFG=[]; // loaded from Firestore /settings/config
-var SECS=["secStudents","secViewStudents","secExams","secClasses","secTeacherMgmt","secPrincipalMgmt","secMarks","secEnterMarks","secViewMarks","secDeleteMarks","secEditMark","secOverview","secAnalytics","secMissing","secDupes","secPreview","secExport","secTracking"];
+var SECS=["secStudents","secViewStudents","secExams","secClasses","secTeacherMgmt","secPrincipalMgmt","secBulkMarks","secMarks","secEnterMarks","secViewMarks","secDeleteMarks","secEditMark","secOverview","secAnalytics","secMissing","secDupes","secPreview","secExport","secTracking"];
 function showSec(id,btn){
   SECS.forEach(function(s){$(s).classList.add("hidden");});$(id).classList.remove("hidden");
   document.querySelectorAll(".nav-item").forEach(function(b){b.classList.remove("active");});
@@ -2479,6 +2536,284 @@ function filterTrack(role,btn){
   document.querySelectorAll("#trackTable tbody tr").forEach(function(row){
     row.style.display=(role==="all"||row.dataset.role===role)?"":"none";
   });
+}
+
+// ═══════════════════════════════════════════════════════
+// BULK UPLOAD MARKS
+// ═══════════════════════════════════════════════════════
+var _bulkWorkbook=null; // parsed workbook: {sheetName: [{admno, col2, col3,...}]}
+var _bulkColCount=0;    // number of subject columns (total cols - 1)
+
+async function handleBulkFile(input){
+  var file=input.files[0];if(!file)return;
+  $("bulkFileName").textContent=file.name;
+  showStatus("bulkStatus","Reading file...","info");
+  $("bulkConfigWrap").classList.add("hidden");
+  $("bulkPreviewWrap").classList.add("hidden");
+  try{
+    var buf=await file.arrayBuffer();
+    // Use SheetJS (xlsx) loaded via CDN
+    if(typeof XLSX==="undefined"){
+      showStatus("bulkStatus","Loading Excel library...","info");
+      await loadSheetJS();
+    }
+    var wb=XLSX.read(buf,{type:"array"});
+    // Parse all sheets
+    _bulkWorkbook={};
+    var maxCols=0;
+    wb.SheetNames.forEach(function(name){
+      var ws=wb.Sheets[name];
+      var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
+      // Filter out empty rows
+      rows=rows.filter(function(r){return r.some(function(c){return String(c).trim()!="";});});
+      if(!rows.length)return;
+      // First row = headers, find Admno col (col 0 assumed)
+      // Store as array of objects: {admno, c1, c2, ...}
+      var dataRows=rows.slice(1).filter(function(r){return String(r[0]||"").trim()!="";});
+      _bulkWorkbook[name]=dataRows;
+      if(rows[0].length-1>maxCols) maxCols=rows[0].length-1;
+    });
+    _bulkColCount=maxCols;
+
+    if(!Object.keys(_bulkWorkbook).length){
+      showStatus("bulkStatus","No valid sheets found in file.","err");return;
+    }
+
+    // Build column mapping UI
+    var mapHtml='<div class="tscroll"><table class="ptable" style="margin-bottom:12px"><thead><tr>'
+      +'<th>Column</th><th>Subject</th><th>Max Marks</th><th>Pass Mark</th><th>No Pass</th>'
+      +'</tr></thead><tbody>';
+    for(var ci=1;ci<=maxCols;ci++){
+      mapHtml+='<tr>'
+        +'<td style="font-size:.82rem;color:var(--g600)">Column '+(ci+1)+'</td>'
+        +'<td><select id="bulkSubCol_'+ci+'" style="width:100%;padding:6px 8px;border:1.5px solid var(--g200);border-radius:6px;font-family:inherit;font-size:.82rem">'
+          +'<option value="">— Skip —</option>'
+          +SUBJECTS.map(function(s){return'<option value="'+s+'">'+s+'</option>';}).join('')
+        +'</select></td>'
+        +'<td><input type="number" id="bulkMaxCol_'+ci+'" value="15" min="1" max="200" style="width:70px;padding:6px 8px;border:1.5px solid var(--g200);border-radius:6px;font-family:inherit;font-size:.82rem"></td>'
+        +'<td><input type="number" id="bulkPassCol_'+ci+'" placeholder="e.g. 6" style="width:70px;padding:6px 8px;border:1.5px solid var(--g200);border-radius:6px;font-family:inherit;font-size:.82rem"></td>'
+        +'<td style="text-align:center"><input type="checkbox" id="bulkNoPassCol_'+ci+'" onchange="toggleBulkPass('+ci+')" style="accent-color:var(--blue);width:16px;height:16px"></td>'
+      +'</tr>';
+    }
+    mapHtml+='</tbody></table></div>';
+    $("bulkColMapWrap").innerHTML=mapHtml;
+
+    // Build sheet checkboxes
+    var sheetHtml=Object.keys(_bulkWorkbook).map(function(name){
+      var count=_bulkWorkbook[name].length;
+      return '<label style="display:flex;align-items:center;gap:6px;padding:6px 12px;border:1.5px solid var(--blue-border);border-radius:8px;background:var(--blue-pale);cursor:pointer;font-size:.82rem;font-weight:600;color:var(--blue)">'
+        +'<input type="checkbox" class="bulk-sheet-cb" value="'+name+'" checked style="accent-color:var(--blue);width:15px;height:15px"> '+name+' <span style="color:var(--g400);font-weight:400">('+count+' rows)</span>'
+      +'</label>';
+    }).join('');
+    $("bulkSheetCheckboxes").innerHTML=sheetHtml;
+
+    $("bulkConfigWrap").classList.remove("hidden");
+    showStatus("bulkStatus","File loaded. "+Object.keys(_bulkWorkbook).length+" sheet(s) found with "+maxCols+" subject column(s). Map subjects below.","ok");
+  }catch(e){
+    showStatus("bulkStatus","Error reading file: "+e.message,"err");
+    console.error(e);
+  }
+}
+
+function toggleBulkPass(ci){
+  var cb=$("bulkNoPassCol_"+ci),inp=$("bulkPassCol_"+ci);
+  if(!cb||!inp)return;
+  if(cb.checked){inp.value="";inp.disabled=true;inp.style.opacity=".4";}
+  else{inp.disabled=false;inp.style.opacity="1";}
+}
+
+function loadSheetJS(){
+  return new Promise(function(resolve,reject){
+    var s=document.createElement("script");
+    s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    s.onload=resolve;s.onerror=function(){reject(new Error("Failed to load Excel library"));};
+    document.head.appendChild(s);
+  });
+}
+
+function getBulkConfig(){
+  // Returns {exam, colMap: [{colIdx, subject, max, passMark}], selectedSheets}
+  var exam=$("bulkExam").value;
+  if(!exam){showStatus("bulkStatus","Select an exam first.","err");return null;}
+  var colMap=[];
+  for(var ci=1;ci<=_bulkColCount;ci++){
+    var sub=$("bulkSubCol_"+ci)?$("bulkSubCol_"+ci).value:"";
+    if(!sub)continue; // skip
+    var max=Number($("bulkMaxCol_"+ci).value)||15;
+    var noPass=$("bulkNoPassCol_"+ci)&&$("bulkNoPassCol_"+ci).checked;
+    var pass=noPass?null:(Number($("bulkPassCol_"+ci).value)||null);
+    colMap.push({colIdx:ci,subject:sub,max:max,passMark:pass});
+  }
+  if(!colMap.length){showStatus("bulkStatus","Map at least one column to a subject.","err");return null;}
+  var selectedSheets=[];
+  document.querySelectorAll(".bulk-sheet-cb:checked").forEach(function(cb){selectedSheets.push(cb.value);});
+  if(!selectedSheets.length){showStatus("bulkStatus","Select at least one sheet.","err");return null;}
+  return{exam:exam,colMap:colMap,selectedSheets:selectedSheets};
+}
+
+function bulkPreview(){
+  var cfg=getBulkConfig();if(!cfg)return;
+  var html='<div class="tscroll"><table class="ptable"><thead><tr>'
+    +'<th>Sheet (Class)</th><th>Students</th>';
+  cfg.colMap.forEach(function(c){html+='<th>'+c.subject+'<br><small style="font-weight:400;color:var(--g400)">Max:'+c.max+(c.passMark!=null?' Pass:'+c.passMark:'')+'</small></th>';});
+  html+='</tr></thead><tbody>';
+  cfg.selectedSheets.forEach(function(name){
+    var rows=_bulkWorkbook[name]||[];
+    var written=rows.filter(function(r){return String(r[0]||"").trim()!="";});
+    html+='<tr><td><strong>'+name+'</strong></td><td><span class="badge badge-blue">'+written.length+'</span></td>';
+    cfg.colMap.forEach(function(c){
+      var count=written.filter(function(r){var v=String(r[c.colIdx]||"").trim();return v!=""&&v.toUpperCase()!="AB";}).length;
+      var ab=written.filter(function(r){var v=String(r[c.colIdx]||"").trim().toUpperCase();return v=="AB";}).length;
+      var empty=written.length-count-ab;
+      html+='<td style="font-size:.78rem">'
+        +(count?'<span class="ok-chip">'+count+' marks</span>':'')
+        +(ab?'<span class="ab-chip">'+ab+' AB</span>':'')
+        +(empty?'<span class="miss-chip">'+empty+' skip</span>':'')
+      +'</td>';
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  $("bulkPreviewTable").innerHTML=html;
+  $("bulkPreviewWrap").classList.remove("hidden");
+}
+
+async function bulkUpload(){
+  var cfg=getBulkConfig();if(!cfg)return;
+
+  // ── STRICT VALIDATION PASS — check every sheet, every subject, every cell ──
+  showStatus("bulkStatus","Validating all data...","info");
+  var allErrors=[]; // {sheet, admno, col, subject, value, reason}
+
+  cfg.selectedSheets.forEach(function(sheetName){
+    var rows=_bulkWorkbook[sheetName]||[];
+    rows.forEach(function(r){
+      var admno=String(r[0]||"").trim();
+      if(!admno)return; // blank admno row — skip entirely
+
+      cfg.colMap.forEach(function(colCfg){
+        var raw=String(r[colCfg.colIdx]||"").trim();
+        var rawUpper=raw.toUpperCase();
+
+        // Rule 1: cell must not be empty
+        if(raw===""||rawUpper==="NAN"){
+          allErrors.push({sheet:sheetName,admno:admno,subject:colCfg.subject,value:"(empty)",reason:"Empty cell — must be a number or AB"});
+          return;
+        }
+        // AB/Absent is valid — no further checks
+        if(rawUpper==="AB"||rawUpper==="ABSENT")return;
+
+        // Rule 2: must be a valid number
+        var n=Number(raw);
+        if(isNaN(n)){
+          allErrors.push({sheet:sheetName,admno:admno,subject:colCfg.subject,value:raw,reason:"Not a valid number"});
+          return;
+        }
+        // Rule 3: must be >= 0
+        if(n<0){
+          allErrors.push({sheet:sheetName,admno:admno,subject:colCfg.subject,value:raw,reason:"Negative mark"});
+          return;
+        }
+        // Rule 4: must not exceed max marks
+        if(n>colCfg.max){
+          allErrors.push({sheet:sheetName,admno:admno,subject:colCfg.subject,value:raw,reason:"Exceeds max ("+colCfg.max+")"});
+        }
+      });
+    });
+  });
+
+  // If any errors — block upload, show full error table
+  if(allErrors.length){
+    var errHtml='<div style="margin-top:12px">'
+      +'<div style="background:var(--red-lt);border:1px solid #fecaca;border-radius:8px;padding:10px 14px;margin-bottom:10px;color:var(--red);font-weight:700;font-size:.84rem">'
+      +'❌ Upload blocked — '+allErrors.length+' error'+(allErrors.length>1?'s':'')+' found. Fix all errors and re-upload.'
+      +'</div>'
+      +'<div class="tscroll"><table class="ptable"><thead><tr>'
+      +'<th>Sheet</th><th>Admission No</th><th>Subject</th><th>Value</th><th>Error</th>'
+      +'</tr></thead><tbody>';
+    allErrors.forEach(function(e){
+      errHtml+='<tr>'
+        +'<td><span class="badge badge-blue">'+e.sheet+'</span></td>'
+        +'<td><strong>'+e.admno+'</strong></td>'
+        +'<td>'+e.subject+'</td>'
+        +'<td style="color:var(--red);font-weight:700">'+e.value+'</td>'
+        +'<td style="color:var(--red)">'+e.reason+'</td>'
+      +'</tr>';
+    });
+    errHtml+='</tbody></table></div></div>';
+    $("bulkPreviewTable").innerHTML=errHtml;
+    $("bulkPreviewWrap").classList.remove("hidden");
+    showStatus("bulkStatus","❌ "+allErrors.length+" error(s) found. Nothing was uploaded. Fix all errors in your file and try again.","err");
+    return; // BLOCK — do not upload anything
+  }
+
+  // ── ALL VALID — proceed with upload ──
+  if(!confirm("All data validated ✅\nUpload "+cfg.exam+" marks for "+cfg.selectedSheets.join(", ")+"?\nThis will overwrite existing marks for the same exam+subject combinations."))return;
+
+  showStatus("bulkStatus","Uploading...","info");
+  $("bulkProgWrap").classList.remove("hidden");
+  $("bulkProgBar").style.width="0%";
+
+  var totalOps=0,doneOps=0,errors=0;
+  cfg.selectedSheets.forEach(function(name){
+    totalOps+=(_bulkWorkbook[name]||[]).length*cfg.colMap.length;
+  });
+
+  for(var si=0;si<cfg.selectedSheets.length;si++){
+    var sheetName=cfg.selectedSheets[si];
+    var rows=_bulkWorkbook[sheetName]||[];
+    if(!rows.length)continue;
+
+    for(var ci=0;ci<cfg.colMap.length;ci++){
+      var colCfg=cfg.colMap[ci];
+      var subject=colCfg.subject;
+      var maxMarks=colCfg.max;
+      var passMark=colCfg.passMark;
+
+      var marksArr=rows.map(function(r){
+        var admno=String(r[0]||"").trim();
+        if(!admno)return null;
+        var raw=String(r[colCfg.colIdx]||"").trim().toUpperCase();
+        if(raw==="AB"||raw==="ABSENT")return{admno:admno,mark:null};
+        var n=Number(r[colCfg.colIdx]);
+        return{admno:admno,mark:n};
+      }).filter(function(x){return x&&x.admno;});
+
+      if(!marksArr.length){doneOps+=rows.length;$("bulkProgBar").style.width=Math.round(doneOps/totalOps*100)+"%";continue;}
+
+      // Rank calculation
+      var written=marksArr.filter(function(x){return x.mark!==null;});
+      var classSize=marksArr.length;
+      var classAvg=written.length?Math.round(written.reduce(function(s,x){return s+x.mark;},0)/written.length*10)/10:0;
+      var classAvgPct=Math.round(classAvg/maxMarks*100);
+      var sorted=written.slice().sort(function(a,b){return b.mark-a.mark;});
+      var rank=1;
+      for(var ri=0;ri<sorted.length;ri++){
+        if(ri>0&&sorted[ri].mark<sorted[ri-1].mark)rank=ri+1;
+        sorted[ri]._rank=rank;
+      }
+      var rankMap={};sorted.forEach(function(x){rankMap[x.admno]=x._rank;});
+
+      for(var mi=0;mi<marksArr.length;mi++){
+        var entry=marksArr[mi];
+        var resultId=entry.admno+"_"+subject;
+        try{
+          var existing=await fsGet("results",resultId);
+          var data=existing||{admNo:entry.admno,subject:subject};
+          data[cfg.exam]={mark:entry.mark,max:maxMarks,passMark:passMark,rank:entry.mark!==null?(rankMap[entry.admno]||null):null,classSize:classSize,classAvg:classAvg,classAvgPct:classAvgPct};
+          data.admNo=entry.admno;data.subject=subject;
+          if(sheetName)data.class=sheetName;
+          await fsSet("results",resultId,data);
+          doneOps++;
+        }catch(e){errors++;doneOps++;console.error("Bulk upload error",entry.admno,subject,e);}
+        $("bulkProgBar").style.width=Math.round(doneOps/totalOps*100)+"%";
+      }
+    }
+  }
+
+  var msg="✅ Done! "+cfg.selectedSheets.length+" class(es), "+cfg.colMap.length+" subject(s), exam: "+cfg.exam+(errors?" | "+errors+" write error(s) — check console":"");
+  showStatus("bulkStatus",msg,errors?"warn":"ok");
+  $("bulkProgBar").style.width="100%";
 }
 </script>
 
