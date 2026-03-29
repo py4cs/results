@@ -324,7 +324,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div id="vmStatus" class="status-bar" style="margin-top:12px"></div>
           <div class="tscroll">
             <table class="ptable" id="vmTable">
-              <thead><tr><th>Admission No</th><th>Class</th><th>Marks</th><th>Max</th><th>%</th><th>Rank</th><th>Class Size</th><th>Class Avg</th></tr></thead>
+              <thead><tr><th>Admission No</th><th>Name</th><th>Class</th><th>Marks</th><th>Max</th><th>%</th><th>Rank</th><th>Class Size</th><th>Class Avg</th></tr></thead>
               <tbody><tr><td colspan="8" style="text-align:center;color:var(--g400);padding:20px">Select and load</td></tr></tbody>
             </table>
           </div>
@@ -1247,7 +1247,12 @@ async function viewMarks(){
   showStatus("vmStatus","Loading...","info");
   try{
     var allStudents=await fsGetAll("students");
-    var stuMap={};allStudents.forEach(function(s){stuMap[s._id||s.admNo]=s.class||"";});
+    var stuMap={};var stuNameMap={};
+    allStudents.forEach(function(s){
+      var id=s._id||s.admNo;
+      stuMap[id]=s.class||"";
+      stuNameMap[id]=s.name||"";
+    });
     var results=await fsGetAll("results");
     var matching=results.filter(function(r){
       if(r.subject!==subj)return false;
@@ -1261,7 +1266,7 @@ async function viewMarks(){
       var ra=a[exam].rank||9999,rb=b[exam].rank||9999;
       return ra-rb;
     });
-    $("vmTable").querySelector("thead").innerHTML="<tr><th>Admission No</th><th>Class</th><th>Marks</th><th>Max</th><th>%</th><th>Rank</th><th>Class Size</th><th>Class Avg</th></tr>";
+    $("vmTable").querySelector("thead").innerHTML="<tr><th>Admission No</th><th>Name</th><th>Class</th><th>Marks</th><th>Max</th><th>%</th><th>Rank</th><th>Class Size</th><th>Class Avg</th></tr>";
     var tbody=$("vmTable").querySelector("tbody");
     tbody.innerHTML=matching.length
       ?matching.map(function(r){
@@ -1269,6 +1274,7 @@ async function viewMarks(){
         var isAb=e.mark===null;
         return"<tr>"
           +"<td><strong>"+r.admNo+"</strong></td>"
+          +"<td>"+(stuNameMap[r.admNo]||"--")+"</td>"
           +"<td><span class='badge badge-blue'>"+sc+"</span></td>"
           +"<td>"+(isAb?"<span class='badge badge-purple'>AB</span>":e.mark)+"</td>"
           +"<td>"+(isAb?"--":e.max)+"</td>"
@@ -1277,7 +1283,7 @@ async function viewMarks(){
           +"<td>"+(e.classSize||"--")+"</td>"
           +"<td>"+(e.classAvg||"--")+"</td></tr>";
       }).join("")
-      :"<tr><td colspan='8' style='text-align:center;color:var(--g400);padding:20px'>No marks for "+subj+" – "+exam+(cls?" ("+cls+")":"")+"</td></tr>";
+      :"<tr><td colspan='9' style='text-align:center;color:var(--g400);padding:20px'>No marks for "+subj+" – "+exam+(cls?" ("+cls+")":"")+"</td></tr>";
     var abCount=matching.filter(function(r){return r[exam].mark===null;}).length;
     if(matching.length)showStatus("vmStatus",matching.length+" records | "+abCount+" absent"+(cls?" | Class: "+cls:""),"ok");
     else hideStatus("vmStatus");
