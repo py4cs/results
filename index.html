@@ -387,9 +387,9 @@ const PROJECT = "velammal-results";
 const API_KEY = "AIzaSyC79jcB_6TgJIG4ngXmPDY6Zjmg8PC0-pU";
 const BASE    = "https://firestore.googleapis.com/v1/projects/" + PROJECT + "/databases/(default)/documents";
 
-async function fsGet(path) {
-  const r = await fetch(BASE + "/" + path + "?key=" + API_KEY);
-  if (r.status === 404) return null; // doc not found — return null silently
+async function fsGet(col, id) {
+  const r = await fetch(BASE + "/" + col + "/" + encodeURIComponent(id) + "?key=" + API_KEY);
+  if (r.status === 404) return null;
   if (!r.ok) throw new Error("Network error: " + r.status);
   return parseDoc(await r.json());
 }
@@ -527,7 +527,7 @@ function examCategory(name){
 
 async function loadConfig(){
   try{
-    var cfg = await fsGet('settings/config');
+    var cfg = await fsGet('settings', 'config');
     if(cfg&&cfg.exams&&Array.isArray(cfg.exams)){
       EXAMS = cfg.exams.map(function(e){return e.name||e;});
       EXAM_CFG = {};
@@ -577,7 +577,7 @@ var _trackLogins=null; // cached tracking flag
 async function checkAndTrack(userId, role, name){
   try{
     if(_trackLogins===null){
-      var cfg=await fsGet('settings/config');
+      var cfg=await fsGet('settings','config');
       _trackLogins=cfg&&cfg.trackLogins===true;
     }
     if(_trackLogins){
@@ -633,7 +633,7 @@ async function studentLogin(){
       d=cached;
     } else {
       // Fetch student by admNo
-      var student = await fsGet('students/'+en);
+      var student = await fsGet('students', en);
       if(!student||!student.name) throw new Error('Invalid admission number or phone number.');
       if(String(student.phone).trim() !== ph) throw new Error('Invalid admission number or phone number.');
       // Fetch results directly by admNo_Subject for each subject (efficient — no query needed)
@@ -641,7 +641,7 @@ async function studentLogin(){
       var subjectsToFetch=SUBJECTS.length?SUBJECTS:[];
       for(var si=0;si<subjectsToFetch.length;si++){
         var sub=subjectsToFetch[si];
-        var resultDoc=await fsGet('results/'+encodeURIComponent(en+'_'+sub));
+        var resultDoc=await fsGet('results', en+'_'+sub);
         if(resultDoc&&resultDoc.subject) results[sub]=resultDoc;
       }
       d={type:'student',admNo:en,phone:ph,student:student,results:results};
@@ -684,7 +684,7 @@ async function teacherLogin(){
     for(var ti=0;ti<students.length;ti++){
       var s=students[ti];
       var admNo=s.id||s.admNo||s._id;
-      var resultDoc=await fsGet('results/'+encodeURIComponent(admNo+'_'+teacher.subject));
+      var resultDoc=await fsGet('results', admNo+'_'+teacher.subject);
       if(resultDoc&&resultDoc.subject){
         if(!results[admNo]) results[admNo]={};
         Object.keys(resultDoc).forEach(function(k){

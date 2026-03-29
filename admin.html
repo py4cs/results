@@ -1839,25 +1839,36 @@ async function loadAnalytics(){
     });
     if(drtExams.length){
       html+='<h4 style="font-size:.9rem;font-weight:700;margin-bottom:10px;color:var(--blue)">📝 DRT Marks Coverage</h4>';
-      html+='<div class="tscroll" style="margin-bottom:24px"><table class="ptable"><thead><tr><th>DRT</th>';
-      SUBJECTS.forEach(function(sub){html+='<th>'+sub+'</th>';});
-      html+='</tr></thead><tbody>';
-      drtExams.forEach(function(ex){
-        html+='<tr><td><strong>'+ex+'</strong></td>';
-        SUBJECTS.forEach(function(sub){
-          var uploaded=students.filter(function(s){
-            var r=resMap[(s._id||s.admNo)+"_"+sub];
-            return r&&r[ex]&&r[ex].mark!==undefined;
-          }).length;
-          var total=students.length;
-          var pct=total?Math.round(uploaded/total*100):0;
-          var badge=uploaded===0?'badge-red':uploaded<total?'badge-gold':'badge-green';
-          var icon=uploaded===0?'❌':uploaded<total?'⚠️':'✅';
-          html+='<td><span class="badge '+badge+'">'+icon+' '+uploaded+'/'+total+'</span></td>';
+      CLASSES.slice().sort().forEach(function(cls){
+        var clsStu=students.filter(function(s){return s.class===cls;});
+        if(!clsStu.length)return;
+        // Only subjects this class actually has result docs for
+        var clsSubjects=SUBJECTS.filter(function(sub){
+          return clsStu.some(function(s){return !!resMap[(s._id||s.admNo)+"_"+sub];});
         });
-        html+='</tr>';
+        if(!clsSubjects.length)return;
+        html+='<div style="margin-bottom:16px">';
+        html+='<div style="font-size:.8rem;font-weight:700;color:var(--blue);margin-bottom:6px;padding:4px 10px;background:var(--blue-pale);border-radius:6px;display:inline-block">'+cls+'</div>';
+        html+='<div class="tscroll"><table class="ptable"><thead><tr><th>DRT</th>';
+        clsSubjects.forEach(function(sub){html+='<th>'+sub+'</th>';});
+        html+='</tr></thead><tbody>';
+        drtExams.forEach(function(ex){
+          html+='<tr><td><strong>'+ex+'</strong></td>';
+          clsSubjects.forEach(function(sub){
+            var stuWithSubject=clsStu.filter(function(s){return !!resMap[(s._id||s.admNo)+"_"+sub];});
+            var total=stuWithSubject.length;
+            var uploaded=stuWithSubject.filter(function(s){
+              var r=resMap[(s._id||s.admNo)+"_"+sub];
+              return r&&r[ex]&&r[ex].mark!==undefined;
+            }).length;
+            var badge=uploaded===0?'badge-red':uploaded<total?'badge-gold':'badge-green';
+            var icon=uploaded===0?'❌':uploaded<total?'⚠️':'✅';
+            html+='<td><span class="badge '+badge+'">'+icon+' '+uploaded+'/'+total+'</span></td>';
+          });
+          html+='</tr>';
+        });
+        html+='</tbody></table></div></div>';
       });
-      html+='</tbody></table></div>';
     }
 
     // ── Card 3: Main Exam Coverage ─────────────────────────────────────────
@@ -1866,24 +1877,35 @@ async function loadAnalytics(){
     });
     if(mainExams.length){
       html+='<h4 style="font-size:.9rem;font-weight:700;margin-bottom:10px;color:var(--blue)">📋 Main Exam Marks Coverage</h4>';
-      html+='<div class="tscroll"><table class="ptable"><thead><tr><th>Exam</th>';
-      SUBJECTS.forEach(function(sub){html+='<th>'+sub+'</th>';});
-      html+='</tr></thead><tbody>';
-      mainExams.forEach(function(ex){
-        html+='<tr><td><strong>'+ex+'</strong></td>';
-        SUBJECTS.forEach(function(sub){
-          var uploaded=students.filter(function(s){
-            var r=resMap[(s._id||s.admNo)+"_"+sub];
-            return r&&r[ex]&&r[ex].mark!==undefined;
-          }).length;
-          var total=students.length;
-          var badge=uploaded===0?'badge-red':uploaded<total?'badge-gold':'badge-green';
-          var icon=uploaded===0?'❌':uploaded<total?'⚠️':'✅';
-          html+='<td><span class="badge '+badge+'">'+icon+' '+uploaded+'/'+total+'</span></td>';
+      CLASSES.slice().sort().forEach(function(cls){
+        var clsStu=students.filter(function(s){return s.class===cls;});
+        if(!clsStu.length)return;
+        var clsSubjects=SUBJECTS.filter(function(sub){
+          return clsStu.some(function(s){return !!resMap[(s._id||s.admNo)+"_"+sub];});
         });
-        html+='</tr>';
+        if(!clsSubjects.length)return;
+        html+='<div style="margin-bottom:16px">';
+        html+='<div style="font-size:.8rem;font-weight:700;color:var(--blue);margin-bottom:6px;padding:4px 10px;background:var(--blue-pale);border-radius:6px;display:inline-block">'+cls+'</div>';
+        html+='<div class="tscroll"><table class="ptable"><thead><tr><th>Exam</th>';
+        clsSubjects.forEach(function(sub){html+='<th>'+sub+'</th>';});
+        html+='</tr></thead><tbody>';
+        mainExams.forEach(function(ex){
+          html+='<tr><td><strong>'+ex+'</strong></td>';
+          clsSubjects.forEach(function(sub){
+            var stuWithSubject=clsStu.filter(function(s){return !!resMap[(s._id||s.admNo)+"_"+sub];});
+            var total=stuWithSubject.length;
+            var uploaded=stuWithSubject.filter(function(s){
+              var r=resMap[(s._id||s.admNo)+"_"+sub];
+              return r&&r[ex]&&r[ex].mark!==undefined;
+            }).length;
+            var badge=uploaded===0?'badge-red':uploaded<total?'badge-gold':'badge-green';
+            var icon=uploaded===0?'❌':uploaded<total?'⚠️':'✅';
+            html+='<td><span class="badge '+badge+'">'+icon+' '+uploaded+'/'+total+'</span></td>';
+          });
+          html+='</tr>';
+        });
+        html+='</tbody></table></div></div>';
       });
-      html+='</tbody></table></div>';
     }
 
     $("anaContent").innerHTML=html;
