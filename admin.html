@@ -137,8 +137,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <span class="nav-sep">Reports</span>
       <button class="nav-item" onclick="showSec('secOverview',this);loadOverview()">🏫 Class Overview</button>
       <button class="nav-item" onclick="showSec('secAnalytics',this)">📊 Analytics</button>
-      <button class="nav-item" onclick="showSec('secMissing',this)">⚠️ Missing Marks</button>
-      <button class="nav-item" onclick="showSec('secDupes',this)">🔁 Duplicate Phones</button>
       <button class="nav-item" onclick="showSec('secPreview',this)">👀 Student Preview</button>
       <span class="nav-sep">Other</span>
       <button class="nav-item" onclick="showSec('secExport',this)">⬇️ Export CSV</button>
@@ -374,28 +372,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <button class="btn btn-outline" onclick="loadAnalytics()" style="margin-bottom:14px">↻ Load</button>
           <div id="anaStatus" class="status-bar"></div>
           <div id="anaContent"></div>
-        </div>
-      </div>
-
-      <!-- MISSING MARKS -->
-      <div id="secMissing" class="hidden">
-        <div class="card">
-          <div class="card-title">Missing Marks Checker</div>
-          <div class="card-sub">Students with no data uploaded yet for any subject or exam. AB = uploaded as absent.</div>
-          <button class="btn btn-outline" onclick="loadMissing()" style="margin-bottom:14px">↻ Check Now</button>
-          <div id="missingStatus" class="status-bar"></div>
-          <div id="missingContent"></div>
-        </div>
-      </div>
-
-      <!-- DUPLICATE PHONES -->
-      <div id="secDupes" class="hidden">
-        <div class="card">
-          <div class="card-title">Duplicate Phone Numbers</div>
-          <div class="card-sub">Students sharing the same phone number will have login conflicts.</div>
-          <button class="btn btn-outline" onclick="loadDupes()" style="margin-bottom:14px">↻ Check Now</button>
-          <div id="dupesStatus" class="status-bar"></div>
-          <div id="dupesContent"></div>
         </div>
       </div>
 
@@ -1069,7 +1045,7 @@ async function adminLogout(){
 var CLASSES=[]; // loaded from Firestore /settings/config
 var TEACHERS_CFG=[]; // loaded from Firestore /settings/config
 var PRINCIPALS_CFG=[]; // loaded from Firestore /settings/config
-var SECS=["secStudents","secViewStudents","secExams","secClasses","secTeacherMgmt","secPrincipalMgmt","secBulkMarks","secViewMarks","secDeleteMarks","secOverview","secAnalytics","secMissing","secDupes","secPreview","secExport","secTracking"];
+var SECS=["secStudents","secViewStudents","secExams","secClasses","secTeacherMgmt","secPrincipalMgmt","secBulkMarks","secViewMarks","secDeleteMarks","secOverview","secAnalytics","secPreview","secExport","secTracking"];
 function showSec(id,btn){
   SECS.forEach(function(s){$(s).classList.add("hidden");});$(id).classList.remove("hidden");
   document.querySelectorAll(".nav-item").forEach(function(b){b.classList.remove("active");});
@@ -1227,6 +1203,88 @@ async function bulkDeleteClass(){
   await loadAllStudents();loadStats();
 }
 // ═══════════════════════════════════════════════════════
+// DELETE MARKS
+// ═══════════════════════════════════════════════════════
+async function deleteMarksFiltered(){
+  var subj=$("delSubject").value,exam=$("delExam").value,cls=$("delClass").value;
+  var desc=subj+(exam?" – "+exam:" – All Exams")+(cls?" ("+cls+")":" (All Classes)");
+  if(!confirm("Delete marks for: "+desc+"?\nCannot be undone."))return;
+  showStatus("delStatus","Loading...","info");
+  try{
+    var students=[];
+    if(cls){
+      var allStu=await fsGetAll("students");
+      students=allStu.filter(function(s){return s.class===cls;}).map(function(s){return s._id||s.admNo;});
+      if(!students.length){showStatus("delStatus","No students in class "+cls,"warn");return;}
+    }
+    var results=await fsGetAll("results");
+    var matching=results.filter(function(r){
+      if(r.subject!==subj)return false;
+      if(cls&&!students.includes(r.admNo))return false;
+      return true;
+    });
+    if(!matching.length){showStatus("delStatus","No marks found for: "+desc,"warn");return;}
+    var done=0;
+    for(var i=0;i<matching.length;i++){
+      var rec=matching[i],id=rec._id,doc=Object.assign({},rec);delete doc._id;
+      if(exam){
+        if(doc[exam]!==undefined){delete doc[exam];await fsSet("results",id,doc);done++;}
+      }else{
+        var clean={admNo:doc.admNo,subject:doc.subject};if(doc.class)clean.class=doc.class;
+        await fsSet("results",id,clean);done++;
+      }
+    }
+    showStatus("delStatus","Deleted marks for "+done+" students. ("+desc+")","ok");
+  }catch(e){showStatus("delStatus","Error: "+e.message,"err");}
+}
+
+// ═══════════════════════════════════════════════════════
+// VIEW MARKS
+// ═══════════════════════════════════════════════════════
+async function viewMarks(){
+  var subj=$("vmSubject").value,exam=$("vmExam").value,cls=$("vmClass").value;
+  if(!exam){showStatus("vmStatus","No exam selected.","err");return;}
+  showStatus("vmStatus","Loading...","info");
+  try{
+    var allStudents=await fsGetAll("students");
+    var stuMap={};allStudents.forEach(function(s){stuMap[s._id||s.admNo]=s.class||"";});
+    var results=await fsGetAll("results");
+    var matching=results.filter(function(r){
+      if(r.subject!==subj)return false;
+      if(!r[exam]||r[exam].mark===undefined)return false;
+      if(cls){var sc=r.class||stuMap[r.admNo]||"";if(sc!==cls)return false;}
+      return true;
+    });
+    matching.sort(function(a,b){
+      var ca=a.class||stuMap[a.admNo]||"",cb=b.class||stuMap[b.admNo]||"";
+      if(ca!==cb)return ca.localeCompare(cb);
+      var ra=a[exam].rank||9999,rb=b[exam].rank||9999;
+      return ra-rb;
+    });
+    $("vmTable").querySelector("thead").innerHTML="<tr><th>Admission No</th><th>Class</th><th>Marks</th><th>Max</th><th>%</th><th>Rank</th><th>Class Size</th><th>Class Avg</th></tr>";
+    var tbody=$("vmTable").querySelector("tbody");
+    tbody.innerHTML=matching.length
+      ?matching.map(function(r){
+        var e=r[exam],sc=r.class||stuMap[r.admNo]||"--";
+        var isAb=e.mark===null;
+        return"<tr>"
+          +"<td><strong>"+r.admNo+"</strong></td>"
+          +"<td><span class='badge badge-blue'>"+sc+"</span></td>"
+          +"<td>"+(isAb?"<span class='badge badge-purple'>AB</span>":e.mark)+"</td>"
+          +"<td>"+(isAb?"--":e.max)+"</td>"
+          +"<td>"+markBadge(e.mark,e.max,exam)+"</td>"
+          +"<td>"+(e.rank?"#"+e.rank:isAb?"AB":"--")+"</td>"
+          +"<td>"+(e.classSize||"--")+"</td>"
+          +"<td>"+(e.classAvg||"--")+"</td></tr>";
+      }).join("")
+      :"<tr><td colspan='8' style='text-align:center;color:var(--g400);padding:20px'>No marks for "+subj+" – "+exam+(cls?" ("+cls+")":"")+"</td></tr>";
+    var abCount=matching.filter(function(r){return r[exam].mark===null;}).length;
+    if(matching.length)showStatus("vmStatus",matching.length+" records | "+abCount+" absent"+(cls?" | Class: "+cls:""),"ok");
+    else hideStatus("vmStatus");
+  }catch(e){showStatus("vmStatus","Error: "+e.message,"err");}
+}
+
+// ═══════════════════════════════════════════════════════
 // ANALYTICS
 // ═══════════════════════════════════════════════════════
 async function loadAnalytics(){
@@ -1340,62 +1398,6 @@ async function loadAnalytics(){
 }
 
 // ═══════════════════════════════════════════════════════
-// MISSING MARKS — only flags if no record at all (AB = uploaded, just absent)
-// ═══════════════════════════════════════════════════════
-async function loadMissing(){
-  if(!EXAMS.length){showStatus("missingStatus","No exams configured.","warn");return;}
-  showStatus("missingStatus","Checking...","info");
-  try{
-    var students=await fsGetAll("students");
-    var results=await fsGetAll("results");
-    var resMap={};results.forEach(function(r){resMap[r.admNo+"_"+r.subject]=r;});
-    var html='<div class="tscroll"><table class="ptable"><thead><tr><th>Admission No</th><th>Name</th><th>Class</th>';
-    SUBJECTS.forEach(function(sub){EXAMS.forEach(function(ex){html+="<th>"+sub.slice(0,1)+"-"+ex+"</th>";});});
-    html+="</tr></thead><tbody>";
-    var issues=0;
-    students.forEach(function(s){
-      var id=s._id||s.admNo,cells="",hasIssue=false;
-      SUBJECTS.forEach(function(sub){
-        EXAMS.forEach(function(ex){
-          var r=resMap[id+"_"+sub];
-          // uploaded = key exists (even if mark is null = AB)
-          // missing = key doesn't exist at all
-          var uploaded=r&&r[ex]&&r[ex].mark!==undefined;
-          var isAb=uploaded&&r[ex].mark===null;
-          if(!uploaded){cells+="<td><span class='miss-chip'>✗</span></td>";hasIssue=true;}
-          else if(isAb){cells+="<td><span class='ab-chip'>AB</span></td>";}
-          else{cells+="<td><span class='ok-chip'>✓</span></td>";}
-        });
-      });
-      if(hasIssue){issues++;html+="<tr><td><strong>"+id+"</strong></td><td>"+s.name+"</td><td>"+s.class+"</td>"+cells+"</tr>";}
-    });
-    html+="</tbody></table></div>";
-    if(!issues){showStatus("missingStatus","✅ All students have data uploaded for all exams! (AB = uploaded as absent)","ok");$("missingContent").innerHTML="";}
-    else{showStatus("missingStatus",issues+" students have missing uploads (✗ = not uploaded, AB = absent, ✓ = has marks)","warn");$("missingContent").innerHTML=html;}
-  }catch(e){showStatus("missingStatus","Error: "+e.message,"err");}
-}
-
-// ═══════════════════════════════════════════════════════
-// DUPLICATE PHONES
-// ═══════════════════════════════════════════════════════
-async function loadDupes(){
-  showStatus("dupesStatus","Checking...","info");
-  try{
-    var students=await fsGetAll("students"),phoneMap={};
-    students.forEach(function(s){var ph=String(s.phone||"").trim();if(!ph)return;if(!phoneMap[ph])phoneMap[ph]=[];phoneMap[ph].push(s);});
-    var dupes=Object.keys(phoneMap).filter(function(p){return phoneMap[p].length>1;});
-    if(!dupes.length){showStatus("dupesStatus","No duplicate phone numbers found!","ok");$("dupesContent").innerHTML="";return;}
-    showStatus("dupesStatus",dupes.length+" duplicate phone number(s) found!","warn");
-    var html='<div class="tscroll"><table class="ptable"><thead><tr><th>Phone</th><th>Students Sharing</th></tr></thead><tbody>';
-    dupes.forEach(function(ph){
-      html+="<tr><td><strong>"+ph+"</strong></td><td>"+phoneMap[ph].map(function(s){return(s._id||s.admNo)+" – "+s.name+" ("+s.class+")";}).join("<br>")+"</td></tr>";
-    });
-    html+="</tbody></table></div>";
-    $("dupesContent").innerHTML=html;
-  }catch(e){showStatus("dupesStatus","Error: "+e.message,"err");}
-}
-
-// ═══════════════════════════════════════════════════════
 // STUDENT PREVIEW
 // ═══════════════════════════════════════════════════════
 async function loadPreview(){
@@ -1406,14 +1408,18 @@ async function loadPreview(){
     var student=await fsGet("students",en);
     if(!student||!student.name){showStatus("previewStatus","Student not found: "+en,"err");return;}
     var results={};
-    for(var i=0;i<SUBJECTS.length;i++){var r=await fsGet("results",en+"_"+SUBJECTS[i]);if(r)results[SUBJECTS[i]]=r;}
+    for(var i=0;i<SUBJECTS.length;i++){var r=await fsGet("results",en+"_"+SUBJECTS[i]);if(r&&r.subject)results[SUBJECTS[i]]=r;}
     hideStatus("previewStatus");
+    var subjectsWithResults=Object.keys(results);
+    if(!subjectsWithResults.length){
+      $("previewContent").innerHTML='<div style="padding:20px;text-align:center;color:var(--g400)">No results uploaded for this student yet.</div>';
+      return;
+    }
     var html='<div style="border:2px solid var(--blue-border);border-radius:12px;overflow:hidden;margin-top:12px">';
     html+='<div style="background:var(--blue);padding:14px 16px;color:#fff"><strong>'+student.name+'</strong> — Admission No: '+en+' | Class: '+student.class+'</div>';
-    SUBJECTS.forEach(function(subj){
+    subjectsWithResults.forEach(function(subj){
       var res=results[subj];
       html+='<div style="padding:14px 16px;border-bottom:1px solid var(--g100)"><strong style="font-size:.84rem;color:var(--blue)">'+subj+'</strong>';
-      if(!res){html+='<span style="color:var(--g400);font-size:.8rem;margin-left:8px">No results uploaded yet</span></div>';return;}
       html+='<div class="tscroll"><table class="ptable" style="margin-top:8px"><thead><tr><th>Exam</th><th>Marks</th><th>Max</th><th>%</th><th>Rank</th><th>Class Avg</th></tr></thead><tbody>';
       EXAMS.forEach(function(ex){
         var e=res[ex];
@@ -1855,23 +1861,21 @@ async function loadLoginTracking(){
 
     // ── Summary stat cards ────────────────────────────────────────────────
     var loggedInCount=allStudents.filter(function(s){return !!loginMap[s._id||s.admNo];}).length;
-    html+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px">'
-      +'@media(min-width:600px){grid-template-columns:repeat(3,1fr);}';
 
     function tCard(icon,big,sub,col){
       return '<div class="card" style="text-align:center;padding:18px 12px;border-top:3px solid '+col+';margin:0">'
         +'<div style="font-size:1.6rem;margin-bottom:6px">'+icon+'</div>'
-        +'<div style="font-size:1.5rem;font-weight:800;color:'+col+'">'+big+'</div>'
-        +'<div style="font-size:.76rem;font-weight:700;color:var(--g600);margin-top:4px;text-transform:uppercase;letter-spacing:.4px">'+sub+'</div>'
+        +'<div style="font-size:1.4rem;font-weight:800;color:'+col+'">'+big+'</div>'
+        +'<div style="font-size:.72rem;font-weight:700;color:var(--g600);margin-top:4px;text-transform:uppercase;letter-spacing:.5px">'+sub+'</div>'
       +'</div>';
     }
 
-    html+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px">';
-    html+=tCard('👥',allStudents.length+' Students<br><span style="font-size:.9rem;color:var(--g600)">'+TEACHERS_CFG.length+' Teacher'+(TEACHERS_CFG.length!==1?'s':'')+'</span>','Registered','var(--blue)');
+    html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">';
+    html+=tCard('👥',allStudents.length,'Students · '+TEACHERS_CFG.length+' Teachers','var(--blue)');
     html+=tCard('🟢',loggedInCount,'Logged In Ever','var(--green)');
     html+=tCard('⬜',neverCount,'Never Logged In','var(--g400)');
-    html+=tCard('✅',todayCount,'Logged In Today','var(--blue-lt)');
-    html+=tCard('📅',weekCount,'Active This Week','var(--gold)');
+    html+=tCard('✅',todayCount,'Today','var(--blue-lt)');
+    html+=tCard('📅',weekCount,'This Week','var(--gold)');
     html+=tCard('🔴',inactiveCount,'Inactive 7+ Days','var(--red)');
     html+='</div>';
     // Class engagement
