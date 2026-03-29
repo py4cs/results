@@ -214,7 +214,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <div id="sForm">
         <div class="l-title">Student Login</div>
         <p class="l-sub">Enter your admission number and registered phone number</p>
-        <div class="fg"><label>Admission No</label><input id="examNo" type="text" inputmode="numeric" placeholder="e.g. H1822"></div>
+        <div class="fg"><label>Admission No</label><input id="examNo" type="text" inputmode="text" placeholder="e.g. H1822"></div>
         <div class="fg"><label>Phone Number</label><input id="phone" type="tel" inputmode="numeric" placeholder="10-digit parent's mobile number"></div>
         <button class="l-btn" id="sBtn" onclick="studentLogin()">Login</button>
         <div class="l-err" id="sErr"></div>
@@ -225,7 +225,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <div id="tForm" class="hidden">
         <div class="l-title">Teacher Login</div>
         <p class="l-sub">Sign in with your Teacher ID and password</p>
-        <div class="fg"><label>Teacher ID</label><input id="tUser" type="text" inputmode="numeric" placeholder="Enter your Teacher ID"></div>
+        <div class="fg"><label>Teacher ID</label><input id="tUser" type="text" inputmode="text" placeholder="Enter your Teacher ID"></div>
         <div class="fg"><label>Password</label><input id="tPass" type="password" placeholder="Password"></div>
         <button class="l-btn" id="tBtn" onclick="teacherLogin()">Login</button>
         <div class="l-err" id="tErr"></div>
@@ -407,7 +407,8 @@ const BASE    = "https://firestore.googleapis.com/v1/projects/" + PROJECT + "/da
 
 async function fsGet(path) {
   const r = await fetch(BASE + "/" + path + "?key=" + API_KEY);
-  if (!r.ok) throw new Error("Not found");
+  if (r.status === 404) return null; // doc not found — return null silently
+  if (!r.ok) throw new Error("Network error: " + r.status);
   return parseDoc(await r.json());
 }
 async function fsWrite(col, id, data) {
@@ -534,10 +535,12 @@ function resultIsPass(mark,examObj){ var p=resultPassMark(examObj); return p!==n
 function examCategory(name){
   var n=name.toUpperCase();
   if(n.indexOf('DRT')>=0) return 'DRT';
-  if(n.indexOf('PT')>=0)  return 'PT';
   if(n.indexOf('TERM')>=0) return 'Term';
-  if(n.indexOf('PRE')>=0) return 'Preboard';
-  return 'Exam';
+  if(n.indexOf('PRE')>=0||n.indexOf('BOARD')>=0) return 'Preboard';
+  if(n.indexOf('PT')>=0||n.indexOf('PERIODIC')>=0) return 'PT';
+  if(n.indexOf('MID')>=0) return 'Term';
+  if(n.indexOf('FINAL')>=0||n.indexOf('ANNUAL')>=0) return 'Term';
+  return 'Exam'; // default — shows in Main Exam table, not DRT
 }
 
 async function loadConfig(){
@@ -656,7 +659,7 @@ async function studentLogin(){
       var subjectsToFetch=SUBJECTS.length?SUBJECTS:[];
       for(var si=0;si<subjectsToFetch.length;si++){
         var sub=subjectsToFetch[si];
-        var resultDoc=await fsGet('results/'+en+'_'+sub);
+        var resultDoc=await fsGet('results/'+en+'_'+encodeURIComponent(sub));
         if(resultDoc&&resultDoc.subject) results[sub]=resultDoc;
       }
       d={type:'student',examNo:en,admNo:en,phone:ph,student:student,results:results};
@@ -699,7 +702,7 @@ async function teacherLogin(){
     for(var ti=0;ti<students.length;ti++){
       var s=students[ti];
       var admNo=s._id||s.admNo||s.examNo;
-      var resultDoc=await fsGet('results/'+admNo+'_'+teacher.subject);
+      var resultDoc=await fsGet('results/'+admNo+'_'+encodeURIComponent(teacher.subject));
       if(resultDoc&&resultDoc.subject){
         if(!results[admNo]) results[admNo]={};
         Object.keys(resultDoc).forEach(function(k){
@@ -872,7 +875,7 @@ function renderStudent(d){
   var student=d.student, results=d.results, name=student.name||'';
   $('sAv').textContent=$('sHeroAv').textContent=name[0]||'S';
   $('sName').textContent=$('sHeroName').textContent=name;
-  $('sMeta').textContent=d.examNo;
+  $('sMeta').textContent=d.admNo||d.examNo;
   $('sHeroMeta').textContent='Class '+student.class;
   var subjs=Object.keys(results);
   $('sSubjBar').innerHTML=subjs.map(function(s,i){

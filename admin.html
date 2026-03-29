@@ -584,12 +584,12 @@ var PROJECT="velammal-results",API_KEY="AIzaSyC79jcB_6TgJIG4ngXmPDY6Zjmg8PC0-pU"
 var BASE="https://firestore.googleapis.com/v1/projects/"+PROJECT+"/databases/(default)/documents";
 
 async function fsSet(col,id,data){
-  var r=await fetch(BASE+"/"+col+"/"+id+"?key="+API_KEY,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({fields:toFsFields(data)})});
+  var r=await fetch(BASE+"/"+col+"/"+encodeURIComponent(id)+"?key="+API_KEY,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({fields:toFsFields(data)})});
   if(!r.ok){var e=await r.json();throw new Error((e.error&&e.error.message)||"Write failed");}
   return r.json();
 }
 async function fsGet(col,id){
-  var r=await fetch(BASE+"/"+col+"/"+id+"?key="+API_KEY);
+  var r=await fetch(BASE+"/"+col+"/"+encodeURIComponent(id)+"?key="+API_KEY);
   if(!r.ok)return null;
   return parseDoc(await r.json());
 }
@@ -603,7 +603,7 @@ async function fsGetAll(col){
   }
   return docs;
 }
-async function fsDelete(col,id){await fetch(BASE+"/"+col+"/"+id+"?key="+API_KEY,{method:"DELETE"});}
+async function fsDelete(col,id){await fetch(BASE+"/"+col+"/"+encodeURIComponent(id)+"?key="+API_KEY,{method:"DELETE"});}
 
 function toFsValue(v){
   if(v===null||v===undefined)return{nullValue:null};
@@ -1286,11 +1286,11 @@ async function bulkDeleteClass(){
   var stuDone=0,resDone=0;
   // Delete all results for students in this class
   var allRes=await fsGetAll("results");
-  var examNos=toDelete.map(function(s){return String(s._id||s.examNo);});
-  var toDelRes=allRes.filter(function(r){return examNos.indexOf(String(r.examNo))>=0||examNos.indexOf(String(r._id))>=0;});
+  var admNos=toDelete.map(function(s){return String(s._id||s.admNo||"");});
+  var toDelRes=allRes.filter(function(r){return admNos.indexOf(String(r.admNo||r._id))>=0||admNos.some(function(an){return r._id.startsWith(an+"_");});});
   for(var j=0;j<toDelRes.length;j++){try{await fsDelete("results",toDelRes[j]._id);resDone++;}catch(e){}}
   // Delete students
-  for(var i=0;i<toDelete.length;i++){try{await fsDelete("students",toDelete[i]._id||toDelete[i].examNo);stuDone++;}catch(e){}}
+  for(var i=0;i<toDelete.length;i++){try{await fsDelete("students",toDelete[i]._id||toDelete[i].admNo);stuDone++;}catch(e){}}
   showStatus("viewStatus","Deleted "+stuDone+" students and "+resDone+" result records from "+cls,"ok");
   await loadAllStudents();loadStats();
 }
@@ -1379,9 +1379,16 @@ async function uploadMarks(){
   // classAvg = avg of students who wrote only
   // Absentees get rank=null but classSize includes them
   var rankData={};
+  // Build full class strength map from all students in Firestore
+  var fullClassSize={};
+  allStudents.forEach(function(s){
+    var c=s.class||"Unknown";
+    fullClassSize[c]=(fullClassSize[c]||0)+1;
+  });
+
   Object.keys(groups).forEach(function(cls){
     var rows=groups[cls];
-    var classSize=rows.length; // ALL students including absent
+    var classSize=fullClassSize[cls]||rows.length; // full class strength, not just uploaded
     var written=rows.filter(function(r){return r.marks!==null;});
     var classAvg=written.length?Math.round(written.reduce(function(s,r){return s+r.marks;},0)/written.length*10)/10:0;
     var classAvgPct=Math.round(classAvg/maxMarks*100);

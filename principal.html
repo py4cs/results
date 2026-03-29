@@ -359,7 +359,7 @@ var _fbAuth=firebase.auth(_fbApp);
 // FIRESTORE REST
 // ═══════════════════════════════════════
 async function fsGet(col,id){
-  var r=await fetch(BASE+"/"+col+"/"+id+"?key="+API_KEY);
+  var r=await fetch(BASE+"/"+col+"/"+encodeURIComponent(id)+"?key="+API_KEY);
   if(!r.ok)return null;
   return parseDoc(await r.json());
 }
@@ -1180,7 +1180,7 @@ function showPrincipalStudentDetail(admNo){
   if(!student){alert("Student not found.");return;}
 
   var resMap={};
-  _cache.results.forEach(function(r){resMap[(r.examNo||r._id)+"_"+(r.subject||"")]=r;});
+  _cache.results.forEach(function(r){resMap[(r.admNo||r._id)+"_"+(r.subject||"")]=r;});
 
   // Get subjects this student has marks for
   var subjects=getSubjects().filter(function(sub){
