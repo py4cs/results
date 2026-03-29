@@ -237,23 +237,24 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <div class="hero-stats" id="sHeroStats"></div>
     </div>
     <div class="subj-bar" id="sSubjBar"></div>
+    <div id="sMarkSheet" class="hidden" style="padding:0 0 16px"></div>
+    <div id="sSubjContent">
     <div class="sec-lbl">Your Overview</div>
     <div class="sum-grid" id="sSumGrid"></div>
     <div class="sec-lbl">Your Marks</div>
     <div class="card" style="margin-bottom:12px">
       <div class="card-title">DRT Marks</div><div class="card-sub">Class test scores</div>
-      <div class="tscroll" style="max-height:320px;overflow-y:auto"><table class="mtable" id="sDrtMarksTable"><thead><tr><th>Exam</th><th>Max</th><th>Your Score</th><th>Class Avg</th><th>Rank</th></tr></thead><tbody></tbody></table></div>
+      <div class="tscroll" style="max-height:320px;overflow-y:auto"><table class="mtable" id="sDrtMarksTable"><thead><tr><th>Exam</th><th>Marks</th><th>100</th><th>Class Avg</th><th>Rank</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="card">
       <div class="card-title">Main Exam Marks</div><div class="card-sub">PT, Term, Preboard scores</div>
-      <div class="tscroll" style="max-height:320px;overflow-y:auto"><table class="mtable" id="sMainMarksTable"><thead><tr><th>Exam</th><th>Max</th><th>Your Score</th><th>Class Avg</th><th>Rank</th></tr></thead><tbody></tbody></table></div>
+      <div class="tscroll" style="max-height:320px;overflow-y:auto"><table class="mtable" id="sMainMarksTable"><thead><tr><th>Exam</th><th>Marks</th><th>100</th><th>Class Avg</th><th>Rank</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="sec-lbl">Exam Category View</div>
     <div class="two-col">
       <div class="card"><div class="card-title">DRT Performance</div><div class="card-sub">Class tests - out of 15</div><div class="ch200" id="sDrtWrap"></div></div>
       <div class="card"><div class="card-title">Main Exams</div><div class="card-sub">PT, Term, Preboard - out of 100</div><div class="ch200" id="sMainWrap"></div></div>
     </div>
-
     <div class="sec-lbl">Class Standing</div>
     <div class="two-col">
       <div class="card"><div class="card-title">You vs Class Average</div><div class="card-sub">Per exam comparison</div><div class="ch240" id="sCompareWrap"></div></div>
@@ -265,6 +266,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
     <div class="card"><div class="card-title">Exam-by-Exam Changes</div><div id="sTrendWrap" style="padding-top:8px"></div></div>
     <div class="sec-lbl">Personalised Insights</div>
     <div class="card"><div class="card-title">Strengths and Suggestions</div><div id="sInsightsWrap" style="padding-top:8px"></div></div>
+    </div>
   </div>
 </div>
 
@@ -719,16 +721,98 @@ function renderStudent(d){
   $('sMeta').textContent=d.admNo;
   $('sHeroMeta').textContent='Class '+student.class;
   var subjs=Object.keys(results);
-  $('sSubjBar').innerHTML=subjs.map(function(s,i){
+  var pills=subjs.map(function(s,i){
     return '<button class="sf-pill'+(i===0?' active':'')+'" onclick="filterSubj(\''+s+'\',this)">'+s+'</button>';
   }).join('');
+  pills+='<button class="sf-pill" onclick="showMarkSheet(this)">📋 Mark Sheet</button>';
+  $('sSubjBar').innerHTML=pills;
   if(subjs.length) renderSubj(results[subjs[0]],subjs[0],name);
 }
 
 function filterSubj(subj,btn){
   document.querySelectorAll('.sf-pill').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
+  $('sMarkSheet').classList.add('hidden');
+  $('sSubjContent').classList.remove('hidden');
   if(_cur) renderSubj(_cur.results[subj],subj,_cur.student.name);
+}
+
+function showMarkSheet(btn){
+  document.querySelectorAll('.sf-pill').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  $('sSubjContent').classList.add('hidden');
+  $('sMarkSheet').classList.remove('hidden');
+  renderMarkSheet();
+}
+
+function renderMarkSheet(){
+  if(!_cur||!_cur.results)return;
+  var results=_cur.results;
+  var subjs=Object.keys(results);
+  if(!subjs.length){
+    $('sMarkSheet').innerHTML='<div class="card"><div class="no-data">No results uploaded yet.</div></div>';
+    return;
+  }
+  var css='<style>'
+    +'.ms-outer{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}'
+    +'.ms-table{border-collapse:collapse;min-width:'+((subjs.length*2+3)*80)+'px;width:100%;font-size:12px;}'
+    +'.ms-table th,.ms-table td{border:1px solid var(--blue-border);padding:7px 9px;text-align:center;white-space:nowrap;}'
+    +'.ms-th-main{background:var(--blue-pale);font-weight:700;font-size:11px;color:var(--blue);letter-spacing:.3px;padding:8px 9px;}'
+    +'.ms-th-sub{background:var(--g50,#f8fafc);font-weight:400;font-size:10px;color:var(--g600);padding:5px 9px;}'
+    +'.ms-exam{text-align:left;font-weight:700;color:var(--g800);background:var(--g50,#f8fafc);position:sticky;left:0;z-index:2;border-right:2px solid var(--blue-border);min-width:72px;}'
+    +'thead .ms-exam{z-index:3;}'
+    +'.ms-mark{font-weight:600;color:var(--g800);font-size:11px;}'
+    +'.ms-pct{font-size:11px;color:var(--g600);}'
+    +'.ms-ab{color:var(--org);font-weight:600;font-size:11px;}'
+    +'.ms-total{font-weight:700;font-size:12px;color:var(--blue);background:var(--blue-pale);border-left:2px solid var(--blue-border);}'
+    +'.ms-pctcol{font-weight:600;font-size:12px;color:var(--g600);}'
+    +'</style>';
+
+  var html=css+'<div class="card"><div class="card-title">📋 Mark Sheet</div><div class="card-sub">All subjects · All exams · Out of 100 conversion</div>';
+  html+='<div class="ms-outer"><table class="ms-table"><thead><tr>';
+  html+='<th class="ms-th-main ms-exam" rowspan="2">Exam</th>';
+  subjs.forEach(function(s){
+    html+='<th class="ms-th-main" colspan="2">'+s+'</th>';
+  });
+  html+='<th class="ms-th-main ms-total" rowspan="2" style="border-left:2px solid var(--blue-border)">Total<br><span style="font-weight:400;font-size:10px">/500</span></th>';
+  html+='<th class="ms-th-main" rowspan="2">%</th>';
+  html+='</tr><tr>';
+  subjs.forEach(function(){
+    html+='<th class="ms-th-sub">Marks</th><th class="ms-th-sub">100</th>';
+  });
+  html+='</tr></thead><tbody>';
+
+  EXAMS.forEach(function(exam){
+    // Check if any subject has this exam
+    var hasExam=subjs.some(function(s){var r=results[s];return r&&r[exam]&&r[exam].mark!==undefined;});
+    if(!hasExam)return;
+    html+='<tr><td class="ms-exam">'+exam+'</td>';
+    var total=0;
+    subjs.forEach(function(s){
+      var r=results[s],e=r?r[exam]:null;
+      if(!e||e.mark===undefined){
+        html+='<td class="ms-pct">—</td><td class="ms-pct">—</td>';
+        return;
+      }
+      var isAb=e.mark===null;
+      if(isAb){
+        html+='<td class="ms-ab">AB</td><td class="ms-ab">AB</td>';
+        // AB = 0 toward total silently
+      } else {
+        var converted=(e.mark/e.max)*100;
+        total+=converted;
+        html+='<td class="ms-mark">'+e.mark+'/'+e.max+'</td>'
+          +'<td class="ms-pct">'+converted.toFixed(2)+'</td>';
+      }
+    });
+    var rowPct=(total/500)*100;
+    html+='<td class="ms-total">'+total.toFixed(2)+'</td>';
+    html+='<td class="ms-pctcol">'+rowPct.toFixed(2)+'%</td>';
+    html+='</tr>';
+  });
+
+  html+='</tbody></table></div></div>';
+  $('sMarkSheet').innerHTML=html;
 }
 
 function renderSubj(res,subject,name){
@@ -817,21 +901,26 @@ function renderSubj(res,subject,name){
     var pBadge='';
     if(has&&e.pct!=null){
       if(e.passMark!==null&&e.passMark!==undefined){
-        pBadge=resultIsPass(e.score,e)?' <span class="gb gb-a">Pass</span>':' <span class="gb gb-d">Fail</span>';
+        pBadge=' '+(resultIsPass(e.score,e)?'<span class="gb gb-a">Pass</span>':'<span class="gb gb-d">Fail</span>');
       } else if(hasPass(e.name)){
-        pBadge=isPass(e.score,e.name)?' <span class="gb gb-a">Pass</span>':' <span class="gb gb-d">Fail</span>';
+        pBadge=' '+(isPass(e.score,e.name)?'<span class="gb gb-a">Pass</span>':'<span class="gb gb-d">Fail</span>');
       }
     }
-    var scoreCell=e.absent
+    // mark/max cell
+    var markCell=e.absent
       ?'<span style="color:var(--org);font-weight:700">AB</span>'
-      :'<strong>'+e.score+'</strong> <span style="color:var(--g600);font-size:.78rem">('+e.pct+'%)</span>'+pBadge;
+      :'<strong>'+e.score+'/'+e.max+'</strong>'+pBadge;
+    // /100 cell
+    var pct100=e.absent?'<span style="color:var(--org)">AB</span>'
+      :(e.pct!=null?((e.score/e.max*100).toFixed(2)):'--');
+    // class avg/max cell
     var avgCell=has
-      ?'<strong>'+e.classAvg+'</strong> <span style="color:var(--g600);font-size:.78rem">('+e.classAvgPct+'%)</span>'
+      ?'<strong>'+e.classAvg+'/'+e.max+'</strong>'
       :'--';
     return '<tr>'
       +'<td style="white-space:nowrap"><strong>'+e.name+'</strong></td>'
-      +'<td style="white-space:nowrap">'+e.max+'</td>'
-      +'<td style="white-space:nowrap">'+scoreCell+'</td>'
+      +'<td style="white-space:nowrap">'+markCell+'</td>'
+      +'<td style="white-space:nowrap">'+pct100+'</td>'
       +'<td style="white-space:nowrap">'+avgCell+'</td>'
       +'<td style="white-space:nowrap">'+rk+'</td>'
     +'</tr>';
