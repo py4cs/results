@@ -79,21 +79,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
 .mtable th{background:var(--g50);padding:10px 12px;text-align:left;font-size:.74rem;font-weight:700;color:var(--g600);border-bottom:2px solid var(--g200);white-space:nowrap;}
 .mtable td{padding:10px 12px;border-bottom:1px solid var(--g100);white-space:nowrap;}
 @media(max-width:480px){.mtable{font-size:.72rem;}.mtable th{padding:7px 7px;font-size:.65rem;}.mtable td{padding:7px 7px;}}
-.print-btn{background:var(--blue);color:#fff;border:none;border-radius:20px;padding:6px 14px;font-size:.73rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;}
-.print-btn:hover{background:var(--blue-lt);}
-@media print{
-  .topbar,.subj-bar,.lo-btn,.print-btn,.tf-row,.sec-lbl+div>.card-sub{display:none!important;}
-  .s-wrap,.t-wrap{padding:0;max-width:100%;}
-  .card{box-shadow:none;border:1px solid #ddd;break-inside:avoid;margin-bottom:10px;}
-  body{background:#fff;}
-  .print-header{display:block!important;}
-  .page{display:flex!important;}
-  #sDash .hero{background:#0a1f6e!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-  .chart-print-img{display:block!important;}
-}
-.print-header{display:none;padding:12px 0 16px;border-bottom:2px solid #0a1f6e;margin-bottom:16px;}
-.print-header h2{color:#0a1f6e;font-size:1.1rem;font-weight:800;}
-.print-header p{color:#475569;font-size:.78rem;margin-top:4px;}
 .chip{display:inline-block;padding:2px 7px;border-radius:6px;font-size:.69rem;font-weight:700;}
 .ch-drt{background:#dbeafe;color:#1d4ed8;}
 .ch-pt{background:#dcfce7;color:#15803d;}
@@ -214,7 +199,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
       <div id="sForm">
         <div class="l-title">Student Login</div>
         <p class="l-sub">Enter your admission number and registered phone number</p>
-        <div class="fg"><label>Admission No</label><input id="examNo" type="text" inputmode="text" placeholder="e.g. H1822"></div>
+        <div class="fg"><label>Admission No</label><input id="admNo" type="text" inputmode="text" placeholder="e.g. H1822"></div>
         <div class="fg"><label>Phone Number</label><input id="phone" type="tel" inputmode="numeric" placeholder="10-digit parent's mobile number"></div>
         <button class="l-btn" id="sBtn" onclick="studentLogin()">Login</button>
         <div class="l-err" id="sErr"></div>
@@ -240,12 +225,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
     <div class="tb-brand"><span>Velammal Vidyalaya Alapakkam</span><small>Results Portal | 2025-26</small></div>
     <div class="tb-r">
       <div class="u-badge"><div class="u-av" id="sAv">S</div><div class="u-info"><span id="sName"></span><small id="sMeta"></small></div></div>
-      <button class="print-btn" onclick="printStudentReport()">🖨️ Export PDF</button>
       <button class="lo-btn" onclick="logout()">Logout</button>
     </div>
   </div>
   <div class="s-wrap">
-    <div class="print-header" id="sPrintHeader"></div>
     <div class="hero">
       <div class="hero-top">
         <div class="hero-left"><div class="hero-av" id="sHeroAv">S</div><div><div class="hero-name" id="sHeroName"></div><div class="hero-meta" id="sHeroMeta"></div></div></div>
@@ -291,7 +274,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
     <div class="tb-brand"><span>Velammal Vidyalaya Alapakkam</span><small>Teacher Portal | 2025-26</small></div>
     <div class="tb-r">
       <div class="u-badge"><div class="u-av" id="tAv">T</div><div class="u-info"><span id="tName"></span><small id="tSubLabel" style="color:var(--gold-lt)"></small></div></div>
-      <button class="print-btn" onclick="printTeacherReport()">🖨️ Export PDF</button>
       <button class="lo-btn" onclick="logout()">Logout</button>
     </div>
   </div>
@@ -639,7 +621,7 @@ function mkChart(id, opts){
 // STUDENT LOGIN
 // ═══════════════════════════════════════════
 async function studentLogin(){
-  var en=$('examNo').value.trim(), ph=$('phone').value.trim();
+  var en=$('admNo').value.trim(), ph=$('phone').value.trim();
   hideErr('sErr');
   if(!en||!ph){ showErr('sErr','Please enter both fields.'); return; }
   setBtn('sBtn',true);
@@ -647,7 +629,7 @@ async function studentLogin(){
     await loadConfig();
     var cached=loadSession();
     var d;
-    if(cached&&cached.type==='student'&&(cached.examNo===en||cached.admNo===en)&&cached.phone===ph&&EXAMS.length){
+    if(cached&&cached.type==='student'&&(cached.admNo===en)&&cached.phone===ph&&EXAMS.length){
       d=cached;
     } else {
       // Fetch student by admNo
@@ -659,10 +641,10 @@ async function studentLogin(){
       var subjectsToFetch=SUBJECTS.length?SUBJECTS:[];
       for(var si=0;si<subjectsToFetch.length;si++){
         var sub=subjectsToFetch[si];
-        var resultDoc=await fsGet('results/'+en+'_'+encodeURIComponent(sub));
+        var resultDoc=await fsGet('results/'+encodeURIComponent(en+'_'+sub));
         if(resultDoc&&resultDoc.subject) results[sub]=resultDoc;
       }
-      d={type:'student',examNo:en,admNo:en,phone:ph,student:student,results:results};
+      d={type:'student',admNo:en,phone:ph,student:student,results:results};
       saveSession(d);
     }
     _cur=d; go('sDash');
@@ -701,12 +683,12 @@ async function teacherLogin(){
     var results={};
     for(var ti=0;ti<students.length;ti++){
       var s=students[ti];
-      var admNo=s._id||s.admNo||s.examNo;
-      var resultDoc=await fsGet('results/'+admNo+'_'+encodeURIComponent(teacher.subject));
+      var admNo=s.id||s.admNo||s._id;
+      var resultDoc=await fsGet('results/'+encodeURIComponent(admNo+'_'+teacher.subject));
       if(resultDoc&&resultDoc.subject){
         if(!results[admNo]) results[admNo]={};
         Object.keys(resultDoc).forEach(function(k){
-          if(k!=='admNo'&&k!=='examNo'&&k!=='subject'&&k!=='class'&&k!=='_id') results[admNo][k]=resultDoc[k];
+          if(k!=='admNo'&&k!=='subject'&&k!=='class'&&k!=='_id') results[admNo][k]=resultDoc[k];
         });
         results[admNo]._subject=resultDoc.subject;
         results[admNo]._admNo=admNo;
@@ -729,143 +711,9 @@ async function teacherLogin(){
 function logout(){
   clearSession(); _cur=null;
   killCharts(sCharts); killCharts(tCharts);
-  $('examNo').value=''; $('phone').value='';
+  $('admNo').value=''; $('phone').value='';
   try{ _fbAuth2.signOut(); }catch(e){}
   go('loginPage');
-}
-
-// ═══════════════════════════════════════════
-// PRINT / PDF EXPORT — Chart to Image
-// ═══════════════════════════════════════════
-
-// Convert all ApexCharts in a chart object to PNG images, print, then restore
-async function chartsToImages(chartObj){
-  var swaps=[];
-  var keys=Object.keys(chartObj);
-  for(var i=0;i<keys.length;i++){
-    var k=keys[i];
-    var ch=chartObj[k];
-    if(!ch) continue;
-    try{
-      var uri=await ch.dataURI({scale:2});
-      var imgSrc=uri.imgURI||uri;
-      var el=ch.el;
-      if(el&&imgSrc){
-        var img=document.createElement('img');
-        img.src=imgSrc;
-        img.style.width='100%';
-        img.style.maxHeight='240px';
-        img.style.objectFit='contain';
-        img.className='chart-print-img';
-        el.parentNode.insertBefore(img,el);
-        el.style.display='none';
-        swaps.push({el:el,img:img});
-      }
-    }catch(e){console.warn('Chart export failed:',k,e);}
-  }
-  return swaps;
-}
-
-function restoreCharts(swaps){
-  swaps.forEach(function(s){
-    s.el.style.display='';
-    if(s.img&&s.img.parentNode) s.img.parentNode.removeChild(s.img);
-  });
-}
-
-async function printStudentReport(){
-  if(!_cur||_cur.type!=='student') return;
-  var student=_cur.student;
-  var now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
-
-  // Build print header
-  var ph=$('sPrintHeader');
-  if(ph){
-    ph.innerHTML='<h2>Velammal School — Student Performance Report</h2>'
-      +'<p>Name: <strong>'+student.name+'</strong> &nbsp;|&nbsp; '
-      +'Admission No: <strong>'+(_cur.examNo||student.admNo||"")+'</strong> &nbsp;|&nbsp; '
-      +'Class: <strong>'+student.class+'</strong> &nbsp;|&nbsp; '
-      +'Generated: '+now+'</p>';
-  }
-
-  // Build all-subject marks table for print
-  var printArea=$('sPrintAllSubjects');
-  if(!printArea){
-    printArea=document.createElement('div');
-    printArea.id='sPrintAllSubjects';
-    document.querySelector('.s-wrap').appendChild(printArea);
-  }
-  var allSubjs=Object.keys(_cur.results||{});
-  var html='<div style="page-break-before:always"><h3 style="color:#0a1f6e;margin-bottom:12px;font-size:.95rem">📊 Subject-wise Marks</h3>';
-  allSubjs.forEach(function(sub){
-    var res=_cur.results[sub];if(!res)return;
-    var exams=EXAMS.map(function(col){
-      var e=res[col];if(!e||e.mark===undefined)return null;
-      var m=e.mark;var mx=e.max||examMax(col);
-      return{name:col,max:mx,score:m,pct:m!=null?pct(m,mx):null,
-        rank:e.rank,classSize:e.classSize||0,classAvg:e.classAvg||0,classAvgPct:e.classAvgPct||0,absent:m===null};
-    }).filter(Boolean);
-    if(!exams.length)return;
-    var taken=exams.filter(function(e){return!e.absent;});
-    var subAvg=taken.length?Math.round(avg(taken.map(function(e){return e.pct;}))):null;
-    html+='<div style="margin-bottom:16px;break-inside:avoid">'
-      +'<div style="background:#0a1f6e;color:#fff;padding:7px 12px;font-weight:700;font-size:.85rem;display:flex;justify-content:space-between;border-radius:4px 4px 0 0">'
-        +'<span>'+sub+'</span>'+(subAvg!==null?'<span>Avg: '+subAvg+'%</span>':'')
-      +'</div>'
-      +'<table style="width:100%;border-collapse:collapse;font-size:.79rem"><thead>'
-        +'<tr style="background:#f1f5f9"><th style="padding:6px 10px;text-align:left;border:1px solid #e2e8f0">Exam</th>'
-        +'<th style="padding:6px 10px;border:1px solid #e2e8f0">Max</th>'
-        +'<th style="padding:6px 10px;border:1px solid #e2e8f0">Score (%)</th>'
-        +'<th style="padding:6px 10px;border:1px solid #e2e8f0">Class Avg</th>'
-        +'<th style="padding:6px 10px;border:1px solid #e2e8f0">Rank</th></tr></thead><tbody>';
-    exams.forEach(function(e){
-      html+='<tr>'
-        +'<td style="padding:6px 10px;border:1px solid #e2e8f0"><strong>'+e.name+'</strong></td>'
-        +'<td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:center">'+e.max+'</td>'
-        +'<td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:center">'+(e.absent?'AB':(e.score+' ('+e.pct+'%)'))+'</td>'
-        +'<td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:center">'+(e.absent?'--':(e.classAvg+' ('+e.classAvgPct+'%)'))+'</td>'
-        +'<td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:center">'+(e.rank?('#'+e.rank+'/'+e.classSize):(e.absent?'AB':'--'))+'</td>'
-      +'</tr>';
-    });
-    html+='</tbody></table></div>';
-  });
-  html+='</div>';
-  printArea.innerHTML=html;
-  printArea.style.display='block';
-
-  // Convert charts to images
-  var swaps=await chartsToImages(sCharts);
-  window.print();
-  setTimeout(function(){
-    restoreCharts(swaps);
-    printArea.style.display='none';
-  },800);
-}
-
-async function printTeacherReport(){
-  if(!_cur||_cur.type!=='teacher') return;
-  var teacher=_cur.teacher;
-  var now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
-
-  // Add print header
-  var tw=document.querySelector('.t-wrap');
-  var existing=$('tPrintHeader');if(existing)existing.remove();
-  var ph=document.createElement('div');
-  ph.id='tPrintHeader';ph.className='print-header';ph.style.display='block';
-  ph.innerHTML='<h2>Velammal School — Class Performance Report</h2>'
-    +'<p>Teacher: <strong>'+teacher.name+'</strong> &nbsp;|&nbsp; '
-    +'Subject: <strong>'+teacher.subject+'</strong> &nbsp;|&nbsp; '
-    +'Class: <strong>'+T.cls+'</strong> &nbsp;|&nbsp; '
-    +'Generated: '+now+'</p>';
-  tw.insertBefore(ph,tw.firstChild);
-
-  // Convert charts to images
-  var swaps=await chartsToImages(tCharts);
-  window.print();
-  setTimeout(function(){
-    restoreCharts(swaps);
-    ph.remove();
-  },800);
 }
 
 // ═══════════════════════════════════════════
@@ -875,7 +723,7 @@ function renderStudent(d){
   var student=d.student, results=d.results, name=student.name||'';
   $('sAv').textContent=$('sHeroAv').textContent=name[0]||'S';
   $('sName').textContent=$('sHeroName').textContent=name;
-  $('sMeta').textContent=d.admNo||d.examNo;
+  $('sMeta').textContent=d.admNo;
   $('sHeroMeta').textContent='Class '+student.class;
   var subjs=Object.keys(results);
   $('sSubjBar').innerHTML=subjs.map(function(s,i){
@@ -1172,7 +1020,7 @@ function renderTDash(){
   // Use admNo as key for results lookup
   var activeEx=EXAMS.filter(function(col){
     return sd.some(function(s){
-      var admNo=s._id||s.admNo||s.examNo||"";
+      var admNo=s._id||s.admNo||"";
       var r=results[admNo];
       return r&&r[col]&&r[col].mark!=null;
     });
@@ -1180,7 +1028,7 @@ function renderTDash(){
     // Get max from first available result doc for this exam
     var maxVal=100;
     for(var si=0;si<sd.length;si++){
-      var admNo=sd[si]._id||sd[si].admNo||sd[si].examNo||"";
+      var admNo=sd[si]._id||sd[si].admNo||"";
       var r=results[admNo];
       if(r&&r[col]&&r[col].max){maxVal=r[col].max;break;}
     }
@@ -1188,7 +1036,7 @@ function renderTDash(){
   });
 
   var sdata=sd.map(function(s){
-    var admNo=s._id||s.admNo||s.examNo||"";
+    var admNo=s._id||s.admNo||"";
     var r=results[admNo];
     return Object.assign({},s,{_admNo:admNo,marks:activeEx.map(function(ex){
       if(!r||!r[ex.name]||r[ex.name].mark===undefined) return null;
@@ -1218,7 +1066,7 @@ function renderTDash(){
   // Try to get pass threshold from first result doc that has passMark
   var foundPass=false;
   for(var pi=0;pi<sd.length&&!foundPass;pi++){
-    var admNoP=sd[pi]._id||sd[pi].admNo||sd[pi].examNo||"";
+    var admNoP=sd[pi]._id||sd[pi].admNo||"";
     var rP=results[admNoP];
     if(rP){
       for(var ei=0;ei<activeEx.length&&!foundPass;ei++){
@@ -1366,7 +1214,7 @@ function renderTDash(){
     var absentLatest=sdata.filter(function(s){return s.marks[latI]===null||s.marks[latI]===undefined;});
     $("absentLatestWrap").innerHTML=absentLatest.length
       ?'<div class="stu-list">'+absentLatest.map(function(s){
-          return '<div class="stu-item" data-en="'+(s._id||s.admNo||s.examNo)+'"><strong>'+s.name+'</strong>'
+          return '<div class="stu-item" data-en="'+(s._id||s.admNo)+'"><strong>'+s.name+'</strong>'
             +'<span style="color:var(--red);font-weight:700">Absent in '+latEx.name+'</span></div>';
         }).join('')+'</div>'
       :'<div class="no-data" style="min-height:50px">All students present in '+latEx.name+' 👍</div>';
@@ -1381,7 +1229,7 @@ function renderTDash(){
     var medals=['🥇','🥈','🥉'];
     $("topWrap").innerHTML=sorted.length
       ?'<div class="stu-list">'+sorted.slice(0,3).map(function(s,i){
-          return '<div class="stu-item" data-en="'+(s._id||s.admNo||s.examNo)+'">'
+          return '<div class="stu-item" data-en="'+(s._id||s.admNo)+'">'
             +'<strong>'+medals[i]+' '+s.name+'</strong>'
             +'<span style="color:var(--green);font-weight:700">'+s.marks[latI]+'/'+latEx.max+' ('+pct(s.marks[latI],latEx.max)+'%)</span>'
           +'</div>';
@@ -1391,7 +1239,7 @@ function renderTDash(){
     var riskLbl=function(m,max){var p=pct(m,max);return p<40?'🚨 Critical':p<55?'⚠️ Needs Help':'📌 Monitor';};
     $("bottomWrap").innerHTML=bottom.length
       ?'<div class="stu-list">'+bottom.map(function(s){
-          return '<div class="stu-item" data-en="'+(s._id||s.admNo||s.examNo)+'">'
+          return '<div class="stu-item" data-en="'+(s._id||s.admNo)+'">'
             +'<strong>'+s.name+'</strong>'
             +'<span style="color:var(--red);font-weight:700">'+s.marks[latI]+'/'+latEx.max+' · '+riskLbl(s.marks[latI],latEx.max)+'</span>'
           +'</div>';
@@ -1505,7 +1353,7 @@ function renderClassComparison(teacher, students, results, activeEx){
   classes.forEach(function(cls){
     var sd=students.filter(function(s){return s.class===cls;});
     classData[cls]=sd.map(function(s){
-      var admNo=s._id||s.admNo||s.examNo||"";
+      var admNo=s._id||s.admNo||"";
       var r=results[admNo];
       return Object.assign({},s,{marks:activeEx.map(function(ex){
         if(!r||!r[ex.name]||r[ex.name].mark===undefined) return null;
@@ -1592,13 +1440,13 @@ function renderClassInsights(sdata, activeEx, passThreshold){
       var written=sdata.filter(function(x){return x.marks[i]!==null&&x.marks[i]!==undefined;});
       if(!written.length) return true;
       var sorted=written.slice().sort(function(a,b){return b.marks[i]-a.marks[i];});
-      var rank=sorted.findIndex(function(x){return String(x._id||x.admNo||x.examNo)===String(s._id||s.admNo||s.examNo);})+1;
+      var rank=sorted.findIndex(function(x){return String(x._id||x.admNo)===String(s._id||s.admNo);})+1;
       return s.marks[i]!==null && rank<=3;
     });
   });
   $("toppersWrap").innerHTML=toppers.length
     ?'<div class="stu-list">'+toppers.map(function(s){
-      return '<div class="stu-item" data-en="'+(s._id||s.admNo||s.examNo)+'"><strong>'+s.name+'</strong><span>🏆 Top 3 every exam</span></div>';
+      return '<div class="stu-item" data-en="'+(s._id||s.admNo)+'"><strong>'+s.name+'</strong><span>🏆 Top 3 every exam</span></div>';
     }).join('')+'</div>'
     :"<div class='no-data' style='min-height:60px'>"+(activeEx.length<2?"Need 2+ exams":"No consistent toppers yet")+"</div>";
 
@@ -1614,7 +1462,7 @@ function renderClassInsights(sdata, activeEx, passThreshold){
   $("improvedWrap").innerHTML=improved.length
     ?'<div class="stu-list">'+improved.map(function(x){
       var col=x.delta>0?"var(--green)":x.delta<0?"var(--red)":"var(--g400)";
-      return '<div class="stu-item" data-en="'+x.s.examNo+'"><strong>'+x.s.name+'</strong><span style="color:'+col+';font-weight:700">'+(x.delta>0?"+":"")+x.delta+"% trend</span></div>";
+      return '<div class="stu-item" data-en="'+(x.s._id||x.s.admNo||x.s.id||"")+'"><strong>'+x.s.name+'</strong><span style="color:'+col+';font-weight:700">'+(x.delta>0?"+":"")+x.delta+"% trend</span></div>";
     }).join('')+'</div>'
     :"<div class='no-data' style='min-height:60px'>Need 2+ exams</div>";
 
@@ -1645,7 +1493,7 @@ function renderClassInsights(sdata, activeEx, passThreshold){
 
   $("absentWrap").innerHTML=absentees.length
     ?'<div class="stu-list">'+absentees.map(function(x){
-      return '<div class="stu-item" data-en="'+x.s.examNo+'"><strong>'+x.s.name+'</strong><span style="color:var(--org);font-weight:700">AB in '+x.abCount+' exam'+(x.abCount>1?"s":"")+'</span></div>';
+      return '<div class="stu-item" data-en="'+(x.s._id||x.s.admNo||x.s.id||"")+'"><strong>'+x.s.name+'</strong><span style="color:var(--org);font-weight:700">AB in '+x.abCount+' exam'+(x.abCount>1?"s":"")+'</span></div>';
     }).join('')+'</div>'
     :"<div class='no-data' style='min-height:60px'>No repeated absences 👍</div>";
 
@@ -1663,12 +1511,12 @@ function searchStudents(){
   var q=$('stuSearchInput').value.trim().toLowerCase();
   if(!q){ $('stuSearchResults').innerHTML=''; return; }
   var res=_cur.students.filter(function(s){
-    var admNo=String(s.admNo||s.examNo||s._id||"");
+    var admNo=String(s.admNo||s._id||"");
     return (s.name&&s.name.toLowerCase().indexOf(q)>=0)||(admNo.toLowerCase().indexOf(q)>=0);
   }).slice(0,10);
   $('stuSearchResults').innerHTML=res.length
     ?'<div class="stu-list">'+res.map(function(s){
-      var admNo=s.admNo||s.examNo||s._id||"";
+      var admNo=s.admNo||s._id||"";
       return '<div class="stu-item" data-en="'+admNo+'"><strong>'+s.name+'</strong><span>Adm: '+admNo+' · Class '+s.class+(s.phone?' · 📞 '+s.phone:'')+'</span></div>';
     }).join('')+'</div>'
     :"<div class='no-data' style='min-height:50px'>No students found</div>";
@@ -1679,14 +1527,12 @@ function searchStudents(){
   },30);
 }
 
-function openStudentPreview(examNo){
+function openStudentPreview(admNo){
   if(!_cur||_cur.type!=='teacher') return;
-  var student=_cur.students.find(function(s){return String(s._id||s.admNo||s.examNo)===String(examNo)||String(s.id)===String(examNo);});
+  var student=_cur.students.find(function(s){return String(s._id||s.admNo)===String(admNo)||String(s.id)===String(admNo);});
   if(!student){ alert('Student not found'); return; }
 
-  // Teacher results keyed by examNo — one doc per student containing all exam marks for teacher's subject
-  // The doc has: subject, examNo, plus exam keys like "DRT-1":{mark,rank,...}
-  var admNo=student._id||student.admNo||student.examNo||"";
+  var admNo=student._id||student.admNo||"";
   var resDoc=_cur.results[admNo]||null;
 
   // Build results map keyed by subject — teacher only has their own subject
@@ -1708,7 +1554,7 @@ function openStudentPreview(examNo){
         return '<button class="sf-pill'+(i===0?' active':'')+'" data-subj="'+s+'">'+s+'</button>';
       }).join('')+'</div>';
     spBody.innerHTML=pillHtml+'<div id="spSubjContent"></div>';
-    window._spData={student:student,results:results,examNo:examNo};
+    window._spData={student:student,results:results};
     spBody.querySelectorAll('.sf-pill').forEach(function(btn){
       btn.addEventListener('click',function(){
         spBody.querySelectorAll('.sf-pill').forEach(function(b){b.classList.remove('active');});

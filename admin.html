@@ -401,7 +401,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div class="card-title">Edit a Single Student's Mark</div>
           <div class="card-sub">Find a student, update their mark. Ranks recalculate automatically for the whole class.</div>
           <div class="form-row-3" style="margin-bottom:12px">
-            <div class="fg" style="margin:0"><label>Admission No</label><input type="text" id="emExamNo" placeholder="e.g. H1822"></div>
+            <div class="fg" style="margin:0"><label>Admission No</label><input type="text" id="emAdmNo" placeholder="e.g. H1822"></div>
             <div class="fg" style="margin:0"><label>Subject</label><select id="emSubject"></select></div>
             <div class="fg" style="margin:0"><label>Exam</label><select id="emExam"></select></div>
           </div>
@@ -455,7 +455,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
           <div class="card-title">Student Preview</div>
           <div class="card-sub">See exactly what a student will see when they log in.</div>
           <div class="form-row" style="margin-bottom:12px">
-            <div class="fg" style="margin:0"><label>Admission No</label><input type="text" id="prevExamNo" placeholder="e.g. H1822"></div>
+            <div class="fg" style="margin:0"><label>Admission No</label><input type="text" id="prevAdmNo" placeholder="e.g. H1822"></div>
             <div class="fg" style="margin:0;display:flex;align-items:flex-end"><button class="btn btn-outline" onclick="loadPreview()" style="width:100%">👀 Preview</button></div>
           </div>
           <div id="previewStatus" class="status-bar"></div>
@@ -564,7 +564,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
 <div id="editModal" class="modal-bg hidden">
   <div class="modal">
     <h3>✏️ Edit Student</h3>
-    <input type="hidden" id="editExamNo">
+    <input type="hidden" id="editAdmNo">
     <div class="fg"><label>Name</label><input type="text" id="editName"></div>
     <div class="fg"><label>Class</label><select id="editClass"></select></div>
     <div class="fg"><label>Phone</label><input type="tel" id="editPhone"></div>
@@ -1215,7 +1215,7 @@ function renderStudentsTable(){
   var tbody=$("allStudentsTable").querySelector("tbody");
   tbody.innerHTML=_allStudents.length
     ?_allStudents.map(function(r){
-      var id=r._id||r.admNo||r.examNo;
+      var id=r._id||r.admNo;
       return"<tr><td><strong>"+id+"</strong></td><td>"+r.name+"</td><td><span class='badge badge-blue'>"+r.class+"</span></td><td>"+(r.phone||"")+"</td>"
         +"<td style='display:flex;gap:6px'><button class='btn btn-outline btn-sm' onclick='openEditModal(\""+id+"\")'>✏️</button>"
         +"<button class='btn btn-red btn-sm' onclick='deleteStudent(\""+id+"\",\""+r.name.replace(/"/g,"")+"\")'>🗑</button></td></tr>";
@@ -1223,20 +1223,20 @@ function renderStudentsTable(){
     :"<tr><td colspan='6' style='text-align:center;color:var(--g400);padding:20px'>No students found</td></tr>";
 }
 function openEditModal(id){
-  var s=_allStudents.find(function(x){return(x._id||x.admNo||x.examNo)===id;});if(!s)return;
-  $("editExamNo").value=id;$("editName").value=s.name||"";$("editClass").value=s.class||(CLASSES.length?CLASSES[0]:"");
+  var s=_allStudents.find(function(x){return(x._id||x.admNo)===id;});if(!s)return;
+  $("editAdmNo").value=id;$("editName").value=s.name||"";$("editClass").value=s.class||(CLASSES.length?CLASSES[0]:"");
   $("editPhone").value=s.phone||"";
   hideStatus("editStatus");$("editModal").classList.remove("hidden");
 }
 function closeEditModal(){$("editModal").classList.add("hidden");}
 async function saveStudent(){
-  var id=$("editExamNo").value;
+  var id=$("editAdmNo").value;
   var newClass=$("editClass").value;
   var data={admNo:id,name:$("editName").value.trim(),class:newClass,phone:$("editPhone").value.trim()};
   if(!data.name||!data.phone){showStatus("editStatus","Name and phone required.","err");return;}
   try{
     // Get old class to check if class changed
-    var oldStudent=_allStudents.find(function(x){return(x._id||x.admNo||x.examNo)===id;});
+    var oldStudent=_allStudents.find(function(x){return(x._id||x.admNo)===id;});
     var oldClass=oldStudent?oldStudent.class:"";
     await fsSet("students",id,data);
     // If class changed — update class field in all result docs (rank/marks untouched)
@@ -1256,23 +1256,23 @@ async function saveStudent(){
     } else {
       showStatus("editStatus","✅ Saved!","ok");
     }
-    var idx=_allStudents.findIndex(function(x){return(x._id||x.admNo||x.examNo)===id;});
+    var idx=_allStudents.findIndex(function(x){return(x._id||x.admNo)===id;});
     if(idx>=0)_allStudents[idx]=Object.assign({},_allStudents[idx],data);
     renderStudentsTable();setTimeout(closeEditModal,1500);
   }catch(e){showStatus("editStatus","Error: "+e.message,"err");}
 }
-async function deleteStudent(examNo,name){
-  if(!confirm("Delete student "+name+" ("+examNo+")? This will also delete all their exam results. Cannot be undone."))return;
+async function deleteStudent(admNo,name){
+  if(!confirm("Delete student "+name+" ("+admNo+")? This will also delete all their exam results. Cannot be undone."))return;
   showStatus("viewStatus","Deleting "+name+" and their results...","info");
   try{
     // Delete student doc
-    await fsDelete("students",examNo);
+    await fsDelete("students",admNo);
     // Delete all result docs for this student
     var allRes=await fsGetAll("results");
-    var stuRes=allRes.filter(function(r){return String(r.admNo||r.examNo)===String(examNo)||r._id.startsWith(examNo+"_");});
+    var stuRes=allRes.filter(function(r){return String(r.admNo)===String(admNo)||r._id.startsWith(admNo+"_");});
     for(var i=0;i<stuRes.length;i++){try{await fsDelete("results",stuRes[i]._id);}catch(e){}}
     showStatus("viewStatus","Deleted "+name+" and "+stuRes.length+" result record(s).","ok");
-    _allStudents=_allStudents.filter(function(s){return(s._id||s.admNo||s.examNo)!==examNo;});
+    _allStudents=_allStudents.filter(function(s){return(s._id||s.admNo)!==admNo;});
     renderStudentsTable();loadStats();
   }catch(e){showStatus("viewStatus","Error: "+e.message,"err");}
 }
@@ -1470,7 +1470,7 @@ async function loadEnterMarks(){
     // Check existing marks using admNo_Subject
     var existingResults=[];
     for(var i=0;i<_emStudents.length;i++){
-      var admNo=_emStudents[i]._id||_emStudents[i].admNo||_emStudents[i].examNo;
+      var admNo=_emStudents[i]._id||_emStudents[i].admNo;
       var resultId=admNo+"_"+subj;
       var r=await fsGet("results",resultId);
       if(r&&r[exam]&&r[exam].mark!==undefined){existingResults.push(r);}
@@ -1511,14 +1511,14 @@ function renderEnterMarksTable(cls,subj,exam,maxM,existingData){
   var existMap={};
   if(existingData){
     existingData.forEach(function(r){
-      var en=String(r.examNo||r._id);
+      var en=String(r.admNo||r._id);
       if(r[exam]&&r[exam].mark!==undefined) existMap[en]=r[exam].mark;
     });
   }
 
   var tbody=$("emTable").querySelector("tbody");
   tbody.innerHTML=_emStudents.map(function(s,i){
-    var en=String(s._id||s.examNo);
+    var en=String(s._id||s.admNo);
     var existing=existMap[en];
     var val=existing===null?"AB":existing!==undefined?existing:"";
     return "<tr id='em-row-"+i+"'>"
@@ -1604,7 +1604,7 @@ async function saveEnterMarks(){
   var marksRows=_emStudents.map(function(s,i){
     var v=($("em-inp-"+i).value||"").trim().toUpperCase();
     var mark=(v===""||v==="AB")?null:Number(v);
-    return{examno:String(s._id||s.examNo),marks:mark};
+    return{admno:String(s._id||s.admNo),marks:mark};
   });
 
   // Rank calculation — same as CSV upload
@@ -1618,21 +1618,21 @@ async function saveEnterMarks(){
     if(i>0&&sorted[i].marks<sorted[i-1].marks) rank=i+1;
     sorted[i]._rank=rank;
   }
-  var rankMap={};sorted.forEach(function(r){rankMap[r.examno]=r._rank;});
+  var rankMap={};sorted.forEach(function(r){rankMap[r.admno]=r._rank;});
 
   showStatus("emStatus","Saving...","info");
   $("emProgWrap").classList.remove("hidden");
   var done=0,errors=0;
   for(var j=0;j<marksRows.length;j++){
     var r=marksRows[j];
-    var admNo=_emStudents[j]?(_emStudents[j]._id||_emStudents[j].admNo||_emStudents[j].examNo):r.examno;
+    var admNo=_emStudents[j]?(_emStudents[j]._id||_emStudents[j].admNo):r.admno;
     var resultId=admNo+"_"+subj;
     try{
       var existing=await fsGet("results",resultId);
-      var data=existing||{admNo:admNo,examNo:_emStudents[j]?(_emStudents[j].examNo||admNo):admNo,subject:subj,class:cls};
+      var data=existing||{admNo:admNo,subject:subj,class:cls};
       data[exam]={
         mark:r.marks,max:maxM,passMark:emPassMark,
-        rank:r.marks!==null?rankMap[r.examno]:null,
+        rank:r.marks!==null?rankMap[r.admno]:null,
         classSize:classSize,classAvg:classAvg,classAvgPct:classAvgPct
       };
       data.admNo=admNo;data.subject=subj;data.class=cls;
@@ -1661,13 +1661,13 @@ async function deleteMarksFiltered(){
     var students=[];
     if(cls){
       var allStu=await fsGetAll("students");
-      students=allStu.filter(function(s){return s.class===cls;}).map(function(s){return s._id||s.examNo;});
+      students=allStu.filter(function(s){return s.class===cls;}).map(function(s){return s._id||s.admNo;});
       if(!students.length){showStatus("delStatus","No students in class "+cls,"warn");return;}
     }
     var results=await fsGetAll("results");
     var matching=results.filter(function(r){
       if(r.subject!==subj)return false;
-      if(cls&&!students.includes(r.examNo))return false;
+      if(cls&&!students.includes(r.admNo))return false;
       return true;
     });
     if(!matching.length){showStatus("delStatus","No marks found for: "+desc,"warn");return;}
@@ -1677,7 +1677,7 @@ async function deleteMarksFiltered(){
       if(exam){
         if(doc[exam]!==undefined){delete doc[exam];await fsSet("results",id,doc);done++;}
       }else{
-        var clean={examNo:doc.examNo,subject:doc.subject};if(doc.class)clean.class=doc.class;
+        var clean={admNo:doc.admNo,subject:doc.subject};if(doc.class)clean.class=doc.class;
         await fsSet("results",id,clean);done++;
       }
     }
@@ -1694,17 +1694,17 @@ async function viewMarks(){
   showStatus("vmStatus","Loading...","info");
   try{
     var allStudents=await fsGetAll("students");
-    var stuMap={};allStudents.forEach(function(s){stuMap[s._id||s.examNo]=s.class||"";});
+    var stuMap={};allStudents.forEach(function(s){stuMap[s._id||s.admNo]=s.class||"";});
     var results=await fsGetAll("results");
     // Include rows where exam key exists (could be null=absent or a number)
     var matching=results.filter(function(r){
       if(r.subject!==subj)return false;
       if(!r[exam]||r[exam].mark===undefined)return false;
-      if(cls){var sc=r.class||stuMap[r.examNo]||"";if(sc!==cls)return false;}
+      if(cls){var sc=r.class||stuMap[r.admNo]||"";if(sc!==cls)return false;}
       return true;
     });
     matching.sort(function(a,b){
-      var ca=a.class||stuMap[a.examNo]||"",cb=b.class||stuMap[b.examNo]||"";
+      var ca=a.class||stuMap[a.admNo]||"",cb=b.class||stuMap[b.admNo]||"";
       if(ca!==cb)return ca.localeCompare(cb);
       // absent to bottom, then sort by rank
       var ra=a[exam].rank||9999,rb=b[exam].rank||9999;
@@ -1714,10 +1714,10 @@ async function viewMarks(){
     var tbody=$("vmTable").querySelector("tbody");
     tbody.innerHTML=matching.length
       ?matching.map(function(r){
-        var e=r[exam],sc=r.class||stuMap[r.examNo]||"--";
+        var e=r[exam],sc=r.class||stuMap[r.admNo]||"--";
         var isAb=e.mark===null;
         return"<tr>"
-          +"<td><strong>"+r.examNo+"</strong></td>"
+          +"<td><strong>"+r.admNo+"</strong></td>"
           +"<td><span class='badge badge-blue'>"+sc+"</span></td>"
           +"<td>"+(isAb?"<span class='badge badge-purple'>AB</span>":e.mark)+"</td>"
           +"<td>"+(isAb?"--":e.max)+"</td>"
@@ -1738,7 +1738,7 @@ async function viewMarks(){
 // ═══════════════════════════════════════════════════════
 var _emCurrentData=null;
 async function findStudentMark(){
-  var en=$("emExamNo").value.trim(),subj=$("emSubject").value,exam=$("emExam").value;
+  var en=$("emAdmNo").value.trim(),subj=$("emSubject").value,exam=$("emExam").value;
   if(!en){showStatus("emInfo","Enter an exam number.","err");return;}
   if(!exam){showStatus("emInfo","No exam selected.","err");return;}
   showStatus("emInfo","Looking up...","info");$("emEditWrap").classList.add("hidden");
@@ -1765,7 +1765,7 @@ async function saveEditedMark(){
     // All results for this subject+exam
     var subjResults=allResults.filter(function(r){return r.subject===_emCurrentData.subj&&r[_emCurrentData.exam]&&r[_emCurrentData.exam].mark!==undefined;});
     // Update target student
-    subjResults.forEach(function(r){if(r.examNo===_emCurrentData.en)r[_emCurrentData.exam].mark=newMark;});
+    subjResults.forEach(function(r){if(r.admNo===_emCurrentData.en)r[_emCurrentData.exam].mark=newMark;});
     var maxM=subjResults.length?subjResults[0][_emCurrentData.exam].max||100:100;
 
     // Recalculate per class
@@ -1807,7 +1807,7 @@ async function loadAnalytics(){
   try{
     var students=await fsGetAll("students");
     var results=await fsGetAll("results");
-    var resMap={};results.forEach(function(r){resMap[r.examNo+"_"+r.subject]=r;});
+    var resMap={};results.forEach(function(r){resMap[r.admNo+"_"+r.subject]=r;});
     hideStatus("anaStatus");
     var html="";
 
@@ -1846,7 +1846,7 @@ async function loadAnalytics(){
         html+='<tr><td><strong>'+ex+'</strong></td>';
         SUBJECTS.forEach(function(sub){
           var uploaded=students.filter(function(s){
-            var r=resMap[(s._id||s.examNo)+"_"+sub];
+            var r=resMap[(s._id||s.admNo)+"_"+sub];
             return r&&r[ex]&&r[ex].mark!==undefined;
           }).length;
           var total=students.length;
@@ -1873,7 +1873,7 @@ async function loadAnalytics(){
         html+='<tr><td><strong>'+ex+'</strong></td>';
         SUBJECTS.forEach(function(sub){
           var uploaded=students.filter(function(s){
-            var r=resMap[(s._id||s.examNo)+"_"+sub];
+            var r=resMap[(s._id||s.admNo)+"_"+sub];
             return r&&r[ex]&&r[ex].mark!==undefined;
           }).length;
           var total=students.length;
@@ -1899,13 +1899,13 @@ async function loadMissing(){
   try{
     var students=await fsGetAll("students");
     var results=await fsGetAll("results");
-    var resMap={};results.forEach(function(r){resMap[r.examNo+"_"+r.subject]=r;});
+    var resMap={};results.forEach(function(r){resMap[r.admNo+"_"+r.subject]=r;});
     var html='<div class="tscroll"><table class="ptable"><thead><tr><th>Admission No</th><th>Name</th><th>Class</th>';
     SUBJECTS.forEach(function(sub){EXAMS.forEach(function(ex){html+="<th>"+sub.slice(0,1)+"-"+ex+"</th>";});});
     html+="</tr></thead><tbody>";
     var issues=0;
     students.forEach(function(s){
-      var id=s._id||s.examNo,cells="",hasIssue=false;
+      var id=s._id||s.admNo,cells="",hasIssue=false;
       SUBJECTS.forEach(function(sub){
         EXAMS.forEach(function(ex){
           var r=resMap[id+"_"+sub];
@@ -1939,7 +1939,7 @@ async function loadDupes(){
     showStatus("dupesStatus",dupes.length+" duplicate phone number(s) found!","warn");
     var html='<div class="tscroll"><table class="ptable"><thead><tr><th>Phone</th><th>Students Sharing</th></tr></thead><tbody>';
     dupes.forEach(function(ph){
-      html+="<tr><td><strong>"+ph+"</strong></td><td>"+phoneMap[ph].map(function(s){return(s._id||s.examNo)+" – "+s.name+" ("+s.class+")";}).join("<br>")+"</td></tr>";
+      html+="<tr><td><strong>"+ph+"</strong></td><td>"+phoneMap[ph].map(function(s){return(s._id||s.admNo)+" – "+s.name+" ("+s.class+")";}).join("<br>")+"</td></tr>";
     });
     html+="</tbody></table></div>";
     $("dupesContent").innerHTML=html;
@@ -1950,7 +1950,7 @@ async function loadDupes(){
 // STUDENT PREVIEW
 // ═══════════════════════════════════════════════════════
 async function loadPreview(){
-  var en=$("prevExamNo").value.trim();
+  var en=$("prevAdmNo").value.trim();
   if(!en){showStatus("previewStatus","Enter an exam number.","err");return;}
   showStatus("previewStatus","Loading...","info");
   try{
@@ -2007,7 +2007,7 @@ async function exportMarks(){
       .map(function(r){
         var e=r[exam],isAb=e.mark===null;
         var ps=isAb?null:passStatus(e.mark,exam);
-        return{ExamNo:r.examNo,Marks:isAb?"AB":e.mark,Max:isAb?"":e.max,Percent:isAb?"":Math.round(e.mark/e.max*100),Result:isAb?"AB":ps===null?"--":ps==="pass"?"Pass":"Fail",Rank:isAb?"AB":(e.rank||""),ClassSize:e.classSize||"",ClassAvg:e.classAvg||""};
+        return{AdmNo:r.admNo,Marks:isAb?"AB":e.mark,Max:isAb?"":e.max,Percent:isAb?"":Math.round(e.mark/e.max*100),Result:isAb?"AB":ps===null?"--":ps==="pass"?"Pass":"Fail",Rank:isAb?"AB":(e.rank||""),ClassSize:e.classSize||"",ClassAvg:e.classAvg||""};
       });
     if(!rows.length){showStatus("exportStatus","No marks for "+subj+" – "+exam,"warn");return;}
     downloadCSV("velammal_"+subj+"_"+exam+".csv",rows,["AdmNo","Marks","Max","Percent","Result","Rank","ClassSize","ClassAvg"]);
@@ -2020,11 +2020,11 @@ async function exportFullReport(){
   try{
     var students=await fsGetAll("students");
     var results=await fsGetAll("results");
-    var resMap={};results.forEach(function(r){resMap[r.examNo+"_"+r.subject]=r;});
+    var resMap={};results.forEach(function(r){resMap[r.admNo+"_"+r.subject]=r;});
     var headers=["AdmNo","Name","Class","Phone"];
     SUBJECTS.forEach(function(sub){EXAMS.forEach(function(ex){headers.push(sub+"_"+ex+"_Marks");headers.push(sub+"_"+ex+"_Pct");headers.push(sub+"_"+ex+"_Result");});});
     var rows=students.map(function(s){
-      var id=s._id||s.admNo||s.examNo,row={AdmNo:id,Name:s.name,Class:s.class,Phone:s.phone};
+      var id=s._id||s.admNo,row={AdmNo:id,Name:s.name,Class:s.class,Phone:s.phone};
       SUBJECTS.forEach(function(sub){
         var r=resMap[id+"_"+sub];
         EXAMS.forEach(function(ex){
@@ -2113,7 +2113,7 @@ async function loadOverview(){
             +'<th>Phone</th>'
           +'</tr></thead><tbody>';
         stuList.forEach(function(s,i){
-          var id=s._id||s.examNo;
+          var id=s._id||s.admNo;
           html+='<tr>'
             +'<td style="color:var(--g400);font-size:.76rem">'+(i+1)+'</td>'
             +'<td><strong>'+id+'</strong></td>'
@@ -2302,7 +2302,7 @@ async function nukeEverything(){
     var results=await fsGetAll("results");
     showStatus("nukeStatus","Deleting "+students.length+" students and "+results.length+" result records...","info");
     for(var i=0;i<results.length;i++){try{await fsDelete("results",results[i]._id);}catch(e){}}
-    for(var j=0;j<students.length;j++){try{await fsDelete("students",students[j]._id||students[j].examNo);}catch(e){}}
+    for(var j=0;j<students.length;j++){try{await fsDelete("students",students[j]._id||students[j].admNo);}catch(e){}}
     showStatus("nukeStatus","✅ Done! Deleted "+students.length+" students and "+results.length+" result records. Settings preserved.","ok");
     btn.textContent="✅ Done";
     loadStats();
