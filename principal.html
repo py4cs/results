@@ -31,34 +31,26 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--g800);mi
 .hidden{display:none!important;}
 
 /* ── LOGIN ── */
-.lp{min-height:100vh;display:flex;background:var(--navy);position:relative;overflow:hidden;}
-.orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:.15;pointer-events:none;}
-.orb1{width:500px;height:500px;background:var(--gold);top:-120px;right:-80px;}
-.orb2{width:380px;height:380px;background:var(--blue);bottom:-100px;left:-60px;}
-.ll{flex:1;display:flex;flex-direction:column;justify-content:center;padding:60px;position:relative;z-index:1;}
-.ls{display:flex;align-items:center;gap:12px;margin-bottom:48px;}
-.ls-icon{width:50px;height:50px;background:linear-gradient(135deg,var(--gold),var(--gold-lt));border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 8px 24px rgba(212,160,23,.4);}
-.ls-name{color:#fff;font-size:.82rem;font-weight:600;opacity:.75;letter-spacing:.5px;text-transform:uppercase;}
-.lh h1{font-family:'DM Serif Display',serif;color:#fff;font-size:3.1rem;line-height:1.15;margin-bottom:14px;}
-.lh h1 em{color:var(--gold-lt);font-style:italic;}
-.lh p{color:rgba(255,255,255,.5);font-size:.95rem;line-height:1.7;max-width:400px;}
-.lstats{display:flex;gap:32px;margin-top:48px;}
-.lstat .num{font-family:'DM Serif Display',serif;font-size:1.9rem;color:var(--gold-lt);}
-.lstat .lbl{font-size:.68rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.8px;margin-top:2px;}
-.lr{width:460px;display:flex;align-items:center;justify-content:center;padding:40px;position:relative;z-index:1;}
-.lc{background:rgba(255,255,255,.05);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:22px;padding:42px 38px;width:100%;}
-.lc-title{font-family:'DM Serif Display',serif;font-size:1.75rem;color:#fff;margin-bottom:5px;}
-.lc-sub{font-size:.82rem;color:rgba(255,255,255,.4);margin-bottom:30px;}
-.lf{margin-bottom:18px;}
-.lf label{display:block;font-size:.72rem;font-weight:600;color:rgba(255,255,255,.55);margin-bottom:7px;letter-spacing:.3px;text-transform:uppercase;}
-.lf input{width:100%;padding:12px 15px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.11);border-radius:9px;font-size:.93rem;font-family:'Inter',sans-serif;color:#fff;transition:.2s;}
-.lf input::placeholder{color:rgba(255,255,255,.22);}
-.lf input:focus{outline:none;border-color:#e8c547;background:rgba(255,255,255,.12);}
-.lbtn{width:100%;padding:13px;background:linear-gradient(135deg,var(--gold),var(--gold-lt));color:var(--navy);border:none;border-radius:9px;font-size:.92rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;margin-top:6px;transition:.2s;box-shadow:0 8px 24px rgba(212,160,23,.3);}
-.lbtn:hover{transform:translateY(-1px);box-shadow:0 12px 28px rgba(212,160,23,.4);}
-.lbtn:disabled{opacity:.6;cursor:not-allowed;transform:none;}
-.lerr{background:rgba(220,38,38,.15);border:1px solid rgba(220,38,38,.3);color:#fca5a5;padding:11px 15px;border-radius:9px;font-size:.82rem;margin-top:10px;display:none;}
-@media(max-width:900px){.ll{display:none;}.lr{width:100%;}.lp{justify-content:center;}}
+.lp{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--navy);position:relative;overflow:hidden;}
+.lp-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;}
+.lp-glow1{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(212,160,23,.18) 0%,transparent 70%);top:-200px;right:-150px;pointer-events:none;}
+.lp-glow2{position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(37,99,235,.15) 0%,transparent 70%);bottom:-100px;left:-100px;pointer-events:none;}
+.lbox{position:relative;z-index:1;width:100%;max-width:400px;margin:0 auto;padding:24px;}
+.lbox-brand{text-align:center;margin-bottom:36px;}
+.lbox-logo{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;background:linear-gradient(135deg,var(--gold),var(--gold-lt));border-radius:16px;font-size:1.6rem;box-shadow:0 8px 32px rgba(212,160,23,.35);margin-bottom:16px;}
+.lbox-school{color:#fff;font-family:'DM Serif Display',serif;font-size:1.5rem;line-height:1.2;margin-bottom:4px;}
+.lbox-tagline{color:rgba(255,255,255,.35);font-size:.72rem;letter-spacing:1.5px;text-transform:uppercase;}
+.lcard{background:rgba(255,255,255,.06);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:32px 28px;}
+.lcard-title{font-size:.78rem;font-weight:600;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:22px;text-align:center;}
+.lf{margin-bottom:16px;}
+.lf label{display:block;font-size:.7rem;font-weight:600;color:rgba(255,255,255,.5);margin-bottom:6px;letter-spacing:.4px;text-transform:uppercase;}
+.lf input{width:100%;padding:11px 14px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.1);border-radius:9px;font-size:.9rem;font-family:'Inter',sans-serif;color:#fff;transition:.2s;outline:none;}
+.lf input::placeholder{color:rgba(255,255,255,.2);}
+.lf input:focus{border-color:rgba(212,160,23,.7);background:rgba(255,255,255,.1);box-shadow:0 0 0 3px rgba(212,160,23,.12);}
+.lbtn{width:100%;padding:12px;background:linear-gradient(135deg,var(--gold) 0%,#f0c040 100%);color:var(--navy);border:none;border-radius:9px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;margin-top:6px;letter-spacing:.3px;transition:.18s;}
+.lbtn:hover{opacity:.92;transform:translateY(-1px);}
+.lbtn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.lerr{background:rgba(220,38,38,.15);border:1px solid rgba(220,38,38,.3);color:#fca5a5;padding:10px 14px;border-radius:8px;font-size:.8rem;margin-top:10px;display:none;text-align:center;}
 
 /* ── APP ── */
 .app{display:none;min-height:100vh;flex-direction:row;}
@@ -281,33 +273,20 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--g800);mi
 
 <!-- LOGIN -->
 <div id="loginPage" class="lp">
-  <div class="orb orb1"></div>
-  <div class="orb orb2"></div>
-  <div class="ll">
-    <div class="ls">
-      <div class="ls-icon">🏫</div>
-      <div>
-        <div class="ls-name">Velammal Vidyalaya Alapakkam</div>
-        <div style="color:rgba(255,255,255,.22);font-size:.58rem;letter-spacing:.5px;margin-top:1px">RESULTS PORTAL 2025-26</div>
-      </div>
+  <div class="lp-grid"></div>
+  <div class="lp-glow1"></div>
+  <div class="lp-glow2"></div>
+  <div class="lbox">
+    <div class="lbox-brand">
+      <div class="lbox-logo">🏫</div>
+      <div class="lbox-school">Velammal Vidyalaya</div>
+      <div class="lbox-tagline">Principal Dashboard · 2025–26</div>
     </div>
-    <div class="lh">
-      <h1>Academic Intelligence<br>for <em>School Leaders</em></h1>
-      <p>Real-time analytics for teacher performance, class outcomes, subject trends and student progress.</p>
-    </div>
-    <div class="lstats">
-      <div class="lstat"><div class="num">350+</div><div class="lbl">Students</div></div>
-      <div class="lstat"><div class="num">22+</div><div class="lbl">Exams</div></div>
-      <div class="lstat"><div class="num">8+</div><div class="lbl">Classes</div></div>
-    </div>
-  </div>
-  <div class="lr">
-    <div class="lc">
-      <div class="lc-title">Welcome back</div>
-      <div class="lc-sub">Sign in with your Principal credentials</div>
+    <div class="lcard">
+      <div class="lcard-title">Sign in to continue</div>
       <div class="lf"><label>Principal ID</label><input type="text" id="pId" placeholder="e.g. P001" autocomplete="username"></div>
-      <div class="lf"><label>Password</label><input type="password" id="pPass" placeholder="Enter password" autocomplete="current-password"></div>
-      <button class="lbtn" id="loginBtn" onclick="doLogin()">Sign In →</button>
+      <div class="lf"><label>Password</label><input type="password" id="pPass" placeholder="••••••••" autocomplete="current-password"></div>
+      <button class="lbtn" id="loginBtn" type="button" onclick="doLogin()">Sign In</button>
       <div class="lerr" id="loginErr"></div>
     </div>
   </div>
@@ -527,9 +506,14 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--g800);mi
 var PROJECT='velammal-results',API_KEY='AIzaSyC79jcB_6TgJIG4ngXmPDY6Zjmg8PC0-pU';
 var BASE='https://firestore.googleapis.com/v1/projects/'+PROJECT+'/databases/(default)/documents';
 var P_DOMAIN='@velammal.com';
-var _fbApp=firebase.initializeApp({apiKey:API_KEY,authDomain:'velammal-results.firebaseapp.com',projectId:PROJECT},'principal');
+var _fbApp;
+try{
+  _fbApp=firebase.app('principal');
+}catch(e){
+  _fbApp=firebase.initializeApp({apiKey:API_KEY,authDomain:'velammal-results.firebaseapp.com',projectId:PROJECT},'principal');
+}
 var _fbAuth=firebase.auth(_fbApp);
-_fbAuth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+_fbAuth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(function(){});
 
 async function fsGet(col,id){var r=await fetch(BASE+'/'+col+'/'+encodeURIComponent(id)+'?key='+API_KEY);if(!r.ok)return null;return pd(await r.json());}
 async function fsGetAll(col){var url=BASE+'/'+col+'?key='+API_KEY+'&pageSize=500',docs=[];while(url){var r=await fetch(url);if(!r.ok)break;var data=await r.json();(data.documents||[]).forEach(function(d){docs.push(Object.assign({_id:d.name.split('/').pop()},pd(d)));});url=data.nextPageToken?BASE+'/'+col+'?key='+API_KEY+'&pageSize=500&pageToken='+data.nextPageToken:null;}return docs;}
@@ -564,7 +548,7 @@ async function doLogin(){
     var p=((cfg&&cfg.principals)||[]).find(function(x){return x.id===id;});
     if(!p){await _fbAuth.signOut();showLE('Principal not found.');btn.disabled=false;btn.textContent='Sign In →';return;}
     _curP=p;_cfg=cfg;startApp(cfg);
-  }catch(e){showLE('Login failed.');}
+  }catch(e){showLE(e.code==='auth/wrong-password'||e.code==='auth/user-not-found'?'Invalid ID or password.':'Login failed: '+e.message);}
   btn.disabled=false;btn.textContent='Sign In →';
 }
 function showLE(m){$('loginErr').textContent=m;$('loginErr').style.display='block';}

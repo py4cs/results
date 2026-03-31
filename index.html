@@ -145,13 +145,32 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
 .ins-card{cursor:default;}
 .ins-card[data-scroll]{cursor:pointer;}
 .ins-card[data-scroll]:hover{opacity:.88;transform:translateY(-1px);transition:.15s;}
-/* Student preview in teacher view */
-.sp-overlay{position:fixed;inset:0;background:rgba(10,31,110,.55);z-index:200;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:16px;}
-.sp-modal{background:var(--cream);border-radius:20px;width:100%;max-width:780px;min-height:200px;box-shadow:var(--sh-lg);position:relative;padding-bottom:24px;}
-.sp-topbar{background:linear-gradient(135deg,var(--blue),var(--blue-lt));border-radius:20px 20px 0 0;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;}
-.sp-topbar span{color:#fff;font-size:.88rem;font-weight:700;}
-.sp-close{background:rgba(255,255,255,.2);border:none;color:#fff;font-size:1.1rem;width:30px;height:30px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-.sp-body{padding:0 16px;}
+/* ── Student Slide Panel ── */
+.sp-backdrop{position:fixed;inset:0;background:rgba(10,31,110,.45);z-index:200;opacity:0;transition:opacity .25s;pointer-events:none;}
+.sp-backdrop.open{opacity:1;pointer-events:auto;}
+.sp-panel{position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:22px 22px 0 0;z-index:201;max-height:90vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:0 -8px 32px rgba(10,31,110,.18);}
+.sp-panel.open{transform:translateY(0);}
+@media(min-width:700px){
+  .sp-panel{left:auto;right:0;top:0;bottom:0;width:420px;max-height:100vh;border-radius:0;transform:translateX(100%);box-shadow:-8px 0 32px rgba(10,31,110,.14);}
+  .sp-panel.open{transform:translateX(0);}
+}
+.sp-handle{width:36px;height:4px;background:var(--g200);border-radius:4px;margin:10px auto 0;flex-shrink:0;}
+@media(min-width:700px){.sp-handle{display:none;}}
+.sp-head{padding:14px 16px 12px;border-bottom:1px solid var(--g100);flex-shrink:0;}
+.sp-head-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+.sp-av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue-lt));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem;color:#fff;flex-shrink:0;}
+.sp-info{flex:1;min-width:0;}
+.sp-name{font-size:.94rem;font-weight:700;color:var(--g800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sp-meta{font-size:.72rem;color:var(--g500);margin-top:2px;}
+.sp-phone{display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:4px 10px;background:var(--green-lt);border:1px solid #bbf7d0;border-radius:20px;font-size:.75rem;font-weight:700;color:var(--green);text-decoration:none;}
+.sp-phone:hover{background:#bbf7d0;}
+.sp-close{background:var(--g100);border:none;color:var(--g600);font-size:1rem;width:30px;height:30px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sp-pills{display:flex;gap:6px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--g100);flex-shrink:0;}
+.sp-pill{padding:5px 14px;border-radius:20px;border:1.5px solid var(--blue-border);background:#fff;color:var(--blue);font-size:.76rem;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;}
+.sp-pill.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+.sp-body{flex:1;overflow-y:auto;padding:14px 16px 24px;-webkit-overflow-scrolling:touch;}
+.sp-loading{display:flex;align-items:center;justify-content:center;padding:32px;gap:10px;color:var(--g400);font-size:.84rem;}
+.sp-spinner{width:20px;height:20px;border:2px solid var(--g200);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;}
 /* Class compare */
 .cc-bar{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
 .cc-label{font-size:.78rem;font-weight:700;width:36px;flex-shrink:0;}
@@ -370,15 +389,23 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
   </div>
 </div>
 
-<!-- STUDENT PREVIEW OVERLAY -->
-<div id="spOverlay" class="sp-overlay hidden">
-  <div class="sp-modal">
-    <div class="sp-topbar">
-      <span id="spTitle">Student View</span>
+<!-- STUDENT SLIDE PANEL -->
+<div class="sp-backdrop" id="spBackdrop" onclick="closeStudentPreview()"></div>
+<div class="sp-panel" id="spPanel">
+  <div class="sp-handle"></div>
+  <div class="sp-head">
+    <div class="sp-head-top">
+      <div class="sp-av" id="spAv">S</div>
+      <div class="sp-info">
+        <div class="sp-name" id="spName">Student</div>
+        <div class="sp-meta" id="spMeta"></div>
+        <a class="sp-phone hidden" id="spPhone" href="#"></a>
+      </div>
       <button class="sp-close" onclick="closeStudentPreview()">✕</button>
     </div>
-    <div class="sp-body" id="spBody"></div>
   </div>
+  <div class="sp-pills" id="spPills"></div>
+  <div class="sp-body" id="spBody"><div class="no-data">Tap a subject to load marks</div></div>
 </div>
 
 <script>
@@ -1145,23 +1172,21 @@ function renderTDash(){
   var ca=allP.length?Math.round(avg(allP)):0;
   // Pass threshold — use passMark from result docs (per subject per exam)
   // Build per-student pass/fail from their actual result docs
-  var passThreshold=40; // fallback default
-  // Try to get pass threshold from first result doc that has passMark
-  var foundPass=false;
-  for(var pi=0;pi<sd.length&&!foundPass;pi++){
-    var admNoP=sd[pi]._id||sd[pi].admNo||"";
-    var rP=results[admNoP];
-    if(rP){
-      for(var ei=0;ei<activeEx.length&&!foundPass;ei++){
-        var eP=rP[activeEx[ei].name];
-        if(eP&&eP.passMark!=null){
-          passThreshold=Math.round(eP.passMark/activeEx[ei].max*100);
-          foundPass=true;
-        }
-      }
-    }
-  }
-  var pass=allP.filter(function(p){return p>=passThreshold;}).length;
+  // Build per-student overall pass/fail using per-exam passMark from result docs
+  // A student passes if their avg% >= 40 (fallback) OR if majority of exams they passed
+  var passThreshold=40; // used only for at-risk table fallback
+  // For summary card: count students who passed every exam they wrote
+  var pass=sdata.filter(function(s){
+    var wrote=false;var allPassed=true;
+    activeEx.forEach(function(ex,ei){
+      var m=s.marks[ei];var pm=s.passMark[ei];
+      if(m===null||m===undefined) return; // absent — skip
+      wrote=true;
+      if(pm!=null){ if(m<pm) allPassed=false; }
+      else { if(pct(m,ex.max)<40) allPassed=false; }
+    });
+    return wrote&&allPassed;
+  }).length;
   var withResults=sdata.filter(function(s){return s.marks.some(function(m){return m!==null&&m!==undefined;});}).length;
   // DRT avg across all DRTs
   var drtEx2=activeEx.filter(function(e){return e.type==='DRT';});
@@ -1262,13 +1287,20 @@ function renderTDash(){
 
   // ── Exam Summary tables (DRT + Main split) ────────────────────────────────
   function buildExamSumRow(ex,i){
-    var written=sdata.map(function(s){return s.marks[i];}).filter(function(m){return m!==null&&m!==undefined;});
-    var abCount=sdata.length-written.length;
+    // written = students who have a numeric mark (not null/undefined) for this exam
+    var writtenData=sdata.filter(function(s){return s.marks[i]!==null&&s.marks[i]!==undefined;});
+    var written=writtenData.map(function(s){return s.marks[i];});
+    var abCount=sdata.length-writtenData.length;
     if(!written.length) return '<tr><td style="white-space:nowrap"><strong>'+ex.name+'</strong></td><td colspan="5" style="color:var(--g400);font-size:.78rem">No data yet</td></tr>';
     var classAvgRaw=Math.round(written.reduce(function(s,m){return s+m;},0)/written.length*10)/10;
     var avgPct=Math.round(avg(written.map(function(m){return pct(m,ex.max);})));
-    var passCount=hasPass(ex.name)?written.filter(function(m){return isPass(m,ex.name);}).length:written.length;
-    var failCount=hasPass(ex.name)?written.filter(function(m){return !isPass(m,ex.name);}).length:0;
+    // Read passMark from result docs (sdata.passMark[i]) — NOT from EXAM_CFG which is empty
+    var pm=null;
+    for(var pi=0;pi<sdata.length;pi++){
+      if(sdata[pi].passMark&&sdata[pi].passMark[i]!=null){pm=sdata[pi].passMark[i];break;}
+    }
+    var passCount=pm!=null?writtenData.filter(function(s){return s.marks[i]>=pm;}).length:writtenData.length;
+    var failCount=pm!=null?writtenData.filter(function(s){return s.marks[i]<pm;}).length:0;
     var col=avgPct>=60?'var(--green)':avgPct>=40?'var(--org)':'var(--red)';
     return '<tr>'
       +'<td style="white-space:nowrap"><strong>'+ex.name+'</strong></td>'
@@ -1431,20 +1463,42 @@ function renderClassComparison(teacher, students, results, activeEx){
   if(!classes||classes.length<2){ $("classCompSection").classList.add("hidden"); return; }
   $("classCompSection").classList.remove("hidden");
 
-  // Build per-class sdata
+  // Build union exam list from ALL classes, not just currently selected class
+  var unionExamNames=[];
+  EXAMS.forEach(function(col){
+    var anyHasIt=students.some(function(s){
+      var admNo=s._id||s.admNo||"";
+      var r=results[admNo];
+      return r&&r[col]&&r[col].mark!=null;
+    });
+    if(anyHasIt&&unionExamNames.indexOf(col)<0) unionExamNames.push(col);
+  });
+  var unionEx=unionExamNames.map(function(col){
+    var maxVal=100;
+    for(var si=0;si<students.length;si++){
+      var admNo=students[si]._id||students[si].admNo||"";
+      var r=results[admNo];
+      if(r&&r[col]&&r[col].max){maxVal=r[col].max;break;}
+    }
+    return {name:col,type:examCategory(col),max:maxVal};
+  });
+
+  // Build per-class sdata using unionEx (not just activeEx of selected class)
   var classData={};
   classes.forEach(function(cls){
     var sd=students.filter(function(s){return s.class===cls;});
     classData[cls]=sd.map(function(s){
       var admNo=s._id||s.admNo||"";
       var r=results[admNo];
-      return Object.assign({},s,{marks:activeEx.map(function(ex){
+      return Object.assign({},s,{marks:unionEx.map(function(ex){
         if(!r||!r[ex.name]||r[ex.name].mark===undefined) return null;
         var m=r[ex.name].mark;
         return (m===null||m===undefined)?null:Number(m);
       })});
     });
   });
+  // Use unionEx for all comparison charts below
+  var activeEx=unionEx;
 
   // Avg per exam per class
   var series=classes.map(function(cls){
@@ -1569,6 +1623,8 @@ function renderClassInsights(sdata, activeEx, passThreshold){
     :"<div class='no-data' style='min-height:60px'>No exam data</div>";
 
   // ── Absent Pattern ─────────────────────────────────────────────────────────
+  // null = explicitly absent (mark stored as null in Firestore)
+  // undefined/missing = result not yet uploaded — do NOT count as absent
   var absentees=sdata.map(function(s){
     var abCount=activeEx.filter(function(ex,i){return s.marks[i]===null;}).length;
     return {s:s, abCount:abCount};
@@ -1593,14 +1649,16 @@ function searchStudents(){
   if(!_cur||_cur.type!=='teacher') return;
   var q=$('stuSearchInput').value.trim().toLowerCase();
   if(!q){ $('stuSearchResults').innerHTML=''; return; }
+  // Search across ALL teacher's students (all classes) — show class label for clarity
   var res=_cur.students.filter(function(s){
     var admNo=String(s.admNo||s._id||"");
     return (s.name&&s.name.toLowerCase().indexOf(q)>=0)||(admNo.toLowerCase().indexOf(q)>=0);
-  }).slice(0,10);
+  }).slice(0,15);
   $('stuSearchResults').innerHTML=res.length
     ?'<div class="stu-list">'+res.map(function(s){
       var admNo=s.admNo||s._id||"";
-      return '<div class="stu-item" data-en="'+admNo+'"><strong>'+s.name+'</strong><span>Adm: '+admNo+' · Class '+s.class+(s.phone?' · 📞 '+s.phone:'')+'</span></div>';
+      var phoneHtml=s.phone?(' · <a href="tel:+91'+s.phone+'" onclick="event.stopPropagation()" style="color:var(--green);font-weight:700;text-decoration:none">📞 +91'+s.phone+'</a>'):'';
+      return '<div class="stu-item" data-en="'+admNo+'"><strong>'+s.name+'</strong><span>'+admNo+' · Class '+s.class+phoneHtml+'</span></div>';
     }).join('')+'</div>'
     :"<div class='no-data' style='min-height:50px'>No students found</div>";
   setTimeout(function(){
@@ -1610,145 +1668,217 @@ function searchStudents(){
   },30);
 }
 
+// ── Slide panel state ──
+window._spCache={};  // keyed by admNo_subject → result doc
+
 function openStudentPreview(admNo){
   if(!_cur||_cur.type!=='teacher') return;
   var student=_cur.students.find(function(s){return String(s._id||s.admNo)===String(admNo)||String(s.id)===String(admNo);});
-  if(!student){ alert('Student not found'); return; }
+  if(!student){ return; }
 
-  var admNo=student._id||student.admNo||"";
-  var resDoc=_cur.results[admNo]||null;
+  var an=String(student._id||student.admNo||"");
 
-  // Build results map keyed by subject — teacher only has their own subject
-  var results={};
-  if(resDoc){
-    var subj=resDoc.subject||_cur.teacher.subject;
-    results[subj]=resDoc;
-  }
-  var subjs=Object.keys(results);
+  // Header
+  $('spAv').textContent=(student.name||'?')[0].toUpperCase();
+  $('spName').textContent=student.name||'';
+  $('spMeta').textContent=an+' · Class '+student.class;
 
-  $('spTitle').textContent=student.name+' · Class '+student.class+(admNo?' · '+admNo:'');
-  var spBody=$('spBody');
-  spBody.innerHTML='';
-  if(!subjs.length){
-    spBody.innerHTML="<div class='no-data' style='padding:40px'>No results uploaded for this student yet.</div>";
+  // Phone — clickable tel link with +91
+  var phoneEl=$('spPhone');
+  if(student.phone){
+    phoneEl.href='tel:+91'+student.phone;
+    phoneEl.innerHTML='📞 +91 '+student.phone;
+    phoneEl.classList.remove('hidden');
   } else {
-    var pillHtml='<div style="display:flex;gap:8px;flex-wrap:wrap;padding:14px 0 6px">'
-      +subjs.map(function(s,i){
-        return '<button class="sf-pill'+(i===0?' active':'')+'" data-subj="'+s+'">'+s+'</button>';
-      }).join('')+'</div>';
-    spBody.innerHTML=pillHtml+'<div id="spSubjContent"></div>';
-    window._spData={student:student,results:results};
-    spBody.querySelectorAll('.sf-pill').forEach(function(btn){
-      btn.addEventListener('click',function(){
-        spBody.querySelectorAll('.sf-pill').forEach(function(b){b.classList.remove('active');});
-        btn.classList.add('active');
-        previewSubj(btn.getAttribute('data-subj'));
-      });
-    });
-    previewSubj(subjs[0]);
+    phoneEl.classList.add('hidden');
   }
-  $('spOverlay').classList.remove('hidden');
+
+  // Build subject pills — all configured subjects
+  var allSubs=SUBJECTS.length?SUBJECTS:(_cur.teacher.subject?[_cur.teacher.subject]:[]);
+  $('spPills').innerHTML=allSubs.map(function(sub,i){
+    return '<button class="sp-pill" data-sub="'+sub+'" onclick="spLoadSubject(''+an+'',''+sub+'',this)">'+sub+'</button>';
+  }).join('');
+
+  $('spBody').innerHTML='<div class="no-data" style="padding:32px">Tap a subject above to load marks</div>';
+
+  // Auto-load teacher's own subject first
+  var ownSub=_cur.teacher.subject;
+  if(ownSub&&allSubs.indexOf(ownSub)>=0){
+    var ownBtn=$('spPills').querySelector('[data-sub="'+ownSub+'"]');
+    if(ownBtn) spLoadSubject(an, ownSub, ownBtn);
+  }
+
+  // Open panel
+  $('spPanel').classList.add('open');
+  $('spBackdrop').classList.add('open');
   document.body.style.overflow='hidden';
 }
 
-function previewSubj(subj){
-  if(!window._spData) return;
-  var d=window._spData;
-  var res=d.results[subj];
-  var spDiv=$('spSubjContent');
-  if(!res){ spDiv.innerHTML="<div class='no-data'>No results for "+subj+"</div>"; return; }
+async function spLoadSubject(admNo, subject, btn){
+  // Update active pill
+  document.querySelectorAll('.sp-pill').forEach(function(b){b.classList.remove('active');});
+  if(btn) btn.classList.add('active');
+
+  // Show spinner
+  $('spBody').innerHTML='<div class="sp-loading"><div class="sp-spinner"></div>Loading '+subject+'...</div>';
+
+  var cacheKey=admNo+'_'+subject;
+
+  // Use cached result if available
+  var res=window._spCache[cacheKey];
+  if(!res){
+    // Check if already in teacher's loaded results
+    var fromTeacher=_cur.results[admNo];
+    if(fromTeacher&&fromTeacher._subject===subject){
+      res=fromTeacher;
+    } else {
+      // Fetch from Firestore on demand
+      try{
+        var fetched=await fsGet('results', admNo+'_'+subject);
+        res=fetched||null;
+      }catch(e){
+        $('spBody').innerHTML='<div class="no-data">Failed to load '+subject+'. Check connection.</div>';
+        return;
+      }
+    }
+    if(res) window._spCache[cacheKey]=res;
+  }
+
+  if(!res||!res.subject){
+    $('spBody').innerHTML='<div class="no-data" style="padding:32px">No marks uploaded for '+subject+' yet.</div>';
+    return;
+  }
+
+  renderSpSubject(res, subject);
+}
+
+function renderSpSubject(res, subject){
+  var student=null;
+  // Find student for context
+  if(_cur&&_cur.students){
+    var admNo=res.admNo||res._admNo||"";
+    student=_cur.students.find(function(s){return String(s._id||s.admNo)===String(admNo);});
+  }
 
   var exams=EXAMS.map(function(col){
     var e=res[col]; if(!e) return null;
     var m=e.mark!==undefined?e.mark:null;
     var mx=e.max||examMax(col);
     var cat=examCategory(col);
-    return {name:col,type:cat,max:mx,score:m,pct:m!=null?pct(m,mx):null,
-      rank:e.rank||null,classSize:e.classSize||0,classAvg:e.classAvg||0,
-      classAvgPct:e.classAvgPct||0,absent:m===null};
+    return {name:col,type:cat,max:mx,score:m,
+      pctVal:m!=null?((m/mx*100).toFixed(1)):null,
+      rank:e.rank||null,classSize:e.classSize||0,
+      classAvg:e.classAvg||0,classAvgPct:e.classAvgPct||0,
+      passMark:e.passMark!=null?e.passMark:null,
+      absent:m===null};
   }).filter(Boolean);
 
-  var taken=exams.filter(function(e){return !e.absent;});
-  var oa=taken.length?Math.round(avg(taken.map(function(e){return e.pct;}))):0;
+  var taken=exams.filter(function(e){return !e.absent&&e.score!==null&&e.score!==undefined;});
+  var oa=taken.length?Math.round(taken.reduce(function(s,e){return s+parseFloat(e.pctVal||0);},0)/taken.length):0;
 
-  var html='<div style="padding-bottom:24px">';
-  // Mini hero
-  html+='<div style="background:linear-gradient(135deg,var(--blue),var(--blue-lt));border-radius:12px;padding:14px;margin-bottom:14px">'
-    +'<div style="color:#fff;font-size:.9rem;font-weight:700">'+d.student.name+' — '+subj+'</div>'
-    +'<div style="color:rgba(255,255,255,.7);font-size:.78rem;margin-top:2px">Overall avg: '+oa+'% · Class '+d.student.class+'</div></div>';
-
-  // Marks table
-  html+='<div style="overflow-x:auto"><table class="mtable">'
-    +'<thead><tr><th>Exam</th><th>Max</th><th>Marks</th><th>%</th><th>Class Avg</th><th>Rank</th></tr></thead><tbody>';
-  exams.forEach(function(e){
-    var has=!e.absent;
-    var rk=e.rank?('#'+e.rank+' of '+e.classSize):(e.absent?'AB':'--');
-    var cc=e.type==='DRT'?'ch-drt':e.type==='PT'?'ch-pt':e.type==='Term'?'ch-term':'ch-pre';
-    html+='<tr>'
-      +'<td><strong>'+e.name+'</strong> <span class="chip '+cc+'">'+e.type+'</span></td>'
-      +'<td>'+e.max+'</td>'
-      +'<td>'+(e.absent?'<span style="color:var(--org);font-weight:700">AB</span>':e.score)+'</td>'
-      +'<td>'+(has&&e.pct!=null?e.pct+'%':'--')+'</td>'
-      +'<td>'+(has?e.classAvg+' ('+e.classAvgPct+'%)':'--')+'</td>'
-      +'<td>'+rk+'</td></tr>';
-  });
-  html+='</tbody></table></div>';
-
-  // Rank card
-  var ranked=taken.filter(function(e){return e.rank;});
-  if(ranked.length){
-    html+='<div style="margin-top:14px"><div class="card-title" style="margin-bottom:8px">Class Rank</div>';
-    ranked.forEach(function(e,i){
-      var cls=e.rank<=3?'rk-top':e.rank<=Math.ceil(e.classSize/2)?'rk-mid':'rk-low';
-      var medal=e.rank===1?'🥇':e.rank===2?'🥈':e.rank===3?'🥉':'#'+e.rank;
-      var gap='';
-      if(e.rank===1) gap='<span style="font-size:.74rem;color:var(--green);font-weight:700">🏆 Top of class!</span>';
-      else if(e.classAvg!=null) { var g=Math.round(e.score-e.classAvg); gap='<span style="font-size:.74rem;color:var(--g600)">'+(g>0?'+':'')+g+' vs class avg ('+e.classAvg+'/'+e.max+')</span>'; }
-      var move='';
-      if(i>0){var diff=ranked[i-1].rank-e.rank; move=diff>0?'<span style="font-size:.74rem;color:var(--green)">📈 +'+diff+' place'+(diff>1?'s':'')+'</span>':diff<0?'<span style="font-size:.74rem;color:var(--red)">📉 '+diff+' place'+(Math.abs(diff)>1?'s':'')+'</span>':'<span style="font-size:.74rem;color:var(--g400)">➡️ Same</span>';}
-      html+='<div style="padding:10px 0;border-bottom:1px solid var(--g100)">'
-        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
-          +'<span style="font-size:1.1rem">'+medal+'</span>'
-          +'<strong style="font-size:.88rem;flex:1">'+e.name+'</strong>'
-          +'<span class="rk-pill '+cls+'">#'+e.rank+' / '+e.classSize+'</span>'
-        +'</div>'
-        +'<div style="display:flex;flex-direction:column;gap:3px;padding-left:4px">'+gap+move+'</div>'
-        +'</div>';
-    });
-    html+='</div>';
+  // Pass/fail badge
+  var passBadge='';
+  if(taken.length){
+    var failed=taken.filter(function(e){return e.passMark!=null&&e.score<e.passMark;}).length;
+    if(failed>0) passBadge='<span style="background:var(--red-lt);color:var(--red);padding:2px 8px;border-radius:20px;font-size:.7rem;font-weight:700;margin-left:6px">'+failed+' Failed</span>';
+    else passBadge='<span style="background:var(--green-lt);color:var(--green);padding:2px 8px;border-radius:20px;font-size:.7rem;font-weight:700;margin-left:6px">Passing</span>';
   }
+
+  var html='<div>';
+
+  // Mini summary bar
+  html+='<div style="background:linear-gradient(135deg,var(--blue),var(--blue-lt));border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="color:#fff;font-size:.86rem;font-weight:700">'+subject+passBadge+'</div>'
+    +'<div style="color:rgba(255,255,255,.85);font-size:.82rem;font-weight:600">Avg: '+oa+'%</div>'
+    +'</div>';
+
+  if(!exams.length){
+    html+='<div class="no-data">No exam data for this subject.</div></div>';
+    $('spBody').innerHTML=html;
+    return;
+  }
+
+  // Marks table — split DRT and Main
+  var drtEx=exams.filter(function(e){return e.type==='DRT';});
+  var mainEx=exams.filter(function(e){return e.type!=='DRT';});
+
+  function buildRows(list){
+    return list.map(function(e){
+      var hasMark=!e.absent&&e.score!==null&&e.score!==undefined;
+      var markCell=e.absent
+        ?'<span style="color:var(--org);font-weight:700">AB</span>'
+        :'<strong>'+e.score+'</strong><span style="color:var(--g400);font-size:.72rem">/'+e.max+'</span>';
+      var pctCell=hasMark?'<span style="font-weight:700;color:'+(parseFloat(e.pctVal)>=60?'var(--green)':parseFloat(e.pctVal)>=40?'var(--org)':'var(--red)')+'">'+e.pctVal+'%</span>':'--';
+      var pmCell=e.passMark!=null?e.passMark+'':'-';
+      var passCell=hasMark&&e.passMark!=null
+        ?(e.score>=e.passMark
+          ?'<span style="color:var(--green);font-weight:700;font-size:.72rem">✓</span>'
+          :'<span style="color:var(--red);font-weight:700;font-size:.72rem">✗</span>')
+        :'';
+      var rkCell=e.rank?'#'+e.rank+'/'+e.classSize:(e.absent?'AB':'--');
+      return '<tr>'
+        +'<td><strong style="font-size:.78rem">'+e.name+'</strong></td>'
+        +'<td>'+markCell+'</td>'
+        +'<td>'+pctCell+'</td>'
+        +'<td style="color:var(--g500);font-size:.74rem">'+pmCell+passCell+'</td>'
+        +'<td style="color:var(--g500);font-size:.74rem">'+rkCell+'</td>'
+        +'</tr>';
+    }).join('');
+  }
+
+  function mkTable(title, list){
+    if(!list.length) return '';
+    return '<div style="margin-bottom:14px">'
+      +'<div style="font-size:.72rem;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">'+title+'</div>'
+      +'<div style="overflow-x:auto"><table class="mtable">'
+      +'<thead><tr><th>Exam</th><th>Marks</th><th>%</th><th>Pass</th><th>Rank</th></tr></thead>'
+      +'<tbody>'+buildRows(list)+'</tbody></table></div></div>';
+  }
+
+  html+=mkTable('DRT Tests', drtEx);
+  html+=mkTable('Main Exams', mainEx);
 
   // Trend
   if(taken.length>=2){
-    html+='<div style="margin-top:14px"><div class="card-title" style="margin-bottom:8px">Improvement Trend</div><div class="trend-list">';
-    for(var i=1;i<taken.length;i++){
-      var c=taken[i],pv=taken[i-1],delta=Math.round(c.pct-pv.pct);
-      var icon=delta>=20?'🚀':delta>0?'📈':delta<-15?'🔴':delta<0?'📉':'➡️';
-      var msg=delta>=20?'Outstanding jump!':delta>=10?'Great improvement!':delta>=1?'Moving forward':delta===0?'Consistent':delta>=-10?'Slight dip':'Needs attention';
+    html+='<div style="margin-top:4px"><div style="font-size:.72rem;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Trend</div>';
+    html+='<div class="trend-list">';
+    for(var ti=1;ti<taken.length;ti++){
+      var c=taken[ti],pv=taken[ti-1];
+      var delta=Math.round(parseFloat(c.pctVal)-parseFloat(pv.pctVal));
+      var icon=delta>5?'📈':delta<-5?'📉':'➡️';
+      var col=delta>0?'var(--green)':delta<0?'var(--red)':'var(--g400)';
       html+='<div class="trend-item '+(delta>0?'ti-up':delta<0?'ti-down':'ti-same')+'">'
         +'<div class="ti-icon">'+icon+'</div>'
-        +'<div class="ti-body"><div class="ti-title">'+pv.name+' ('+pv.score+'/'+pv.max+') → '+c.name+' ('+c.score+'/'+c.max+')</div>'
-        +'<div class="ti-desc">'+msg+'</div></div>'
-        +'<div class="ti-delta '+(delta>0?'up':delta<0?'down':'')+'">'+(delta>0?'+':'')+delta+'%</div></div>';
+        +'<div class="ti-body"><div class="ti-title" style="font-size:.78rem">'+pv.name+' → '+c.name+'</div>'
+        +'<div class="ti-desc" style="font-size:.72rem">'+(delta>0?'Improved':'Dropped')+' by '+Math.abs(delta)+'%</div></div>'
+        +'<div class="ti-delta '+(delta>0?'up':delta<0?'down':'')+'" style="font-size:.84rem">'+(delta>0?'+':'')+delta+'%</div></div>';
     }
     html+='</div></div>';
   }
 
   html+='</div>';
-  spDiv.innerHTML=html;
+  $('spBody').innerHTML=html;
 }
 
 function closeStudentPreview(){
-  $('spOverlay').classList.add('hidden');
+  $('spPanel').classList.remove('open');
+  $('spBackdrop').classList.remove('open');
   document.body.style.overflow='';
-  window._spData=null;
+  // Clear cache when panel closes to always fetch fresh on next open
+  window._spCache={};
 }
 
-// Close overlay on background click
-document.addEventListener('click',function(e){
-  var ov=$('spOverlay');
-  if(ov&&!ov.classList.contains('hidden')&&e.target===ov) closeStudentPreview();
-});
+// Swipe down to close on mobile
+(function(){
+  var startY=0;
+  var panel=$('spPanel');
+  if(!panel) return;
+  panel.addEventListener('touchstart',function(e){startY=e.touches[0].clientY;},{passive:true});
+  panel.addEventListener('touchend',function(e){
+    var dy=e.changedTouches[0].clientY-startY;
+    if(dy>80) closeStudentPreview();
+  },{passive:true});
+})();
 
 
 // ═══════════════════════════════════════════
@@ -1792,7 +1922,7 @@ document.addEventListener('click',function(e){
       }
       saved.results=results;
       _cur=saved;
-      T.cls=saved.teacher.classes[0]||'';
+      T.cls=T.cls||(saved.teacher&&saved.teacher.classes&&saved.teacher.classes[0])||'';
       saveSession(saved);
       renderTeacher();
     });
