@@ -447,10 +447,9 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--cream);color:va
         <div class="card">
           <div class="card-title">📊 Login Tracking</div>
           <div class="card-sub">Monitor student and teacher login activity.</div>
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-            <span style="font-size:.88rem;font-weight:600;color:var(--g800)">Tracking Status:</span>
-            <button id="trackToggleBtn" class="btn btn-outline" onclick="toggleTracking()" style="min-width:120px">Loading...</button>
-            <span id="trackStatusLabel" style="font-size:.82rem;color:var(--g600)"></span>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+            <span style="background:var(--green-lt);color:var(--green);padding:4px 12px;border-radius:20px;font-size:.78rem;font-weight:700">🟢 Always Active</span>
+            <span style="font-size:.8rem;color:var(--g500)">Tracking is permanently enabled for all users</span>
           </div>
           <div id="trackStatus" class="status-bar"></div>
         </div>
@@ -1786,48 +1785,12 @@ document.addEventListener("keydown",function(e){
 // ═══════════════════════════════════════════════════════
 // LOGIN TRACKING
 // ═══════════════════════════════════════════════════════
-var _trackingEnabled=null;
 
-async function toggleTracking(){
-  try{
-    showStatus("trackStatus","Updating...","info");
-    var cfg=await fsGet("settings","config");
-    var current=cfg&&cfg.trackLogins===true;
-    var newVal=!current;
-    if(!cfg)cfg={};
-    cfg.trackLogins=newVal;
-    await fsSet("settings","config",cfg);
-    _trackingEnabled=newVal;
-    updateTrackToggleUI(newVal);
-    showStatus("trackStatus",newVal?"✅ Tracking enabled.":"⚠️ Tracking disabled.","ok");
-  }catch(e){showStatus("trackStatus","Error: "+e.message,"err");}
-}
-
-function updateTrackToggleUI(enabled){
-  var btn=$("trackToggleBtn"),lbl=$("trackStatusLabel");
-  if(!btn)return;
-  if(enabled){
-    btn.textContent="🟢 ON — Click to Disable";
-    btn.className="btn btn-green";
-    if(lbl)lbl.textContent="Logins are being tracked";
-  }else{
-    btn.textContent="⚫ OFF — Click to Enable";
-    btn.className="btn btn-outline";
-    if(lbl)lbl.textContent="Tracking is disabled";
-  }
-}
+// Tracking toggle removed — tracking is always enabled permanently
 
 async function loadLoginTracking(){
   showStatus("trackStatus","Loading...","info");
   try{
-    var cfg=await fsGet("settings","config");
-    var enabled=cfg&&cfg.trackLogins===true;
-    _trackingEnabled=enabled;
-    updateTrackToggleUI(enabled);
-    if(!enabled){
-      $("trackDashWrap").innerHTML='<div class="card"><div class="no-data" style="min-height:80px">Tracking is disabled. Enable it to record login activity.</div></div>';
-      hideStatus("trackStatus");return;
-    }
     var records=await fsGetAll("lastLogin");
     hideStatus("trackStatus");
     if(!records.length){
@@ -1903,6 +1866,7 @@ async function loadLoginTracking(){
     html+='<button class="btn btn-outline btn-sm active" onclick="filterTrack(\'all\',this)" style="font-size:.76rem">All</button>';
     html+='<button class="btn btn-outline btn-sm" onclick="filterTrack(\'student\',this)" style="font-size:.76rem">Students</button>';
     html+='<button class="btn btn-outline btn-sm" onclick="filterTrack(\'teacher\',this)" style="font-size:.76rem">Teachers</button>';
+    html+='<button class="btn btn-outline btn-sm" onclick="filterTrack(\'principal\',this)" style="font-size:.76rem">Principals</button>';
     html+='</div></div>';
     html+='<div class="tscroll"><table class="ptable" id="trackTable"><thead><tr><th>Name</th><th>Role</th><th>Class</th><th>Last Login</th><th>Status</th></tr></thead><tbody>';
     sortedRecords.forEach(function(r){

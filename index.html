@@ -604,18 +604,11 @@ function setBtn(id,loading){ var b=$(id); b.disabled=loading; b.textContent=load
 function saveSession(d){ try{ sessionStorage.setItem('vva_v2',JSON.stringify(d)); }catch(e){} }
 function loadSession(){ try{ var s=sessionStorage.getItem('vva_v2'); return s?JSON.parse(s):null; }catch(e){ return null; } }
 function clearSession(){ sessionStorage.removeItem('vva_v2'); sessionStorage.removeItem('vva'); }
-var _trackLogins=null; // cached tracking flag
+// Tracking is always enabled — no toggle
 async function checkAndTrack(userId, role, name){
   try{
-    if(_trackLogins===null){
-      var cfg=await fsGet('settings','config');
-      // Default trackLogins to TRUE — only skip if explicitly set to false
-      _trackLogins=!(cfg&&cfg.trackLogins===false);
-    }
-    if(_trackLogins){
-      var now=Date.now();
-      await fsWrite('lastLogin',userId,{role:role,name:name,timestamp:now});
-    }
+    var now=Date.now();
+    await fsWrite('lastLogin',userId,{role:role,name:name,timestamp:now});
   }catch(e){ /* silent */ }
 }
 

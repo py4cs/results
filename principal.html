@@ -517,6 +517,21 @@ _fbAuth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(function(){
 
 async function fsGet(col,id){var r=await fetch(BASE+'/'+col+'/'+encodeURIComponent(id)+'?key='+API_KEY);if(!r.ok)return null;return pd(await r.json());}
 async function fsGetAll(col){var url=BASE+'/'+col+'?key='+API_KEY+'&pageSize=500',docs=[];while(url){var r=await fetch(url);if(!r.ok)break;var data=await r.json();(data.documents||[]).forEach(function(d){docs.push(Object.assign({_id:d.name.split('/').pop()},pd(d)));});url=data.nextPageToken?BASE+'/'+col+'?key='+API_KEY+'&pageSize=500&pageToken='+data.nextPageToken:null;}return docs;}
+async function fsWrite(col,id,data){
+  try{
+    var fields={};
+    Object.keys(data).forEach(function(k){
+      var v=data[k];
+      if(typeof v==='string')fields[k]={stringValue:v};
+      else if(typeof v==='number')fields[k]={integerValue:String(v)};
+      else if(typeof v==='boolean')fields[k]={booleanValue:v};
+    });
+    await fetch(BASE+'/'+col+'/'+encodeURIComponent(id)+'?key='+API_KEY,{
+      method:'PATCH',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({fields:fields})
+    });
+  }catch(e){}
+}
 function pd(doc){if(!doc||!doc.fields)return{};var o={};Object.keys(doc.fields).forEach(function(k){o[k]=pfv(doc.fields[k]);});return o;}
 function pfv(v){if(v.stringValue!==undefined)return v.stringValue;if(v.integerValue!==undefined)return Number(v.integerValue);if(v.doubleValue!==undefined)return Number(v.doubleValue);if(v.booleanValue!==undefined)return v.booleanValue;if(v.nullValue!==undefined)return null;if(v.arrayValue)return(v.arrayValue.values||[]).map(pfv);if(v.mapValue)return pd(v.mapValue);return null;}
 
@@ -564,7 +579,15 @@ function startApp(cfg){
   $('hGr').textContent=h<12?'morning':h<17?'afternoon':'evening';
   $('hPN').textContent=(_curP.name||'Principal').split(' ')[0];
   $('hDate').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  trackPrincipal();
   loadDash();
+}
+
+function trackPrincipal(){
+  try{
+    var now=Date.now();
+    fsWrite('lastLogin',_curP.id,{role:'principal',name:_curP.name||_curP.id,timestamp:now});
+  }catch(e){}
 }
 
 async function loadDash(force){
