@@ -520,11 +520,13 @@ function parseFsValue(v) {
 // ═══════════════════════════════════════════
 var TEACHERS = {}; // loaded from Firestore /settings/config
 // Firebase Auth
-var _fbApp2=firebase.initializeApp({
+var _fbApp2;
+try{ _fbApp2=firebase.app("portal"); }
+catch(e){ _fbApp2=firebase.initializeApp({
   apiKey:"AIzaSyC79jcB_6TgJIG4ngXmPDY6Zjmg8PC0-pU",
   authDomain:"velammal-results.firebaseapp.com",
   projectId:"velammal-results"
-},"portal");
+},"portal"); }
 var _fbAuth2=firebase.auth(_fbApp2);
 var T_DOMAIN="@velammal.com";
 // Loaded from Firestore /settings/config on login
@@ -607,7 +609,8 @@ async function checkAndTrack(userId, role, name){
   try{
     if(_trackLogins===null){
       var cfg=await fsGet('settings','config');
-      _trackLogins=cfg&&cfg.trackLogins===true;
+      // Default trackLogins to TRUE — only skip if explicitly set to false
+      _trackLogins=!(cfg&&cfg.trackLogins===false);
     }
     if(_trackLogins){
       var now=Date.now();
@@ -1696,8 +1699,15 @@ function openStudentPreview(admNo){
   // Build subject pills — all configured subjects
   var allSubs=SUBJECTS.length?SUBJECTS:(_cur.teacher.subject?[_cur.teacher.subject]:[]);
   $('spPills').innerHTML=allSubs.map(function(sub,i){
-    return '<button class="sp-pill" data-sub="'+sub+'" onclick="spLoadSubject(''+an+'',''+sub+'',this)">'+sub+'</button>';
+    // Use data attributes + event delegation to avoid quote nesting issues
+    return '<button class="sp-pill" data-sub="'+sub+'" data-an="'+an+'">'+sub+'</button>';
   }).join('');
+  // Attach click handlers after rendering
+  $('spPills').querySelectorAll('.sp-pill').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      spLoadSubject(btn.getAttribute('data-an'), btn.getAttribute('data-sub'), btn);
+    });
+  });
 
   $('spBody').innerHTML='<div class="no-data" style="padding:32px">Tap a subject above to load marks</div>';
 
